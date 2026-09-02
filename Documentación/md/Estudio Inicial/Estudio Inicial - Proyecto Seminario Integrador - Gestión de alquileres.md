@@ -285,11 +285,13 @@ Gestionar reportes e informes:
 
 ## ***7.1- Prefactibilidad técnica***
 
-El desarrollo se apoya en un stack tecnológico moderno y ampliamente documentado: Next.js y Node.js para la aplicación web, Supabase como base de datos y backend (autenticación, almacenamiento), y Vercel como plataforma de despliegue *serverless*. Los organismos oficiales (INDEC y BCRA) publican sus índices de forma pública, lo que permite automatizar la actualización de los valores de ajuste. La integración de cobros puede resolverse con una pasarela de pago existente (por ejemplo, MercadoPago), evitando desarrollar infraestructura de procesamiento de pagos propia.
+Para conectarse y utilizar la plataforma, los usuarios necesitarán disponer de conexión a internet y un navegador web en un dispositivo inteligente, como ser: una tablet, un teléfono móvil o una computadora.
 
-En cuanto a los usuarios, para conectarse y utilizar la plataforma necesitarán disponer de conexión a internet y un navegador web en un dispositivo inteligente, como ser: una tablet, un teléfono móvil o una computadora.
+En cuanto al desarrollo, no se precisa de ninguna innovación tecnológica, sino que se hará uso de tecnologías existentes.
 
 ## ***7.2- Prefactibilidad económica***
+
+El costo de uso de la web será nulo para quienes busquen propiedades a alquilar y se cobrará una pequeña comisión mensual a los propietarios que reciban el pago de alquiler mediante MercadoPago. Además, a fines de sostener el alojamiento de la web en un servidor, se mostrarán pequeños anuncios en los bordes de la misma.
 
 La arquitectura *serverless* propuesta (Vercel y Supabase) permite operar el MVP dentro de los niveles gratuitos o de bajo costo de estos servicios mientras el volumen de usuarios es reducido, lo que mantiene acotada la inversión en infraestructura durante el desarrollo académico del proyecto. La pasarela de pago no requiere costo fijo, sino una comisión por transacción procesada. El principal costo del proyecto es el esfuerzo de desarrollo, cubierto por el equipo del Seminario Integrador. Para una eventual puesta en producción comercial, el modelo de ingresos podría basarse en una comisión sobre el cobro gestionado o en una suscripción mensual, aunque ese análisis de negocio excede el alcance académico del presente informe.
 
