@@ -303,6 +303,9 @@ El principal riesgo operativo identificado es la resistencia al cambio por parte
 
 Para las etapas de diseño y desarrollo se propone utilizar la metodología de Scrum, la cual sigue la filosofía del desarrollo ágil y organiza el trabajo en sprints breves (dos semanas) con entregas incrementales del producto. Este enfoque permite validar tempranamente los módulos más críticos del sistema antes de avanzar con funcionalidades de menor prioridad, y ajustar el backlog del proyecto según la retroalimentación de la cátedra en cada revisión.
 
+Scrum fue creado por Ken Schwaber y Jeff Sutherland. La información obtenida con respecto a esta metodología proviene tanto de los apuntes empleados a lo largo de diferentes materias en la universidad como de Scrum.org ([https://www.scrum.org/learning-series/what-is-scrum/](https://www.scrum.org/learning-series/what-is-scrum/)). En cuanto a la filosofía ágil, los doce principios listados en el manifiesto ágil permiten un acercamiento a su funcionamiento  
+([https://agilemanifesto.org/iso/es/principles.html](https://agilemanifesto.org/iso/es/principles.html)).
+
 # **9- Roadmap del proyecto**
 
 ![][image2]
