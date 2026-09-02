@@ -80,7 +80,11 @@ Rosales, Tomás Daniel
 
 [**5.2- Requerimientos Funcionales y No Funcionales	11**](#5.2--requerimientos-funcionales-y-no-funcionales)
 
-[**6- Objetivo del SI	12**](#6--objetivo-del-si)
+[**6- Propuesta del sistema de información	12**](#6--propuesta-del-sistema-de-información)
+
+[**6.1- Objetivo del SI	12**](#6.1--objetivo-del-si)
+
+[**6.2- Requerimientos funcionales detallados	12**](#6.2--requerimientos-funcionales-detallados)
 
 [**7- Estudio de Prefactibilidad	13**](#7--estudio-de-prefactibilidad)
 
@@ -194,54 +198,23 @@ Entonces, algunos de los problemas actuales al alquilar propiedades son:
 
 ## ***5.2- Requerimientos Funcionales y No Funcionales***
 
-**Requerimientos Funcionales:**
+**Requerimientos Funcionales Globales:**
 
 Administrar propiedades en alquiler: añadir o eliminar propiedades de un locador con detalles identificadores de las mismas y definir si las mismas se encuentran disponibles para alquilar o ya están alquiladas.
 
-- Registrar propiedad.  
-- Consultar propiedad.  
-- Modificar propiedad.  
-- Eliminar propiedad.
-
 Gestionar alquileres: asociar un contrato de alquiler a una propiedad y vincular un alquiler entre locador y locatario.
-
-- Registrar contrato de alquiler.  
-- Modificar contrato de alquiler.
 
 Gestionar cobros: calcular y procesar cobro a realizarse por propiedad mes a mes, ajustando automáticamente el monto pactado de acuerdo al índice declarado en el contrato y excluyendo el monto de expensas extraordinarias, asignando el mismo únicamente al locador.
 
-- Registrar cobro.  
-- Consultar cobro.  
-- Emitir comprobante de pago.
-
 Gestionar reclamos: llevar un seguimiento de los reclamos o consultas que pueda realizar el locatario al locador con respecto a la propiedad que esté alquilando.
-
-- Registrar reclamo.  
-- Consultar reclamo.  
-- Modificar reclamo.  
-- Eliminar reclamo.
 
 Administrar usuarios: permitir el registro de usuarios en la plataforma.
 
-- Registrar usuario.  
-- Consultar usuario.  
-- Modificar usuario.
-
 Gestionar notificaciones: realizar el envío de notificaciones a los locadores y locatarios, como recordatorios de pagos o para informar de un nuevo reclamo.
-
-- Registrar notificación.  
-- Consultar notificación.
 
 Gestionar mensajes: permitir la comunicación dentro de la plataforma entre locador y locatario.
 
-- Registrar mensaje.  
-- Consultar mensaje.  
-- Eliminar mensaje.
-
 Gestionar reportes e informes: recopilar los datos necesarios para la generación de reportes e informes.
-
-- Generar y emitir histograma de pagos realizados.  
-- Generar y emitir histograma de precio del alquiler.
 
 **Requerimientos No Funcionales:**
 
@@ -254,9 +227,59 @@ Gestionar reportes e informes: recopilar los datos necesarios para la generació
 - Se debe poder enviar notificaciones a los usuarios vía mail y dentro de la misma página web.   
 - Se utilizará una integración con IA (Gemini) para realizar análisis de los contratos y resolver consultas.
 
-# **6- Objetivo del SI**
+# **6- Propuesta del sistema de información**
+
+## ***6.1- Objetivo del SI***
 
 El producto tiene como objetivo brindar información que permita centralizar el ofrecimiento, cierre de contrato y la gestión de alquileres realizados de manera directa entre locadores y locatarios. Busca simplificar la trazabilidad de los alquileres de inicio a fin, automatizar las actualizaciones periódicas del monto establecido en el contrato y la republicación de alquileres una vez vencido el plazo pactado, y agilizar el firmado de los contratos.
+
+## ***6.2- Requerimientos funcionales detallados***
+
+Administrar propiedades en alquiler:
+
+- Registrar propiedad.  
+- Consultar propiedad.  
+- Modificar propiedad.  
+- Eliminar propiedad.
+
+Gestionar alquileres:
+
+- Registrar contrato de alquiler.  
+- Modificar contrato de alquiler.
+
+Gestionar cobros:
+
+- Registrar cobro.  
+- Consultar cobro.  
+- Emitir comprobante de pago.
+
+Gestionar reclamos:
+
+- Registrar reclamo.  
+- Consultar reclamo.  
+- Modificar reclamo.  
+- Eliminar reclamo.
+
+Administrar usuarios:
+
+- Registrar usuario.  
+- Consultar usuario.  
+- Modificar usuario.
+
+Gestionar notificaciones:
+
+- Registrar notificación.  
+- Consultar notificación.
+
+Gestionar mensajes:
+
+- Registrar mensaje.  
+- Consultar mensaje.  
+- Eliminar mensaje.
+
+Gestionar reportes e informes:
+
+- Generar y emitir histograma de pagos realizados y del precio del alquiler.
 
 # **7- Estudio de Prefactibilidad**
 
