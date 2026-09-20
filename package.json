@@ -1,0 +1,15 @@
+{
+  "name": "rentar-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sistema de gestión y búsqueda de alquileres RentAR",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "dev:api": "npm run dev --workspace=apps/api"
+  }
+}
