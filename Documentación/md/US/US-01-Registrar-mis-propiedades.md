@@ -19,12 +19,16 @@
 | - Se debe indicar qué servicios incluye la propiedad. |
 | - Se debe asociar el contrato de alquiler de la propiedad. |
 | - Se pueden indicar tags de la propiedad, que son características adicionales. |
-| - Se debe cargar al menos una foto de la propiedad. |
+| - Se deben cargar al menos tres fotos de la propiedad. |
 | - Las fotos deberán estar en formato JPG y no superar los 350kb. |
 | - Se pueden cargar hasta 50 fotos por propiedad. |
 | - Se puede indicar la antigüedad de la propiedad. |
 | - Se debe escoger la primer foto cargada como la imagen principal de la propiedad. |
 | - Se puede cambiar la foto principal de la propiedad. |
+| - Se debe indicar el monto de alquiler de la propiedad. |
+| - Se debe indicar el monto de las expensas de la propiedad. |
+| - Se puede indicar el índice de actualización de la propiedad. |
+| - Se debe indicar los métodos de pago preferidos. |
 | **Pruebas de usuario:** |
 | - Probar registrar una propiedad sin contar con una sesión iniciada (falla). |
 | - Probar registrar una propiedad y no haber adjuntado ninguna foto (falla). |
@@ -55,4 +59,8 @@
 | - Probar registrar una propiedad sin haber seleccionado tags (pasa). |
 | - Probar registrar una propiedad y seleccionar uno o más tags (pasa). |
 | - Probar registrar una propiedad sin asociarle un contrato (falla). |
+| - Probar registrar una propiedad sin ingresar un monto de alquiler (falla). |
+| - Probar registrar una propiedad sin ingresar un monto de expensas (falla). |
+| - Probar registrar una propiedad sin seleccionar un índice de actualización (pasa). |
+| - Probar registrar una propiedad sin indicar los métodos de pago preferidos (pasa). |
 
