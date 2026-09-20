@@ -66,6 +66,10 @@ const router = Router();
  *         description: Inmueble creado con éxito (ID generado automáticamente)
  */
 router.get('/', inmuebleController.getAll.bind(inmuebleController));
+router.get(
+  '/disponibles',
+  inmuebleController.getInmueblesDisponibles.bind(inmuebleController)
+);
 router.get('/:id', inmuebleController.getById.bind(inmuebleController));
 router.post(
   '/',

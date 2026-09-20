@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { inmuebleService } from '../services/inmueble.service';
-import { ApiResponse, InmuebleDTO } from '../dtos';
+import { ApiResponse, InmuebleDTO,InmuebleDetalleDTO } from '../dtos';
 
 export class InmuebleController {
   async getAll(req: Request, res: Response<ApiResponse<InmuebleDTO[]>>, next: NextFunction): Promise<void> {
@@ -16,7 +16,7 @@ export class InmuebleController {
     }
   }
 
-  async getById(req: Request, res: Response<ApiResponse<InmuebleDTO>>, next: NextFunction): Promise<void> {
+  async getById(req: Request, res: Response<ApiResponse<InmuebleDetalleDTO>>, next: NextFunction): Promise<void> {
     try {
       const id = parseInt(req.params.id, 10);
       if (isNaN(id)) {
@@ -45,6 +45,19 @@ export class InmuebleController {
     }
   }
 
+  async getInmueblesDisponibles( req: Request, res: Response<ApiResponse<InmuebleDTO[]>>, next: NextFunction): Promise<void> {
+    try {
+      const inmuebles = await inmuebleService.getInmueblesDisponibles();
+  
+      res.status(200).json({
+        success: true,
+        message: 'Propiedades disponibles obtenidas exitosamente',
+        data: inmuebles
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
   async create(req: Request, res: Response<ApiResponse<InmuebleDTO>>, next: NextFunction): Promise<void> {
     try {
       // El ID no debe ser provisto por el cliente, es autogenerado

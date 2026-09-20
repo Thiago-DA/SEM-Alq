@@ -64,6 +64,31 @@ export interface InmuebleDTO {
   created_at?: Date | string;
 }
 
+export interface InmuebleDetalleDTO {
+  id: number;
+  tipo_inmueble: string;
+  direccion: string;
+  numero: number;
+  piso?: string | null;
+  ciudad: string;
+  ambientes: number;
+  dormitorios: number;
+  banos: number;
+  m2: number;
+  descripcion?: string | null;
+  tag?: string | null;
+  servicio?: string | null;
+  id_locador: number;
+  created_at?: Date | string;
+  publicacion?: {
+    id: number;
+    titulo: string;
+    precio: number;
+    activa: boolean;
+    created_at?: Date | string;
+  } | null;
+}
+
 export interface CreateInmuebleDTO {
   tipo: number;
   direccion: string;

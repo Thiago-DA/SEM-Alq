@@ -1,8 +1,9 @@
 import {
   InmuebleDTO,
+  InmuebleDetalleDTO,
   CreateInmuebleDTO,
   UpdateInmuebleDTO,
-  MisAlquileresDTO
+  MisAlquileresDTO,
 } from '../dtos';
 import { IInmuebleRepository, inmuebleRepository } from '../repositories/inmueble.repository';
 import { IPublicacionRepository, publicacionRepository } from '../repositories/publicacion.repository';
@@ -20,8 +21,98 @@ export class InmuebleService {
     return await this.inmRepo.findAll();
   }
 
-  async getById(id: number): Promise<InmuebleDTO | null> {
-    return await this.inmRepo.findById(id);
+  async getById(id: number): Promise<InmuebleDetalleDTO | null> {
+    const inmueble = await this.inmRepo.findById(id);
+
+    if (!inmueble) {
+      return null;
+    }
+
+    const tipo = await lookupRepository.getTipoById(inmueble.tipo);
+
+    const tag = inmueble.tags
+      ? await lookupRepository.getTagById(inmueble.tags)
+      : null;
+
+    const servicio = inmueble.servicios
+      ? await lookupRepository.getServicioById(inmueble.servicios)
+      : null;
+
+    const publicacion = await this.pubRepo.findByInmuebleId(inmueble.id);
+
+    return {
+      id: inmueble.id,
+      tipo_inmueble: tipo?.descripcion ?? 'Tipo no especificado',
+      direccion: inmueble.direccion,
+      numero: inmueble.numero,
+      piso: inmueble.piso,
+      ciudad: inmueble.ciudad,
+      ambientes: inmueble.ambientes,
+      dormitorios: inmueble.dormitorios,
+      banos: inmueble.banos,
+      m2: inmueble.m2,
+      descripcion: inmueble.descripcion,
+      tag: tag?.descripcion ?? null,
+      servicio: servicio?.nombre ?? null,
+      id_locador: inmueble.id_locador,
+      created_at: inmueble.created_at,
+      publicacion: publicacion
+        ? {
+            id: publicacion.id,
+            titulo: publicacion.titulo,
+            precio: publicacion.precio,
+            activa: publicacion.activa,
+            created_at: publicacion.created_at
+          }
+        : null
+    };
+  }
+
+  async getInmueblesDisponibles(): Promise<InmuebleDTO[]> {
+    const inmuebles = await this.inmRepo.findAll();
+  
+    const disponibles: InmuebleDTO[] = [];
+  
+    for (const inmueble of inmuebles) {
+      // 1. La propiedad debe tener una publicación activa
+      const publicacion = await this.pubRepo.findByInmuebleId(inmueble.id);
+  
+      if (!publicacion) {
+        continue;
+      }
+  
+      // 2. Verificamos si tiene un contrato
+      const contratos = await this.contRepo.findByInmuebleId(inmueble.id);
+  
+      const contratoPrincipal = contratos.length > 0
+        ? contratos[0]
+        : null;
+  
+      let estaAlquilado = false;
+  
+      if (contratoPrincipal) {
+        const usuariosContrato =
+          await this.contRepo.getUsuariosByContratoId(contratoPrincipal.id);
+  
+        const tieneLocatario = usuariosContrato.some(
+          usuario => usuario.id_usuario !== inmueble.id_locador
+        );
+  
+        if (
+          tieneLocatario ||
+          contratoPrincipal.estado === 'vigente'
+        ) {
+          estaAlquilado = true;
+        }
+      }
+  
+      // 3. Solo agregamos propiedades disponibles
+      if (!estaAlquilado) {
+        disponibles.push(inmueble);
+      }
+    }
+  
+    return disponibles;
   }
 
   async create(data: CreateInmuebleDTO): Promise<InmuebleDTO> {
