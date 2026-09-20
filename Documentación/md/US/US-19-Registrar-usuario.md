@@ -8,6 +8,9 @@
 | - Se debe ingresar una contraseña alfanumérica de al menos 8 caracteres con al menos una mayúscula y al menos una minúscula. |
 | - Se debe confirmar la contraseña ingresada. |
 | - Se debe ingresar la fecha de nacimiento del usuario. |
+| - Se debe ingresar un número de teléfono. |
+| - Se debe ingresar un número de documento. |
+| - Se debe aceptar los términos y condiciones. |
 | **Pruebas de usuario:** |
 | - Probar registrar un usuario sin ingresar una dirección de mail (falla). | 
 | - Probar registrar un usuario sin ingresar un nombre (falla). | 
@@ -20,3 +23,6 @@
 | - Probar registrar un usuario con una contraseña menor a 8 caracteres (falla). | 
 | - Probar registrar un usuario con una dirección de correo en un formato inválido (falla). |
 | - Probar registrar un usuario sin ingresar una fecha de nacimiento (falla). |
+| - Probar registrar un usuario sin ingresar un número de teléfono (falla). |
+| - Probar registrar un usuario sin ingresar un número de documento (falla). |
+| - Probar registrar un usuario sin aceptar los términos y condiciones (falla). |
