@@ -23,6 +23,8 @@
 | - Las fotos deberán estar en formato JPG y no superar los 350kb. |
 | - Se pueden cargar hasta 50 fotos por propiedad. |
 | - Se puede indicar la antigüedad de la propiedad. |
+| - Se debe escoger la primer foto cargada como la imagen principal de la propiedad. |
+| - Se puede cambiar la foto principal de la propiedad. |
 | **Pruebas de usuario:** |
 | - Probar registrar una propiedad sin contar con una sesión iniciada (falla). |
 | - Probar registrar una propiedad y no haber adjuntado ninguna foto (falla). |
