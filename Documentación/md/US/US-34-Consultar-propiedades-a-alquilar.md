@@ -18,12 +18,10 @@
 |- Probar consultar propiedades disponibles con sus datos sin haber iniciado sesión. |
 |- Probar consultar propiedades disponibles con sus datos habiendo iniciado sesión. |
 |- Probar consultar propiedades disponibles cuando no existen propiedades que cumplan con los filtros y verificar que se muestre un mensaje indicando que no hay resultados.|
-|- Probar consultar propiedades disponibles y filtrar por barrio.|
-|- Probar consultar propiedades disponibles y filtrar por tipo de propiedad.|
-|- Probar consultar propiedades disponibles y filtrar por cantidad de ambientes.|
-|- Probar consultar propiedades disponibles y filtrar por tags.|
+|- Probar consultar propiedades disponibles aplicando filtros |
 |- Probar consultar propiedades disponibles aplicando más de un filtro al mismo tiempo y verificar que solo se muestren las propiedades que cumplan con todos los criterios seleccionados. |
 |- Probar consultar propiedades disponibles, quitar los filtros aplicados y verificar que vuelvan a mostrarse todas las propiedades correspondientes.|
 |- Probar ver el detalle de una propiedad publicada |
 |- Probar el paginado de propiedades publicadas |
 |- Probar el ordenamiento de propiedades publicadas|
+|- Probar consultar propiedades ordenandolas por algún criterio, quitar el ordenamiento aplicados y verificar que vuelvan a mostrarse todas las propiedades en el orden correspondientes.|
