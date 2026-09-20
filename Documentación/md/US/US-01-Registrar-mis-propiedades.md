@@ -3,32 +3,40 @@
 | Como locador, quiero registrar una propiedad, para incorporarla a la plataforma y poder gestionarla. |
 | **Criterios de aceptación:** |
 | - Se debe haber iniciado sesión. |
-| - Se debe ingresar un título para la propiedad a publicar. |
-| - Se debe indicar si la propiedad ya se encuentra alquilada o no. |
-| - Se debe decidir si publicar la propiedad o no. |
-| - Si la propiedad se encuentra alquilada, por defecto no se publicará. |
-| - Si la propiedad no se encuentra alquilada, por defecto se publicará. |
+| - Se puede ingresar una descripción para la propiedad a publicar. |
+| - Se debe indicar el estado del alquiler: publicado, pausado o alquilado. |
+| - Si la propiedad se encuentra alquilada, se puede ingresar desde qué fecha estará disponible para alquilar. |
 | - Se debe indicar la provincia en la que se encuentra la propiedad. |
+| - Se debe indicar la ciudad en la que se encuentra la propiedad. |
+| - Se debe indicar el barrio en el que se encuentra la propiedad. |
 | - Se debe indicar la calle en la que se encuentra la propiedad. |
 | - Se debe indicar a qué altura de la calle se encuentra la propiedad. |
-| - Se debe indicar los metros cuadrados de la propiedad. |
+| - Se debe indicar los metros cuadrados de la superficie total. |
+| - Se debe indicar los metros cuadrados de la superficie cubierta. |
 | - Se debe indicar el tipo de propiedad (casa, departamento, monoambiente). |
 | - Se debe indicar la cantidad de dormitorios de la propiedad si no es un monoambiente. |
 | - Se debe indicar la cantidad de ambientes de la propiedad si no es un monoambiente. |
 | - Se debe indicar la cantidad de baños de la propiedad. |
-| - Se debe indicar qué servicios incluye la propiedad. |
-| - Se debe asociar el contrato de alquiler de la propiedad. |
 | - Se pueden indicar tags de la propiedad, que son características adicionales. |
-| - Se debe cargar al menos una foto de la propiedad. |
-| - Las fotos deberán estar en formato JPG y no superar los 350kb. |
+| - Se deben cargar al menos tres fotos de la propiedad. |
+| - Las fotos deberán estar en formato JPG o PNG y no superar los 350kb. |
 | - Se pueden cargar hasta 50 fotos por propiedad. |
 | - Se puede indicar la antigüedad de la propiedad. |
 | - Se debe escoger la primer foto cargada como la imagen principal de la propiedad. |
 | - Se puede cambiar la foto principal de la propiedad. |
+| - Se debe indicar el monto de alquiler de la propiedad. |
+| - Se debe indicar el monto de las expensas de la propiedad. |
+| - Se puede indicar el índice de actualización de la propiedad. |
+| - Se debe indicar los métodos de pago preferidos. |
+| - Se puede indicar el interés por día de atraso. |
+| - Si se indicó el interés por día, se deben indicar los días de gracia. |
+| - Se puede indicar la frecuencia de ajuste. |
+| - Se puede indicar la duración del contrato. |
+| - Se puede indicar el depósito solicitado al locatario. |
 | **Pruebas de usuario:** |
 | - Probar registrar una propiedad sin contar con una sesión iniciada (falla). |
 | - Probar registrar una propiedad y no haber adjuntado ninguna foto (falla). |
-| - Probar registrar una propiedad sin haber ingresado un título (falla). |
+| - Probar registrar una propiedad sin haber ingresado una descripción (pasa). |
 | - Probar registrar una propiedad sin haber ingresado una calle (falla). |
 | - Probar registrar una propiedad sin haber ingresado una altura de calle (falla). |
 | - Probar registrar una propiedad sin haber ingresado los metros cuadrados (falla). |
@@ -37,22 +45,23 @@
 | - Probar registrar una propiedad que no es monoambiente sin haber ingresado la cantidad de ambientes (falla). |
 | - Probar registrar una propiedad monoambiente con más de un ambiente (falla). |
 | - Probar registrar una propiedad monoambiente con más de un dormitorio (falla). |
-| - Probar registrar una propiedad sin haber seleccionado los servicios que incluye la misma (falla). |
 | - Probar registrar una propiedad y cargar más de 50 fotos (falla). |
-| - Probar registrar una propiedad y cargar una foto en un formato diferente a JPG (falla). |
+| - Probar registrar una propiedad y cargar una foto en un formato diferente a JPG o PNG (falla). |
 | - Probar registrar una propiedad y cargar una foto con peso mayor a 350kb (falla). |
 | - Probar registrar una propiedad sin haber ingresado la antigüedad de la propiedad (pasa). |
-| - Probar registrar una propiedad sin haber indicado si se encuentra alquilada o no (falla).  |
-| - Probar registrar una propiedad sin haber indicado la ciudad en la que se encuentra (falla). |
-| - Probar registrar una propiedad en una provincia que no existe (falla). |
+| - Probar registrar una propiedad sin haber indicado el estado del alquiler (falla).  |
+| - Probar registrar una propiedad sin haber indicado la ciudad, provincia y barrio en los que se encuentra (falla). |
 | - Probar registrar una propiedad con menos de 0 habitaciones (falla). |
 | - Probar registrar una propiedad que no es monoambiente con menos de 1 habitación (falla). |
 | - Probar registrar una propiedad que no es monoambiente con menos de 2 ambientes (falla). |
 | - Probar registrar una propiedad con 0 o menos metros cuadrados (falla). |
 | - Probar registrar una propiedad con 0 o menos baños (falla). |
-| - Probar registrar una propiedad ya alquilada y que por defecto se seleccione la opción de no publicarla (pasa). |
-| - Probar registrar una propiedad sin alquilar y que por defecto se seleccione la opción de publicarla (pasa). |
 | - Probar registrar una propiedad sin haber seleccionado tags (pasa). |
 | - Probar registrar una propiedad y seleccionar uno o más tags (pasa). |
-| - Probar registrar una propiedad sin asociarle un contrato (falla). |
+| - Probar registrar una propiedad sin ingresar un monto de alquiler (falla). |
+| - Probar registrar una propiedad sin ingresar un monto de expensas (falla). |
+| - Probar registrar una propiedad sin seleccionar un índice de actualización (pasa). |
+| - Probar registrar una propiedad sin indicar los métodos de pago preferidos (pasa). |
+| - Probar registrar una propiedad indicando el interés por día pero no los días de gracia (falla). |
+| - Probar registrar una propiedad indicando el interés por día pero no los días de gracia (falla). |
 
