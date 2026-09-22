@@ -3,10 +3,21 @@
 # dependencies
 /node_modules
 /.pnp
-.pnp.js
+jspm_packages/
+web_modules/
+.npm
+.yarn/cache
+.yarn/unplugged
+.yarn/build-state.yml
+.yarn/install-state.gz
+.pnp.*
 
-# testing
-/coverage
+# Profiling and coverage
+*.prof
+*.pb.gz
+coverage
+*.lcov
+.nyc_output
 
 # next.js
 /.next/
@@ -14,6 +25,17 @@
 
 # production
 /build
+
+# Native compiler outputs
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.wasm
+*.test
+__debug_bin*
+*.out
 
 # misc
 .DS_Store
@@ -27,6 +49,14 @@ yarn-error.log*
 # local env files
 .env*.local
 .env
+.node_repl_history
+**/.vscode/*
+!**/.vscode/tasks.json
+!**/.vscode/settings.template.json
+!**/.vscode/launch.template.json
+!**/.vscode/extensions.json
+.DS_Store
+.idea
 
 # vercel
 .vercel
@@ -34,3 +64,34 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+*.tgz
+dist
+.eslintcache
+.cache
+.parcel-cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+.vscode-test
+/built
+/go.work.sum
+/tsc/cmd/tsc/tsc
+/tsc/tsc
+
+
+# Generated development tools
+tools/custom-gcl
+tools/custom-gcl.exe
+tools/custom-gcl.hash
+tools/custom-gcl.exe.hash
+tools/gotestsum
+tools/gotestsum.exe
+tools/gotestsum.hash
+tools/gotestsum.exe.hash
+
+# Keep tracked text assets that overlap broad output patterns
+!tsc/testdata/baselines/reference/**/*.txt
+!packages/typescript/vendor/**/*.txt
+!tsc/testdata/submoduleAccepted.txt
+!tsc/testdata/submoduleTriaged.txt
