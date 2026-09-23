@@ -4,6 +4,7 @@ export interface IPublicacionRepository {
   findById(id: number): Promise<PublicacionDTO | null>;
   findByInmuebleId(inmuebleId: number): Promise<PublicacionDTO | null>;
   findAll(): Promise<PublicacionDTO[]>;
+  findAllActive(): Promise<PublicacionDTO[]>;
   create(data: CreatePublicacionDTO): Promise<PublicacionDTO>;
   update(id: number, data: Partial<PublicacionDTO>): Promise<PublicacionDTO | null>;
   delete(id: number): Promise<boolean>;
@@ -53,6 +54,13 @@ export class PublicacionRepository implements IPublicacionRepository {
     return this.publicaciones.map(p => ({ ...p }));
   }
 
+  async findAllActive(): Promise<PublicacionDTO[]> {
+
+    return this.publicaciones
+      .filter(p => p.activa)
+      .map(p => ({ ...p }));
+  
+  }
   async create(data: CreatePublicacionDTO): Promise<PublicacionDTO> {
     const newPub: PublicacionDTO = {
       id: ++this.nextId,
