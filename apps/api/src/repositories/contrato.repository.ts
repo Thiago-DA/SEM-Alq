@@ -1,5 +1,5 @@
-import { ContratoDTO, MedioPagoXContratoDTO, MedioPagoDTO } from '../dtos';
-import { lookupRepository } from './lookup.repository';
+import { ContratoDTO, MedioPagoDTO } from '../dtos';
+import { getSupabaseAdmin } from '../config/supabase';
 
 export interface IContratoRepository {
   findById(id: number): Promise<ContratoDTO | null>;
@@ -11,103 +11,60 @@ export interface IContratoRepository {
 }
 
 export class ContratoRepository implements IContratoRepository {
-  private nextId = 10;
-  private nextMedioPagoXContratoId = 10;
-
-  private contratos: ContratoDTO[] = [
-    {
-      id: 1,
-      id_inmueble: 1,
-      monto_alquiler: 350000.0,
-      expensas: 45000.0,
-      indice_aumento: 1,
-      frecuencia_ajuste: 'Semestral',
-      duracion_meses: 24,
-      deposito: 350000.0,
-      interes_por_dia: 0.5,
-      dias_gracia: 5,
-      fecha_inicio_contrato: '2026-10-01',
-      fecha_fin_contrato: '2028-09-30',
-      estado: 1
-    },
-    {
-      id: 2,
-      id_inmueble: 2,
-      monto_alquiler: 290000.0,
-      expensas: 38000.0,
-      indice_aumento: 1,
-      frecuencia_ajuste: 'Anual',
-      duracion_meses: 24,
-      deposito: 290000.0,
-      interes_por_dia: 0.5,
-      dias_gracia: 3,
-      fecha_inicio_contrato: '2026-03-01',
-      fecha_fin_contrato: '2028-02-28',
-      estado: 2
-    }
-  ];
-
-  private mediosPagoXContratos: MedioPagoXContratoDTO[] = [
-    { id: 1, id_contrato: 1, id_medio_pago: 1 }, // Transferencia
-    { id: 2, id_contrato: 1, id_medio_pago: 3 }, // Mercado Pago
-    { id: 3, id_contrato: 2, id_medio_pago: 1 }  // Transferencia
-  ];
-
   async findById(id: number): Promise<ContratoDTO | null> {
-    const contrato = this.contratos.find(c => c.id === id);
-    return contrato ? { ...contrato } : null;
+    const { data, error } = await getSupabaseAdmin().from('contrato').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data as ContratoDTO | null;
   }
 
   async findByInmuebleId(inmuebleId: number): Promise<ContratoDTO | null> {
-    const contrato = this.contratos.find(c => c.id_inmueble === inmuebleId);
-    return contrato ? { ...contrato } : null;
+    const { data, error } = await getSupabaseAdmin()
+      .from('contrato')
+      .select('*')
+      .eq('id_inmueble', inmuebleId)
+      .maybeSingle();
+    if (error) throw error;
+    return data as ContratoDTO | null;
   }
 
   async create(
     data: Omit<ContratoDTO, 'id'>,
     mediosPagoIds: number[]
   ): Promise<ContratoDTO> {
-    const nuevoId = ++this.nextId;
-    const nuevoContrato: ContratoDTO = {
-      ...data,
-      id: nuevoId
-    };
-    this.contratos.push(nuevoContrato);
+    const supabase = getSupabaseAdmin();
+    const { data: contrato, error } = await supabase.from('contrato').insert(data).select('*').single();
+    if (error || !contrato) throw error ?? new Error('No se pudo crear el contrato.');
 
-    // Asociar medios de pago
-    for (const idMedio of mediosPagoIds) {
-      this.mediosPagoXContratos.push({
-        id: ++this.nextMedioPagoXContratoId,
-        id_contrato: nuevoId,
-        id_medio_pago: idMedio
-      });
+    const relaciones = mediosPagoIds.map(id_medio_pago => ({ id_contrato: contrato.id, id_medio_pago }));
+    const { error: mediosError } = await supabase.from('medio_pago_x_contrato').insert(relaciones);
+    if (mediosError) {
+      await this.delete(contrato.id);
+      throw mediosError;
     }
-
-    return { ...nuevoContrato };
+    return contrato as ContratoDTO;
   }
 
   async getMediosPagoByContratoId(contratoId: number): Promise<MedioPagoDTO[]> {
-    const rels = this.mediosPagoXContratos.filter(r => r.id_contrato === contratoId);
-    const resultado: MedioPagoDTO[] = [];
-    for (const r of rels) {
-      const mp = await lookupRepository.getMedioPagoById(r.id_medio_pago);
-      if (mp) resultado.push(mp);
-    }
-    return resultado;
+    const { data, error } = await getSupabaseAdmin()
+      .from('medio_pago_x_contrato')
+      .select('medio_pago(id, nombre, descripcion)')
+      .eq('id_contrato', contratoId);
+    if (error) throw error;
+    return (data ?? []).map((row: any) => row.medio_pago).filter(Boolean) as MedioPagoDTO[];
   }
 
   async delete(id: number): Promise<boolean> {
-    const index = this.contratos.findIndex(c => c.id === id);
-    if (index === -1) return false;
-    this.contratos.splice(index, 1);
-    this.mediosPagoXContratos = this.mediosPagoXContratos.filter(r => r.id_contrato !== id);
-    return true;
+    const { error, count } = await getSupabaseAdmin()
+      .from('contrato')
+      .delete({ count: 'exact' })
+      .eq('id', id);
+    if (error) throw error;
+    return (count ?? 0) > 0;
   }
 
   async deleteByInmuebleId(inmuebleId: number): Promise<boolean> {
-    const contrato = this.contratos.find(c => c.id_inmueble === inmuebleId);
-    if (!contrato) return false;
-    return this.delete(contrato.id);
+    const contrato = await this.findByInmuebleId(inmuebleId);
+    return contrato ? this.delete(contrato.id) : false;
   }
 }
 

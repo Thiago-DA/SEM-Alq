@@ -4,125 +4,96 @@ import {
   ServicioDTO,
   RolDTO,
   UsuarioDTO,
-  UsuarioXRolDTO,
   TipoIndiceDTO,
   EstadoContratoDTO,
   MedioPagoDTO
 } from '../dtos';
+import { getSupabaseAdmin } from '../config/supabase';
 
 export class LookupRepository {
-  private tiposInmueble: TipoInmuebleDTO[] = [
-    { id: 1, descripcion: 'Departamento' },
-    { id: 2, descripcion: 'Casa' },
-    { id: 3, descripcion: 'PH' },
-    { id: 4, descripcion: 'Monoambiente' }
-  ];
-
-  private tagsInmueble: TagInmuebleDTO[] = [
-    { id: 1, descripcion: 'Acepta mascotas', estado: true },
-    { id: 2, descripcion: 'Con cochera', estado: true },
-    { id: 3, descripcion: 'Amoblado', estado: true },
-    { id: 4, descripcion: 'Balcón con vista abierta', estado: true }
-  ];
-
-  private servicios: ServicioDTO[] = [
-    { id: 1, nombre: 'Luz', descripcion: 'Suministro de energía eléctrica' },
-    { id: 2, nombre: 'Gas natural', descripcion: 'Red de gas natural' },
-    { id: 3, nombre: 'Agua corriente', descripcion: 'Suministro de agua potable' },
-    { id: 4, nombre: 'Internet', descripcion: 'Conexión fibra óptica' }
-  ];
-
-  private tiposIndice: TipoIndiceDTO[] = [
-    { id: 1, descripcion: 'ICL (Índice de Contratos de Locación)', valor: 4.5 },
-    { id: 2, descripcion: 'IPC (Índice de Precios al Consumidor)', valor: 3.8 },
-    { id: 3, descripcion: 'CAC (Cámara Argentina de la Construcción)', valor: 5.1 }
-  ];
-
-  private estadosContrato: EstadoContratoDTO[] = [
-    { id: 1, descripcion: 'disponible', valor: true },
-    { id: 2, descripcion: 'vigente', valor: true },
-    { id: 3, descripcion: 'finalizado', valor: false }
-  ];
-
-  private mediosPago: MedioPagoDTO[] = [
-    { id: 1, nombre: 'Transferencia bancaria', descripcion: 'Transferencia directa a CBU/CVU' },
-    { id: 2, nombre: 'Efectivo', descripcion: 'Pago presencial en efectivo' },
-    { id: 3, nombre: 'Mercado Pago', descripcion: 'Pasarela digital de Mercado Pago' },
-    { id: 4, nombre: 'Débito automático', descripcion: 'Débito automático en cuenta bancaria' }
-  ];
-
-  private roles: RolDTO[] = [
-    { id: 0, descripcion: 'locatario' },
-    { id: 1, descripcion: 'locador' },
-    { id: 2, descripcion: 'administrador' }
-  ];
-
-  private usuarios: UsuarioDTO[] = [
-    { id: 1, nombre: 'Carlos', apellido: 'Propietario', email: 'locador@rentar.com', numero_documento: '30111222', telefono: '3511112233' },
-    { id: 2, nombre: 'Ana', apellido: 'Inquilina', email: 'locatario@rentar.com', numero_documento: '30222333', telefono: '3514445566' },
-    { id: 3, nombre: 'Segundo', apellido: 'Locador', email: 'otro.locador@rentar.com', numero_documento: '30333444', telefono: '3517778899' }
-  ];
-
-  private usuariosXRoles: UsuarioXRolDTO[] = [
-    { id_usuario: 1, id_rol: 1 }, // Carlos es locador
-    { id_usuario: 2, id_rol: 0 }, // Ana es locatario
-    { id_usuario: 3, id_rol: 1 }  // Segundo es locador
-  ];
-
-  // Tipos de Inmueble
   async getTipoById(id: number): Promise<TipoInmuebleDTO | null> {
-    return this.tiposInmueble.find(t => t.id === id) || null;
+    const { data, error } = await getSupabaseAdmin().from('tipo_inmueble').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data as TipoInmuebleDTO | null;
   }
+
   async getAllTipos(): Promise<TipoInmuebleDTO[]> {
-    return [...this.tiposInmueble];
+    const { data, error } = await getSupabaseAdmin().from('tipo_inmueble').select('*').order('id');
+    if (error) throw error;
+    return (data ?? []) as TipoInmuebleDTO[];
   }
 
-  // Tags
   async getTagById(id: number): Promise<TagInmuebleDTO | null> {
-    return this.tagsInmueble.find(t => t.id === id) || null;
+    const { data, error } = await getSupabaseAdmin().from('tags_inmueble').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data as TagInmuebleDTO | null;
   }
+
   async getAllTags(): Promise<TagInmuebleDTO[]> {
-    return [...this.tagsInmueble];
+    const { data, error } = await getSupabaseAdmin().from('tags_inmueble').select('*').order('id');
+    if (error) throw error;
+    return (data ?? []) as TagInmuebleDTO[];
   }
 
-  // Servicios
   async getServicioById(id: number): Promise<ServicioDTO | null> {
-    return this.servicios.find(s => s.id === id) || null;
+    const { data, error } = await getSupabaseAdmin().from('servicio').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data as ServicioDTO | null;
   }
+
   async getAllServicios(): Promise<ServicioDTO[]> {
-    return [...this.servicios];
+    const { data, error } = await getSupabaseAdmin().from('servicio').select('*').order('id');
+    if (error) throw error;
+    return (data ?? []) as ServicioDTO[];
   }
 
-  // Índices
   async getTipoIndiceById(id: number): Promise<TipoIndiceDTO | null> {
-    return this.tiposIndice.find(i => i.id === id) || null;
+    const { data, error } = await getSupabaseAdmin().from('tipo_indice').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data as TipoIndiceDTO | null;
   }
 
-  // Estados de Contrato
   async getEstadoContratoById(id: number): Promise<EstadoContratoDTO | null> {
-    return this.estadosContrato.find(e => e.id === id) || null;
+    const { data, error } = await getSupabaseAdmin().from('estado_contrato').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data as EstadoContratoDTO | null;
   }
 
-  // Medios de Pago
   async getMedioPagoById(id: number): Promise<MedioPagoDTO | null> {
-    return this.mediosPago.find(m => m.id === id) || null;
-  }
-  async getAllMediosPago(): Promise<MedioPagoDTO[]> {
-    return [...this.mediosPago];
+    const { data, error } = await getSupabaseAdmin().from('medio_pago').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data as MedioPagoDTO | null;
   }
 
-  // Roles & Usuarios
+  async getAllMediosPago(): Promise<MedioPagoDTO[]> {
+    const { data, error } = await getSupabaseAdmin().from('medio_pago').select('*').order('id');
+    if (error) throw error;
+    return (data ?? []) as MedioPagoDTO[];
+  }
+
   async getRolById(id: number): Promise<RolDTO | null> {
-    return this.roles.find(r => r.id === id) || null;
+    const { data, error } = await getSupabaseAdmin().from('rol').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data as RolDTO | null;
   }
+
   async getUsuarioById(id: number): Promise<UsuarioDTO | null> {
-    return this.usuarios.find(u => u.id === id) || null;
+    const { data, error } = await getSupabaseAdmin()
+      .from('usuario')
+      .select('id, nombre, apellido, email, numero_documento, telefono, fecha_nacimiento')
+      .eq('id', id)
+      .maybeSingle();
+    if (error) throw error;
+    return data as UsuarioDTO | null;
   }
+
   async getRolesByUsuarioId(idUsuario: number): Promise<RolDTO[]> {
-    const rolesIds = this.usuariosXRoles
-      .filter(ur => ur.id_usuario === idUsuario)
-      .map(ur => ur.id_rol);
-    return this.roles.filter(r => rolesIds.includes(r.id));
+    const { data, error } = await getSupabaseAdmin()
+      .from('usuario_x_rol')
+      .select('id_rol, rol(id, descripcion)')
+      .eq('id_usuario', idUsuario);
+    if (error) throw error;
+    return (data ?? []).map((row: any) => row.rol).filter(Boolean) as RolDTO[];
   }
 }
 

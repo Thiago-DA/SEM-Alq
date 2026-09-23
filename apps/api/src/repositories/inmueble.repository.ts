@@ -5,7 +5,7 @@ import {
   InmuebleXTagDTO,
   TagInmuebleDTO
 } from '../dtos';
-import { lookupRepository } from './lookup.repository';
+import { getSupabaseAdmin } from '../config/supabase';
 
 export interface IInmuebleRepository {
   findAll(): Promise<InmuebleDTO[]>;
@@ -21,164 +21,92 @@ export interface IInmuebleRepository {
 }
 
 export class InmuebleRepository implements IInmuebleRepository {
-  private nextId = 10;
-  private nextFotoId = 10;
-  private nextTagRelId = 10;
-
-  private inmuebles: InmuebleDTO[] = [
-    {
-      id: 1,
-      id_locador: 1, // Carlos
-      tipo: 1, // Departamento
-      descripcion: 'Hermoso departamento luminoso con balcón',
-      provincia: 'Córdoba',
-      ciudad: 'Córdoba',
-      barrio: 'Alberdi',
-      direccion: 'Av. Colón',
-      numero: 1550,
-      piso: '4B',
-      m2_totales: 70,
-      m2_cubiertos: 65,
-      ambientes: 3,
-      dormitorios: 2,
-      banos: 1,
-      antiguedad: 5,
-      precio_publicado: 360000.0,
-      estado_alquiler: 'publicado',
-      fecha_disponible: null,
-      servicios: 4
-    },
-    {
-      id: 2,
-      id_locador: 1, // Carlos
-      tipo: 1, // Departamento
-      descripcion: 'Departamento en Nueva Córdoba',
-      provincia: 'Córdoba',
-      ciudad: 'Córdoba',
-      barrio: 'Nueva Córdoba',
-      direccion: 'Bv. Chacabuco',
-      numero: 720,
-      piso: '2A',
-      m2_totales: 52,
-      m2_cubiertos: 48,
-      ambientes: 2,
-      dormitorios: 1,
-      banos: 1,
-      antiguedad: 3,
-      precio_publicado: 290000.0,
-      estado_alquiler: 'alquilado',
-      fecha_disponible: '2028-03-01',
-      servicios: 1
-    }
-  ];
-
-  private fotos: FotoInmuebleDTO[] = [
-    { id: 1, id_inmueble: 1, url: 'https://rentar.com/fotos/1-frente.jpg', es_principal: true, peso_kb: 180, formato: 'jpg', orden: 1 },
-    { id: 2, id_inmueble: 1, url: 'https://rentar.com/fotos/1-living.jpg', es_principal: false, peso_kb: 210, formato: 'jpg', orden: 2 },
-    { id: 3, id_inmueble: 1, url: 'https://rentar.com/fotos/1-dormitorio.png', es_principal: false, peso_kb: 320, formato: 'png', orden: 3 },
-    { id: 4, id_inmueble: 2, url: 'https://rentar.com/fotos/2-portada.jpg', es_principal: true, peso_kb: 195, formato: 'jpg', orden: 1 },
-    { id: 5, id_inmueble: 2, url: 'https://rentar.com/fotos/2-comedor.jpg', es_principal: false, peso_kb: 250, formato: 'jpg', orden: 2 },
-    { id: 6, id_inmueble: 2, url: 'https://rentar.com/fotos/2-cocina.png', es_principal: false, peso_kb: 280, formato: 'png', orden: 3 }
-  ];
-
-  private inmuebleXTags: InmuebleXTagDTO[] = [
-    { id: 1, id_inmueble: 1, id_tag: 1 }, // Acepta mascotas
-    { id: 2, id_inmueble: 1, id_tag: 4 }, // Balcón
-    { id: 3, id_inmueble: 2, id_tag: 2 }  // Con cochera
-  ];
-
   async findAll(): Promise<InmuebleDTO[]> {
-    return this.inmuebles.map(i => ({ ...i }));
+    const { data, error } = await getSupabaseAdmin().from('inmueble').select('*').order('id');
+    if (error) throw error;
+    return (data ?? []) as InmuebleDTO[];
   }
 
   async findById(id: number): Promise<InmuebleDTO | null> {
-    const inm = this.inmuebles.find(i => i.id === id);
-    return inm ? { ...inm } : null;
+    const { data, error } = await getSupabaseAdmin().from('inmueble').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data as InmuebleDTO | null;
   }
 
   async findByLocadorId(locadorId: number): Promise<InmuebleDTO[]> {
-    return this.inmuebles
-      .filter(i => i.id_locador === locadorId)
-      .map(i => ({ ...i }));
+    const { data, error } = await getSupabaseAdmin()
+      .from('inmueble')
+      .select('*')
+      .eq('id_locador', locadorId)
+      .order('id');
+    if (error) throw error;
+    return (data ?? []) as InmuebleDTO[];
   }
 
   async create(data: Omit<InmuebleDTO, 'id'>): Promise<InmuebleDTO> {
-    const nuevoId = ++this.nextId;
-    const nuevoInmueble: InmuebleDTO = {
-      ...data,
-      id: nuevoId
-    };
-    this.inmuebles.push(nuevoInmueble);
-    return { ...nuevoInmueble };
+    const { data: inmueble, error } = await getSupabaseAdmin().from('inmueble').insert(data).select('*').single();
+    if (error || !inmueble) throw error ?? new Error('No se pudo crear el inmueble.');
+    return inmueble as InmuebleDTO;
   }
 
   async update(id: number, data: Partial<InmuebleDTO>): Promise<InmuebleDTO | null> {
-    const index = this.inmuebles.findIndex(i => i.id === id);
-    if (index === -1) return null;
-    this.inmuebles[index] = { ...this.inmuebles[index], ...data };
-    return { ...this.inmuebles[index] };
+    const { data: inmueble, error } = await getSupabaseAdmin()
+      .from('inmueble')
+      .update(data)
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+    if (error) throw error;
+    return inmueble as InmuebleDTO | null;
   }
 
   async delete(id: number): Promise<boolean> {
-    const index = this.inmuebles.findIndex(i => i.id === id);
-    if (index === -1) return false;
-    this.inmuebles.splice(index, 1);
-    this.fotos = this.fotos.filter(f => f.id_inmueble !== id);
-    this.inmuebleXTags = this.inmuebleXTags.filter(t => t.id_inmueble !== id);
-    return true;
+    const { error, count } = await getSupabaseAdmin()
+      .from('inmueble')
+      .delete({ count: 'exact' })
+      .eq('id', id);
+    if (error) throw error;
+    return (count ?? 0) > 0;
   }
 
-  /**
-   * Agrega fotos al inmueble aplicando la regla de foto principal y orden
-   */
   async addFotos(idInmueble: number, fotos: CreateFotoDTO[]): Promise<FotoInmuebleDTO[]> {
-    // Si ninguna foto viene con es_principal: true, la primera (fotos[0]) es principal por defecto
-    const tienePrincipal = fotos.some(f => f.es_principal === true);
-
-    const creadas: FotoInmuebleDTO[] = [];
-    fotos.forEach((f, idx) => {
-      const esPrincipal = tienePrincipal ? Boolean(f.es_principal) : (idx === 0);
-      const nuevaFoto: FotoInmuebleDTO = {
-        id: ++this.nextFotoId,
-        id_inmueble: idInmueble,
-        url: f.url,
-        es_principal: esPrincipal,
-        peso_kb: f.peso_kb,
-        formato: f.formato.toLowerCase(),
-        orden: idx + 1
-      };
-      this.fotos.push(nuevaFoto);
-      creadas.push({ ...nuevaFoto });
-    });
-
-    return creadas;
+    const tienePrincipal = fotos.some(foto => foto.es_principal === true);
+    const filas = fotos.map((foto, index) => ({
+      id_inmueble: idInmueble,
+      url: foto.url,
+      es_principal: tienePrincipal ? Boolean(foto.es_principal) : index === 0,
+      peso_kb: foto.peso_kb,
+      formato: foto.formato.toLowerCase(),
+      orden: index + 1
+    }));
+    const { data, error } = await getSupabaseAdmin().from('foto_inmueble').insert(filas).select('*');
+    if (error) throw error;
+    return (data ?? []) as FotoInmuebleDTO[];
   }
 
   async getFotosByInmuebleId(idInmueble: number): Promise<FotoInmuebleDTO[]> {
-    return this.fotos
-      .filter(f => f.id_inmueble === idInmueble)
-      .sort((a, b) => a.orden - b.orden)
-      .map(f => ({ ...f }));
+    const { data, error } = await getSupabaseAdmin()
+      .from('foto_inmueble')
+      .select('*')
+      .eq('id_inmueble', idInmueble)
+      .order('orden');
+    if (error) throw error;
+    return (data ?? []) as FotoInmuebleDTO[];
   }
 
   async addTags(idInmueble: number, tagIds: number[]): Promise<void> {
-    for (const tagId of tagIds) {
-      this.inmuebleXTags.push({
-        id: ++this.nextTagRelId,
-        id_inmueble: idInmueble,
-        id_tag: tagId
-      });
-    }
+    const filas = tagIds.map(id_tag => ({ id_inmueble: idInmueble, id_tag }));
+    const { error } = await getSupabaseAdmin().from('inmueble_x_tag').insert(filas);
+    if (error) throw error;
   }
 
   async getTagsByInmuebleId(idInmueble: number): Promise<TagInmuebleDTO[]> {
-    const rels = this.inmuebleXTags.filter(r => r.id_inmueble === idInmueble);
-    const resultado: TagInmuebleDTO[] = [];
-    for (const r of rels) {
-      const tag = await lookupRepository.getTagById(r.id_tag);
-      if (tag) resultado.push(tag);
-    }
-    return resultado;
+    const { data, error } = await getSupabaseAdmin()
+      .from('inmueble_x_tag')
+      .select('id_tag, tags_inmueble(id, descripcion, estado)')
+      .eq('id_inmueble', idInmueble);
+    if (error) throw error;
+    return (data ?? []).map((row: any) => row.tags_inmueble).filter(Boolean) as TagInmuebleDTO[];
   }
 }
 
