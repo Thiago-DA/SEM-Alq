@@ -1,0 +1,19 @@
+// tsconfig.base.json — base de TypeScript del frontend.
+//
+// La extienden `apps/web` y `packages/ui`. A propósito NO la extienden
+// `apps/api` ni `packages/shared-types`: esos dos compilan a CommonJS con su
+// propio tsconfig (`tsc` → `dist/`) y no tienen que cambiar por el frontend.
+{
+  "compilerOptions": {
+    "strict": true,
+    "target": "ES2022",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "esModuleInterop": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true
+  }
+}
