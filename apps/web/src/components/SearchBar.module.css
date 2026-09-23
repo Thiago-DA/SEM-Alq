@@ -53,6 +53,38 @@
   min-width: 0;
 }
 
+/* Móvil (debajo de 768px, el mismo corte en que el Header pasa al menú
+   hamburguesa): "desde" y "hasta" comparten la primera fila y el slider baja
+   a una fila propia, a todo el ancho. En una sola fila no entraba: el slider
+   quedaba con 0px de ancho y no se podía usar. */
+@media (max-width: 767px) {
+  .priceInline {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-areas:
+      'desde hasta'
+      'slider slider';
+  }
+
+  .priceInline > :first-child {
+    grid-area: desde;
+  }
+
+  .priceInline > :last-child {
+    grid-area: hasta;
+  }
+
+  .priceInlineSlider {
+    grid-area: slider;
+  }
+
+  /* Doble clase para ganarle al ancho por defecto de antd (90px): en la
+     grilla no hay flex-basis que lo pise. */
+  .priceInline .priceInlineInput {
+    width: 100%;
+  }
+}
+
 .characteristics {
   margin-top: 16px;
 }
