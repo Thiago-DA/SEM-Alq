@@ -11,5 +11,10 @@
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "dev:api": "npm run dev --workspace=apps/api"
+  },
+  "dependencies": {
+    "@supabase/server": "^1.8.0",
+    "@supabase/ssr": "^0.12.7",
+    "next": "^16.3.6"
   }
 }
