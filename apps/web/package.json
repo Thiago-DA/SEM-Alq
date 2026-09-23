@@ -5,6 +5,7 @@
   "engines": {
     "node": ">=20.9.0"
   },
+  "//": "NOTA: antd va fijado en 6.6.3 (sin ^) en apps/web y en packages/ui, a propósito. Con un rango, npm resolvía la dependencia de @rentar/ui a otra versión (6.6.5) y quedaban dos copias de antd instaladas: el ConfigProvider del layout (una copia) no llega a los componentes de @rentar/ui (la otra copia) y el tema de marca no se aplica. Para actualizar antd, cambiar la versión en los dos package.json a la vez.",
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
@@ -17,7 +18,7 @@
     "@ant-design/nextjs-registry": "^1.3.0",
     "@rentar/shared-types": "*",
     "@rentar/ui": "*",
-    "antd": "^6.6.3",
+    "antd": "6.6.3",
     "dayjs": "^1.11.19",
     "next": "16.3.5",
     "react": "19.2.8",
