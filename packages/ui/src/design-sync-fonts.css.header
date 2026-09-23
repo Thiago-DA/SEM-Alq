@@ -1,0 +1,30 @@
+/*
+ * Solo para el bundle de /design-sync — la app real (apps/web) carga
+ * League Spartan con `next/font/google`, que la self-hostea en el build de
+ * Next.js y no queda accesible desde acá. Las previews que arma Claude
+ * Design no pasan por ese build, así que cargan la misma tipografía desde
+ * Google Fonts en runtime.
+ */
+@import url('https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700;800&display=swap');
+
+/*
+ * apps/web pone `font-family` en `body` vía globals.css (con la variable de
+ * next/font). Acá no hay globals.css ni next/font, así que sin esta regla
+ * cualquier elemento propio que no pase por un token de antd cae al serif
+ * por default del navegador.
+ */
+body {
+  font-family: 'League Spartan', system-ui, sans-serif;
+}
+
+/*
+ * NOTA (mantenimiento): lo que sigue es una COPIA del contenido de
+ * tokens/css-vars.css, pegada acá a mano — no una referencia local al
+ * archivo original. El conversor de /design-sync copia este archivo tal
+ * cual (sin pasarlo por un bundler que resuelva rutas relativas), así que
+ * una referencia local a otro archivo del paquete queda rota una vez
+ * servido desde ds-bundle/ (la estructura de carpetas ahí es otra).
+ * Si tokens/css-vars.css cambia, hay que regenerar este archivo antes del
+ * próximo /design-sync concatenando este header con el contenido actual
+ * de ese archivo (ver .design-sync/NOTES.md para el comando exacto).
+ */

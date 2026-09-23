@@ -1,0 +1,6 @@
+.hint {
+  margin: 0.5rem 0 0;
+  font-size: 0.8125rem;
+  color: var(--rentar-color-text-tertiary);
+  text-align: center;
+}
