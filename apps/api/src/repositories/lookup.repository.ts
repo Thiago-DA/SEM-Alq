@@ -4,7 +4,10 @@ import {
   ServicioDTO,
   RolDTO,
   UsuarioDTO,
-  UsuarioXRolDTO
+  UsuarioXRolDTO,
+  TipoIndiceDTO,
+  EstadoContratoDTO,
+  MedioPagoDTO
 } from '../dtos';
 
 export class LookupRepository {
@@ -16,38 +19,57 @@ export class LookupRepository {
   ];
 
   private tagsInmueble: TagInmuebleDTO[] = [
-    { id: 1, descripcion: 'Acepta mascotas' },
-    { id: 2, descripcion: 'Con cochera' },
-    { id: 3, descripcion: 'Amoblado' },
-    { id: 4, descripcion: 'Balcón con vista abierta' }
+    { id: 1, descripcion: 'Acepta mascotas', estado: true },
+    { id: 2, descripcion: 'Con cochera', estado: true },
+    { id: 3, descripcion: 'Amoblado', estado: true },
+    { id: 4, descripcion: 'Balcón con vista abierta', estado: true }
   ];
 
   private servicios: ServicioDTO[] = [
     { id: 1, nombre: 'Luz', descripcion: 'Suministro de energía eléctrica' },
-    { id: 2, nombre: 'Gas natural', descripcion: 'Red de gas natural por cañería' },
-    { id: 3, nombre: 'Agua corriente', descripcion: 'Suministro de agua potable de red' },
-    { id: 4, nombre: 'Internet', descripcion: 'Conexión a internet por fibra óptica' }
+    { id: 2, nombre: 'Gas natural', descripcion: 'Red de gas natural' },
+    { id: 3, nombre: 'Agua corriente', descripcion: 'Suministro de agua potable' },
+    { id: 4, nombre: 'Internet', descripcion: 'Conexión fibra óptica' }
+  ];
+
+  private tiposIndice: TipoIndiceDTO[] = [
+    { id: 1, descripcion: 'ICL (Índice de Contratos de Locación)', valor: 4.5 },
+    { id: 2, descripcion: 'IPC (Índice de Precios al Consumidor)', valor: 3.8 },
+    { id: 3, descripcion: 'CAC (Cámara Argentina de la Construcción)', valor: 5.1 }
+  ];
+
+  private estadosContrato: EstadoContratoDTO[] = [
+    { id: 1, descripcion: 'disponible', valor: true },
+    { id: 2, descripcion: 'vigente', valor: true },
+    { id: 3, descripcion: 'finalizado', valor: false }
+  ];
+
+  private mediosPago: MedioPagoDTO[] = [
+    { id: 1, nombre: 'Transferencia bancaria', descripcion: 'Transferencia directa a CBU/CVU' },
+    { id: 2, nombre: 'Efectivo', descripcion: 'Pago presencial en efectivo' },
+    { id: 3, nombre: 'Mercado Pago', descripcion: 'Pasarela digital de Mercado Pago' },
+    { id: 4, nombre: 'Débito automático', descripcion: 'Débito automático en cuenta bancaria' }
   ];
 
   private roles: RolDTO[] = [
-    { id: 1, nombre: 'locador', descripcion: 'Propietario que publica y gestiona sus inmuebles en alquiler' },
-    { id: 2, nombre: 'locatario', descripcion: 'Inquilino que busca, solicita y alquila inmuebles' },
-    { id: 3, nombre: 'administrador', descripcion: 'Administrador de la plataforma RentAR' }
+    { id: 1, descripcion: 'locador' },
+    { id: 2, descripcion: 'locatario' },
+    { id: 3, descripcion: 'administrador' }
   ];
 
   private usuarios: UsuarioDTO[] = [
-    { id: 1, nombre: 'Carlos Propietario', email: 'locador@rentar.com', telefono: '+54 9 351 111-2233' },
-    { id: 2, nombre: 'Ana Inquilina', email: 'locatario@rentar.com', telefono: '+54 9 351 444-5566' },
-    { id: 3, nombre: 'Segundo Propietario', email: 'otro.locador@rentar.com', telefono: '+54 9 351 777-8899' }
+    { id: 1, nombre: 'Carlos', apellido: 'Propietario', email: 'locador@rentar.com', telefono: '3511112233' },
+    { id: 2, nombre: 'Ana', apellido: 'Inquilina', email: 'locatario@rentar.com', telefono: '3514445566' },
+    { id: 3, nombre: 'Segundo', apellido: 'Locador', email: 'otro.locador@rentar.com', telefono: '3517778899' }
   ];
 
   private usuariosXRoles: UsuarioXRolDTO[] = [
-    { id: 1, id_usuario: 1, id_rol: 1 }, // Carlos es locador
-    { id: 2, id_usuario: 2, id_rol: 2 }, // Ana es locatario
-    { id: 3, id_usuario: 3, id_rol: 1 }  // Segundo es locador
+    { id_usuario: 1, id_rol: 1 }, // Carlos es locador
+    { id_usuario: 2, id_rol: 2 }, // Ana es locatario
+    { id_usuario: 3, id_rol: 1 }  // Segundo es locador
   ];
 
-  // Tipos
+  // Tipos de Inmueble
   async getTipoById(id: number): Promise<TipoInmuebleDTO | null> {
     return this.tiposInmueble.find(t => t.id === id) || null;
   }
@@ -71,20 +93,30 @@ export class LookupRepository {
     return [...this.servicios];
   }
 
-  // Roles
+  // Índices
+  async getTipoIndiceById(id: number): Promise<TipoIndiceDTO | null> {
+    return this.tiposIndice.find(i => i.id === id) || null;
+  }
+
+  // Estados de Contrato
+  async getEstadoContratoById(id: number): Promise<EstadoContratoDTO | null> {
+    return this.estadosContrato.find(e => e.id === id) || null;
+  }
+
+  // Medios de Pago
+  async getMedioPagoById(id: number): Promise<MedioPagoDTO | null> {
+    return this.mediosPago.find(m => m.id === id) || null;
+  }
+  async getAllMediosPago(): Promise<MedioPagoDTO[]> {
+    return [...this.mediosPago];
+  }
+
+  // Roles & Usuarios
   async getRolById(id: number): Promise<RolDTO | null> {
     return this.roles.find(r => r.id === id) || null;
   }
-  async getRolByNombre(nombre: string): Promise<RolDTO | null> {
-    return this.roles.find(r => r.nombre.toLowerCase() === nombre.toLowerCase()) || null;
-  }
-
-  // Usuarios
   async getUsuarioById(id: number): Promise<UsuarioDTO | null> {
     return this.usuarios.find(u => u.id === id) || null;
-  }
-  async getUsuarioByEmail(email: string): Promise<UsuarioDTO | null> {
-    return this.usuarios.find(u => u.email.toLowerCase() === email.toLowerCase()) || null;
   }
   async getRolesByUsuarioId(idUsuario: number): Promise<RolDTO[]> {
     const rolesIds = this.usuariosXRoles

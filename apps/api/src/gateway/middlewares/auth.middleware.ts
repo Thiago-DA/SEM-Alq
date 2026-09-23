@@ -1,5 +1,5 @@
-import { Request, Response, NextFunction } from 'express';
-import { lookupRepository } from '../../repositories/lookup.repository';
+import { Request, Response, NextFunction } from "express";
+import { lookupRepository } from "../../repositories/lookup.repository";
 
 export interface AuthenticatedUser {
   id: number;
@@ -18,13 +18,13 @@ export const authenticateGateway = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    const userIdHeader = req.header('x-user-id') || '1'; // Default: usuario demo locador Carlos
+    const userIdHeader = req.header("x-user-id") || "1";
     const userId = parseInt(userIdHeader, 10);
 
     if (isNaN(userId)) {
       res.status(401).json({
         success: false,
-        error: 'No autorizado: Cabecera x-user-id inválida o ausente.'
+        error: "No autorizado: Cabecera x-user-id inválida o ausente."
       });
       return;
     }
@@ -44,7 +44,7 @@ export const authenticateGateway = async (
       id: usuario.id,
       nombre: usuario.nombre,
       email: usuario.email,
-      roles: roles.map(r => r.nombre)
+      roles: roles.map(r => (r as any).nombre || r.descripcion)
     } as AuthenticatedUser;
 
     next();
@@ -54,7 +54,7 @@ export const authenticateGateway = async (
 };
 
 /**
- * Middleware para asegurar que el usuario tenga un rol específico (ej. 'locador').
+ * Middleware para asegurar que el usuario tenga un rol específico (ej. "locador").
  */
 export const requireRole = (roleRequired: string) => {
   return (req: Request, res: Response, next: NextFunction): void => {
@@ -69,3 +69,4 @@ export const requireRole = (roleRequired: string) => {
     next();
   };
 };
+

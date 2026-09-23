@@ -7,7 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "test": "tsx tests/api/mis-alquileres.test.ts"
+    "test": "tsx tests/api/us01-registrar-propiedades.test.ts"
   },
   "dependencies": {
     "@rentar/shared-types": "*",

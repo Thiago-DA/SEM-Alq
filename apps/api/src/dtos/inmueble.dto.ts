@@ -1,0 +1,84 @@
+import type { CreateFotoDTO, FotoInmuebleDTO } from './foto-inmueble.dto';
+import type { CreateContratoCondicionesDTO } from './contrato.dto';
+import type {
+  CreateInmuebleCompletoPayload,
+  EstadoAlquiler as SharedEstadoAlquiler,
+  Inmueble as SharedInmueble,
+  InmuebleXTag as SharedInmuebleXTag,
+  MisAlquileresItem
+} from '@rentar/shared-types';
+
+export type EstadoAlquiler = SharedEstadoAlquiler;
+export type InmuebleDTO = SharedInmueble;
+export type InmuebleXTagDTO = SharedInmuebleXTag;
+
+export interface InmuebleDetalleDTO {
+  id: number;
+  tipo_inmueble: string;
+  direccion: string;
+  numero: number;
+  piso?: string | null;
+  ciudad: string;
+  barrio?: string;
+  provincia?: string;
+  ambientes: number;
+  dormitorios: number;
+  banos: number;
+  m2?: number;
+  m2_totales?: number;
+  m2_cubiertos?: number;
+  descripcion?: string | null;
+  tag?: string | null;
+  tags?: string[];
+  servicio?: string | null;
+  id_locador: number;
+}
+
+export interface CreateInmuebleDTO {
+  tipo: number;
+  descripcion?: string | null;
+  provincia?: string;
+  ciudad: string;
+  barrio?: string;
+  direccion: string;
+  numero: number;
+  piso?: string | null;
+  m2?: number;
+  m2_totales?: number;
+  m2_cubiertos?: number;
+  ambientes: number;
+  dormitorios: number;
+  banos: number;
+  antiguedad?: number | null;
+  precio_publicado?: number;
+  estado_alquiler?: EstadoAlquiler;
+  fecha_disponible?: string | null;
+  servicios?: number | null;
+  id_locador?: number;
+  tags?: number | number[];
+}
+
+export interface UpdateInmuebleDTO {
+  tipo?: number;
+  descripcion?: string | null;
+  provincia?: string;
+  ciudad?: string;
+  barrio?: string;
+  direccion?: string;
+  numero?: number;
+  piso?: string | null;
+  m2_totales?: number;
+  m2_cubiertos?: number;
+  ambientes?: number;
+  dormitorios?: number;
+  banos?: number;
+  antiguedad?: number | null;
+  precio_publicado?: number;
+  estado_alquiler?: EstadoAlquiler;
+  fecha_disponible?: string | null;
+  servicios?: number | null;
+}
+
+export type CreateInmuebleCompletoDTO = CreateInmuebleCompletoPayload;
+export type MisAlquileresDTO = MisAlquileresItem;
+
