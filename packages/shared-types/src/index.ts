@@ -12,9 +12,21 @@ export interface Usuario {
   nombre: string;
   apellido?: string | null;
   email: string;
-  contraseña?: string;
+  numero_documento: string;
   telefono?: string | null;
   fecha_nacimiento?: string | null;
+}
+
+export interface CreateUsuarioPayload {
+  nombre: string;
+  apellido: string;
+  email: string;
+  contraseña: string;
+  confirmar_contraseña: string;
+  telefono: string;
+  numero_documento: string;
+  fecha_nacimiento: string;
+  acepta_terminos: boolean;
 }
 
 export interface UsuarioXRol {

@@ -4,9 +4,9 @@
 
 -- Catálogos
 INSERT INTO rol (id, descripcion) VALUES
+(0, 'locatario'),
 (1, 'locador'),
-(2, 'locatario'),
-(3, 'administrador')
+(2, 'administrador')
 ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO tipo_inmueble (id, descripcion) VALUES
@@ -56,15 +56,15 @@ INSERT INTO tipo_firmante (id, descripcion) VALUES
 ON CONFLICT ("id") DO NOTHING;
 
 -- Usuarios
-INSERT INTO usuario (id, nombre, apellido, email, contrasena, telefono) VALUES
-(1, 'Carlos', 'Propietario', 'locador@rentar.com', 'hash_pass123', '3511112233'),
-(2, 'Ana', 'Inquilina', 'locatario@rentar.com', 'hash_pass456', '3514445566'),
-(3, 'Segundo', 'Locador', 'otro.locador@rentar.com', 'hash_pass789', '3517778899')
+INSERT INTO usuario (id, nombre, apellido, email, numero_documento, telefono) VALUES
+(1, 'Carlos', 'Propietario', 'locador@rentar.com', '30111222', '3511112233'),
+(2, 'Ana', 'Inquilina', 'locatario@rentar.com', '30222333', '3514445566'),
+(3, 'Segundo', 'Locador', 'otro.locador@rentar.com', '30333444', '3517778899')
 ON CONFLICT ("id") DO NOTHING;
 
 INSERT INTO usuario_x_rol (id_usuario, id_rol) VALUES
 (1, 1),
-(2, 2),
+(2, 0),
 (3, 1)
 ON CONFLICT ("id_usuario", "id_rol") DO NOTHING;
 

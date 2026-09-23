@@ -65,7 +65,7 @@ export class InmuebleController {
   async create(req: Request, res: Response<ApiResponse<InmuebleDTO>>, next: NextFunction): Promise<void> {
     try {
       const user = (req as any).user;
-      const locadorId = user?.id || parseInt(req.header('x-user-id') || '1', 10);
+      const locadorId = user.id;
 
       const nuevo = await inmuebleService.registrarPropiedadCompleta(req.body, locadorId);
       res.status(201).json({

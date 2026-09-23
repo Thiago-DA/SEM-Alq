@@ -52,20 +52,20 @@ export class LookupRepository {
   ];
 
   private roles: RolDTO[] = [
+    { id: 0, descripcion: 'locatario' },
     { id: 1, descripcion: 'locador' },
-    { id: 2, descripcion: 'locatario' },
-    { id: 3, descripcion: 'administrador' }
+    { id: 2, descripcion: 'administrador' }
   ];
 
   private usuarios: UsuarioDTO[] = [
-    { id: 1, nombre: 'Carlos', apellido: 'Propietario', email: 'locador@rentar.com', telefono: '3511112233' },
-    { id: 2, nombre: 'Ana', apellido: 'Inquilina', email: 'locatario@rentar.com', telefono: '3514445566' },
-    { id: 3, nombre: 'Segundo', apellido: 'Locador', email: 'otro.locador@rentar.com', telefono: '3517778899' }
+    { id: 1, nombre: 'Carlos', apellido: 'Propietario', email: 'locador@rentar.com', numero_documento: '30111222', telefono: '3511112233' },
+    { id: 2, nombre: 'Ana', apellido: 'Inquilina', email: 'locatario@rentar.com', numero_documento: '30222333', telefono: '3514445566' },
+    { id: 3, nombre: 'Segundo', apellido: 'Locador', email: 'otro.locador@rentar.com', numero_documento: '30333444', telefono: '3517778899' }
   ];
 
   private usuariosXRoles: UsuarioXRolDTO[] = [
     { id_usuario: 1, id_rol: 1 }, // Carlos es locador
-    { id_usuario: 2, id_rol: 2 }, // Ana es locatario
+    { id_usuario: 2, id_rol: 0 }, // Ana es locatario
     { id_usuario: 3, id_rol: 1 }  // Segundo es locador
   ];
 
