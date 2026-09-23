@@ -1,5 +1,21 @@
 # Notas de `/design-sync` — @rentar/ui
 
+## Fuente de verdad: este repo (desde 2026-09-23)
+
+El frontend de RentAR se mudó al repo del equipo (`SEM-Alq`, rama `feature/vistas` → `develop`).
+**Desde ahora, `/design-sync` se corre solo desde este repo.** El repo anterior
+(`LandingSeminario/versionCompleta`) queda como histórico: no se sincroniza más desde ahí, así
+no hay dos fuentes empujando versiones distintas de `@rentar/ui` al mismo proyecto de Claude Design.
+
+Cambios de `@rentar/ui` hechos en la migración, a tener en cuenta en el próximo sync:
+- `Header`/`Footer`: los botones y links apuntan a rutas reales (`/login`, `/buscar`,
+  `/panel/propiedades/nueva`); el link a `/design-system` solo aparece en desarrollo. Sin cambios
+  visuales.
+- `RoleSwitcher`: ahora es una pestaña plegable al borde izquierdo, con `role`/`onChange` opcionales
+  y el botón "Reiniciar datos de prueba" (`onResetMockData`).
+- `PropertyCard`: etiqueta para el tipo nuevo `monoambiente`.
+- `.ds-sync/` se copió sin `node_modules` y sigue en el `.gitignore` (se regenera en cada sync).
+
 ## Contexto de esta corrida (2026-09-22)
 
 Re-sync sobre `feature/fundaciones-app` (rama activa, ramificada de `develop`) contra el proyecto
