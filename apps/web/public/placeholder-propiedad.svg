@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" role="img" aria-label="Propiedad sin foto">
+  <!-- Foto de reemplazo mientras el back no guarde fotos (ver propiedad.adapter.ts). Colores de marca: sky #E3F2FB, blue #004D98. -->
+  <rect width="400" height="300" fill="#E3F2FB"/>
+  <path d="M140 170 L200 120 L260 170 L260 220 L140 220 Z" fill="none" stroke="#004D98" stroke-width="8" stroke-linejoin="round" opacity="0.4"/>
+  <rect x="185" y="185" width="30" height="35" fill="#004D98" opacity="0.4"/>
+</svg>

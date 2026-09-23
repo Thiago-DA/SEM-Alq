@@ -7,3 +7,4 @@
  * documentada, el catálogo `/design-system`).
  */
 export { usuarios, MOCK_PASSWORD, type UsuarioMock } from './usuarios.mock'
+export { propiedades, type PropiedadMock, type FotoMock, type AlquilerMock } from './propiedades.mock'

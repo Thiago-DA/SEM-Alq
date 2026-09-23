@@ -84,7 +84,9 @@
   gap: 0.25rem;
 }
 
-.drawerNav a {
+/* Solo los links directos del menú: los botones de .drawerActions también
+   son <a> (antd con href) y no tienen que heredar este estilo. */
+.drawerNav > a {
   border-radius: 0.5rem;
   padding: 0.5rem;
   color: rgba(var(--rentar-color-ink-rgb), 0.8);
@@ -92,7 +94,7 @@
   font-weight: 500;
 }
 
-.drawerNav a:hover {
+.drawerNav > a:hover {
   background: var(--rentar-color-sky-light);
 }
 

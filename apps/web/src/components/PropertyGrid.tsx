@@ -1,11 +1,11 @@
 import { Col, Empty, Row } from 'antd'
-import type { MockProperty } from '@/lib/data/properties.mock'
+import type { PropiedadResumen } from '@rentar/shared-types'
 import PropertyCard from './PropertyCard'
 
 /** Props de {@link PropertyGrid}. */
 interface PropertyGridProps {
   /** Propiedades ya filtradas a mostrar (la landing las recorta a 8 antes de pasarlas). */
-  properties: MockProperty[]
+  properties: PropiedadResumen[]
 }
 
 /**

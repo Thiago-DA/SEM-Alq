@@ -2,18 +2,23 @@
 
 import { useMemo, useState } from 'react'
 import { Button } from 'antd'
-import type { FilterState } from '@rentar/shared-types'
+import type { FilterState, PropiedadResumen } from '@rentar/shared-types'
 import Hero from './Hero'
 import HowItWorks from './HowItWorks'
 import PropertyGrid from './PropertyGrid'
-import { properties, type MockProperty } from '@/lib/data/properties.mock'
 import { defaultFilters } from '@/lib/types/filters'
 import styles from './Landing.module.css'
 
 const PREVIEW_LIMIT = 8
 
+/** Props de {@link Landing}. */
+interface LandingProps {
+  /** Propiedades buscables (US-34), ya traducidas al tipo de vista. */
+  properties: PropiedadResumen[]
+}
+
 /** Evalúa si una propiedad matchea el estado de filtros actual. */
-function matchesFilters(property: MockProperty, filters: FilterState): boolean {
+function matchesFilters(property: PropiedadResumen, filters: FilterState): boolean {
   if (filters.neighborhoodSlug !== 'todos' && property.neighborhoodSlug !== filters.neighborhoodSlug) {
     return false
   }
@@ -41,21 +46,23 @@ function matchesFilters(property: MockProperty, filters: FilterState): boolean {
 }
 
 /**
- * Contenido de la landing: arma el estado de filtros (client-side, sin
- * backend) y orquesta Hero (con el buscador), el grid de propiedades
- * filtradas (recortado a `PREVIEW_LIMIT`) y HowItWorks.
+ * Contenido de la landing (`/`).
  *
- * NOTA: ya no envuelve en `PublicLayout` — eso lo hace
- * `app/(public)/layout.tsx`, compartido con `/buscar`, `/propiedad/[id]` y
- * `/planes`. Mismo output visual que antes, solo se movió el wrap un nivel
- * arriba para no repetirlo en cada ruta pública nueva.
+ * Recibe las propiedades publicadas (las carga `app/(public)/page.tsx` desde
+ * `services/propiedades.service.ts`), arma el estado de filtros en el
+ * cliente y orquesta Hero (con el buscador), el grid de propiedades
+ * filtradas (recortado a `PREVIEW_LIMIT`) y HowItWorks. "Buscar más
+ * propiedades" lleva a `/buscar` (US-34).
+ *
+ * NOTA: no envuelve en `PublicLayout` — eso lo hace `app/(public)/layout.tsx`,
+ * compartido con `/buscar` y `/propiedad/[id]`.
  */
-export default function Landing() {
+export default function Landing({ properties }: LandingProps) {
   const [filters, setFilters] = useState<FilterState>(defaultFilters)
 
   const filteredProperties = useMemo(
     () => properties.filter((property) => matchesFilters(property, filters)),
-    [filters],
+    [properties, filters],
   )
 
   return (
@@ -66,7 +73,7 @@ export default function Landing() {
         <h2 className={styles.heading}>Propiedades disponibles cerca tuyo en Córdoba</h2>
         <PropertyGrid properties={filteredProperties.slice(0, PREVIEW_LIMIT)} />
         <div className={styles.moreWrap}>
-          <Button type="primary" size="large" data-testid="landing-more-properties-button">
+          <Button type="primary" size="large" href="/buscar" data-testid="landing-more-properties-button">
             Buscar más propiedades
           </Button>
         </div>

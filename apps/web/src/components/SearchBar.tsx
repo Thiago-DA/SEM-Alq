@@ -2,8 +2,8 @@
 
 import { Card, Col, InputNumber, Row, Select, Slider, Tag } from 'antd'
 import type { FilterState } from '@rentar/shared-types'
-import { characteristicOptions } from '@/lib/data/properties.mock'
-import { neighborhoods } from '@/lib/data/neighborhoods'
+import { characteristicOptions } from '@/lib/catalogs/characteristics'
+import { neighborhoods } from '@/lib/catalogs/neighborhoods'
 import { formatMonthlyPrice } from '@/lib/utils/format'
 import styles from './SearchBar.module.css'
 

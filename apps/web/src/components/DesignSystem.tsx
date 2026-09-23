@@ -46,8 +46,14 @@ import PropertyCard from './PropertyCard'
 import SearchBar from './SearchBar'
 import ProcessLoopMotif from './ProcessLoopMotif'
 import HowItWorks from './HowItWorks'
-import { characteristicOptions, properties, type MockProperty } from '@/lib/data/properties.mock'
-import { neighborhoods } from '@/lib/data/neighborhoods'
+import type { PropiedadResumen } from '@rentar/shared-types'
+import { characteristicOptions } from '@/lib/catalogs/characteristics'
+import { neighborhoods } from '@/lib/catalogs/neighborhoods'
+// NOTA: excepción documentada a "las páginas no importan mocks": este es el
+// catálogo del design system (solo desarrollo), no una pantalla del
+// producto. Toma datos del elenco para que las demos se vean reales.
+import { propiedades } from '@/lib/mocks'
+import { isSearchable, propiedadMockToResumen } from '@/services/adapters/propiedad-mock.adapter'
 import { defaultFilters, MAX_PRICE_CEILING } from '@/lib/types/filters'
 import { formatMonthlyPrice } from '@/lib/utils/format'
 import { navItemsByRole } from '@/lib/navigation/navConfig'
@@ -370,7 +376,10 @@ function StatusGroup<D extends StatusDomain>({
   )
 }
 
-const demoTableColumns: DataTableColumn<MockProperty>[] = [
+/** Propiedades buscables del elenco, ya como tipo de vista, para las demos. */
+const properties: PropiedadResumen[] = propiedades.filter(isSearchable).map(propiedadMockToResumen)
+
+const demoTableColumns: DataTableColumn<PropiedadResumen>[] = [
   { key: 'title', title: 'Propiedad', render: (p) => p.title },
   { key: 'neighborhood', title: 'Barrio', render: (p) => p.neighborhoodName },
   { key: 'price', title: 'Precio', render: (p) => <MoneyAmount amount={p.priceMonthly} size="sm" /> },
@@ -781,7 +790,7 @@ export default function DesignSystem() {
 
               <p className={styles.subheading}>PropertyCard de @rentar/ui</p>
               <p className={styles.sectionLead} style={{ marginBottom: '0.75rem' }}>
-                Portado desde el de arriba, desacoplado de <code>MockProperty</code>/
+                Portado desde el de arriba, desacoplado de <code>PropiedadResumen</code>/
                 <code>StaticImageData</code> — props primitivas + <code>useNextBridge()</code> para
                 imagen/link. Es el que va a usar <code>/buscar</code> y el listado del locador.
               </p>
@@ -794,8 +803,8 @@ export default function DesignSystem() {
                     priceMonthly={demoProperty.priceMonthly}
                     bedrooms={demoProperty.bedrooms}
                     areaM2={demoProperty.areaM2}
-                    adjustmentIndex={demoProperty.adjustmentIndex}
-                    imageSrc={demoProperty.image.src}
+                    adjustmentIndex={demoProperty.adjustmentIndex ?? 'IPC' /* el elenco siempre tiene índice */}
+                    imageSrc={demoProperty.imageSrc}
                     href="#tarjetas"
                   />
                 </div>
@@ -1089,7 +1098,7 @@ export default function DesignSystem() {
               <div className={styles.liveFramePadded}>
                 <div className={styles.cardDemoWrap}>
                   <PhotoGallery
-                    images={properties.slice(0, 4).map((p) => ({ src: p.image.src, alt: p.title }))}
+                    images={properties.slice(0, 4).map((p) => ({ src: p.imageSrc, alt: p.title }))}
                   />
                 </div>
               </div>
