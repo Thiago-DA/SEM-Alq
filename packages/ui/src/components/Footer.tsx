@@ -4,9 +4,14 @@ import { useNextBridge } from '../providers/NextBridge'
 import { LOGO } from '../assets/logo'
 import styles from './Footer.module.css'
 
-/** Pie de página de RentAR: logo, tagline, links de ancla y nota legal. Lo usan la landing y `PublicLayout`. */
+/**
+ * Pie de página de RentAR: logo, tagline, links y nota legal. Lo usan la
+ * landing y todas las páginas públicas vía `PublicLayout`. Mismos destinos
+ * que `Header`: "Buscar propiedades" → `/buscar`, "Cómo funciona" → la
+ * sección de la landing.
+ */
 export function Footer() {
-  const { ImageComponent } = useNextBridge()
+  const { ImageComponent, LinkComponent } = useNextBridge()
 
   return (
     <footer className={styles.footer}>
@@ -21,8 +26,8 @@ export function Footer() {
           </div>
 
           <nav aria-label="Enlaces del pie de página" className={styles.nav}>
-            <a href="#buscar">Buscar propiedades</a>
-            <a href="#como-funciona">Cómo funciona</a>
+            <LinkComponent href="/buscar">Buscar propiedades</LinkComponent>
+            <a href="/#como-funciona">Cómo funciona</a>
           </nav>
         </div>
 

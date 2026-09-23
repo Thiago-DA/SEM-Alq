@@ -1,9 +1,15 @@
+// tsconfig de @rentar/ui. Extiende la base del frontend (tsconfig.base.json).
 {
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
     "lib": ["ES2022", "DOM"],
-    "noEmit": true
+    "noEmit": true,
+    "paths": {
+      // Mismo motivo que en apps/web/tsconfig.json: se lee el código fuente
+      // de @rentar/shared-types, no su dist/ compilado.
+      "@rentar/shared-types": ["../shared-types/src/index.ts"]
+    }
   },
   "include": ["src"]
 }

@@ -9,6 +9,7 @@ const TYPE_LABEL: Record<PropertyType, string> = {
   departamento: 'Departamento',
   casa: 'Casa',
   ph: 'PH',
+  monoambiente: 'Monoambiente',
 }
 
 /** Props de {@link PropertyCard}. */

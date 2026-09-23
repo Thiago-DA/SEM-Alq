@@ -1,10 +1,39 @@
+/* Pestaña pegada al borde izquierdo, a media altura: lejos de las barras
+   inferiores (pie del wizard) y de la barra superior (Header / AppShell). */
 .wrap {
   position: fixed;
-  right: 1rem;
-  bottom: 1rem;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
   z-index: var(--rentar-z-sticky);
-  border-radius: var(--rentar-radius-pill);
+  display: flex;
+  align-items: center;
+}
+
+.summary {
+  list-style: none;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  width: var(--rentar-spacing-lg);
+  height: var(--rentar-spacing-lg);
+  border-radius: 0 var(--rentar-radius-pill) var(--rentar-radius-pill) 0;
   background: var(--rentar-color-bg-surface);
   box-shadow: var(--rentar-shadow-lifted);
-  padding: 0.25rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.summary::-webkit-details-marker {
+  display: none;
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rentar-spacing-xs);
+  margin-left: var(--rentar-spacing-xs);
+  padding: var(--rentar-spacing-xs);
+  border-radius: var(--rentar-radius-md);
+  background: var(--rentar-color-bg-surface);
+  box-shadow: var(--rentar-shadow-lifted);
 }
