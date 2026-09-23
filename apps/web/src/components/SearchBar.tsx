@@ -109,7 +109,6 @@ export default function SearchBar({ filters, onChange, resultCount }: SearchBarP
             <div className={styles.priceInline}>
               <InputNumber
                 className={styles.priceInlineInput}
-                style={{ width: 168 }}
                 size="large"
                 controls={false}
                 min={0}
@@ -139,7 +138,6 @@ export default function SearchBar({ filters, onChange, resultCount }: SearchBarP
               />
               <InputNumber
                 className={styles.priceInlineInput}
-                style={{ width: 168 }}
                 size="large"
                 controls={false}
                 min={filters.minPrice}

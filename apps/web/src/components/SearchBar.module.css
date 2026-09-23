@@ -31,8 +31,14 @@
   gap: 0.625rem;
 }
 
+/* 10.5rem (168px) de base, pero pueden achicarse: en pantallas angostas los
+   dos campos más el slider no entran en la fila, y con un ancho fijo el campo
+   "hasta" se salía de la tarjeta y generaba scroll horizontal en toda la
+   página (a 390px desbordaba 9px). En pantallas anchas no cambia nada. */
 .priceInlineInput {
-  flex: 0 0 auto;
+  flex: 0 1 10.5rem;
+  width: 10.5rem;
+  min-width: 0;
   background-color: var(--rentar-color-bg-page);
   border-radius: var(--rentar-radius-sm);
 }
