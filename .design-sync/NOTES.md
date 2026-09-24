@@ -101,6 +101,10 @@ Primer re-sync desde este repo (camino atómico, anclado en el `_ds_sync.json` d
   preview autorada y la floor card lo renderizaba con props vacías. Se autoró su preview (valores
   reales, sin tocar el componente).
 - Resultado: 34 componentes, 0 floor cards, render check sin `bad`.
+- **Subido desde el commit `7a26b94b3bf3e6e68a8a3aae4624ce2c4485c79d`** (`chore(ui): Preparar la subida de /design-sync del Sprint 1`),
+  el 2026-09-24: 178 archivos escritos (136 de `components/`, 34 de `_preview/`, 2 de `_vendor/`, 4 de
+  la raíz, el aviso `_ds_needs_recompile` y `_ds_sync.json` al final), 0 borrados. No se tocó `templates/`.
+  Lo que está en Claude Design corresponde exactamente a ese commit.
 
 ## Contexto de esta corrida (2026-09-22)
 
