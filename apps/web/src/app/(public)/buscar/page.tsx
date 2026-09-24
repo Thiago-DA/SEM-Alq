@@ -15,11 +15,13 @@ import type { Metadata } from 'next'
 import { BuscarPropiedades } from '@/components/buscar/BuscarPropiedades'
 import { ResultadosCargando } from '@/components/buscar/ResultadosBusqueda'
 
+/** Título y descripción de la pestaña del navegador (Next.js los lee de este export). */
 export const metadata: Metadata = {
   title: 'Buscar propiedades — RentAR',
   description: 'Alquileres de larga duración en Córdoba, directo con el dueño: filtrá por barrio, precio, tipología y más.',
 }
 
+/** Monta la búsqueda (US-34). Va con Suspense porque lee los filtros de la URL. */
 export default function BuscarPage() {
   return (
     <Suspense fallback={<ResultadosCargando />}>

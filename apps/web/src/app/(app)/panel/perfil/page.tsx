@@ -7,6 +7,7 @@
  */
 import { PlaceholderScreen } from '@/components/PlaceholderScreen'
 
+/** Placeholder de Mi perfil (otro sprint). */
 export default function PerfilPage() {
   return <PlaceholderScreen title="Mi perfil" userStory="US-20 y US-21 Consultar y modificar usuario" />
 }

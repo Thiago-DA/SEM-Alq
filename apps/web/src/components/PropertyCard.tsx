@@ -1,5 +1,13 @@
 'use client'
 
+/**
+ * PropertyCard.tsx — tarjeta de propiedad de la landing ("Ver detalle" → `/propiedad/[id]`).
+ *
+ * NOTA: `/buscar` y el alta usan la `PropertyCard` de `@rentar/ui` con
+ * `layout="busqueda"`; esta es la de la landing, que se mantiene igual al
+ * origen para no romper la paridad visual.
+ * Quién lo usa: `PropertyGrid.tsx`.
+ */
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
 import { Button, Card } from 'antd'

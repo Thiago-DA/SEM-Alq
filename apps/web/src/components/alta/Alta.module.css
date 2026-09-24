@@ -195,7 +195,7 @@
 .paymentCardOn {
   border: 2px solid var(--rentar-color-blue);
   padding: calc(0.875rem - 1px) calc(0.9375rem - 1px);
-  background: #f6fafd;
+  background: color-mix(in srgb, var(--rentar-color-sky-light) 40%, var(--rentar-color-bg-surface));
 }
 
 .paymentCheck.paymentCheck {
@@ -521,7 +521,7 @@
   padding: 1rem;
   border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.1);
   border-radius: 1rem;
-  background: #f4f7fa;
+  background: var(--rentar-color-bg-page);
 }
 
 .previewTitle {
@@ -571,7 +571,7 @@
   display: flex;
   gap: 0.6875rem;
   padding: 0.8125rem;
-  border: 1px solid rgba(168, 32, 26, 0.28);
+  border: 1px solid color-mix(in srgb, var(--rentar-color-error) 28%, transparent);
   border-radius: 0.875rem;
   background: var(--rentar-status-error-bg);
 }
@@ -662,7 +662,7 @@
   gap: 0.625rem;
   margin-bottom: 1rem;
   padding: 1rem;
-  border: 1px solid rgba(168, 32, 26, 0.28);
+  border: 1px solid color-mix(in srgb, var(--rentar-color-error) 28%, transparent);
   border-radius: 1rem;
   background: var(--rentar-status-error-bg);
 }
@@ -751,7 +751,7 @@
   padding: 0.875rem;
   border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.1);
   border-radius: 0.875rem;
-  background: #f4f7fa;
+  background: var(--rentar-color-bg-page);
   text-align: left;
 }
 

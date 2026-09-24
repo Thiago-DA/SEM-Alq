@@ -1,3 +1,9 @@
+/**
+ * Hero.tsx — primer bloque de la landing: titular, CTAs y buscador.
+ *
+ * Diseño: landing del origen, con paridad visual verificada.
+ * Quién lo usa: `Landing.tsx`.
+ */
 import { Button } from 'antd'
 import type { FilterState } from '@rentar/shared-types'
 import ProcessLoopMotif from './ProcessLoopMotif'

@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * Header.tsx — barra superior de la zona pública: logo, navegación, "Iniciar sesión" y "Publicar
+ * propiedad", con menú Drawer en móvil.
+ *
+ * Quién lo usa: `PublicLayout`.
+ */
 import { useState } from 'react'
 import { Button, Drawer } from 'antd'
 import { MenuOutlined, CloseOutlined } from '@ant-design/icons'

@@ -1,11 +1,20 @@
 'use client'
 
+/**
+ * SearchSidebarFilters.tsx — filtros de `/buscar`: barra lateral en escritorio y contenido del
+ * Drawer en móvil.
+ *
+ * Diseño: "Búsqueda de propiedades" · 01 y 03.
+ * Quién lo usa: `/buscar` (US-34) y el catálogo.
+ */
 import type { ReactNode } from 'react'
 import { CloseOutlined } from '@ant-design/icons'
 import { Button, Checkbox, InputNumber, Radio, Select, Slider } from 'antd'
 import type { AdjustmentIndex, BusquedaFiltros, CharacteristicOption, PropertyType, UbicacionOpciones } from '@rentar/shared-types'
 import { IndexBadge } from '../data/IndexBadge'
 import styles from './SearchSidebarFilters.module.css'
+
+// ─── Opciones fijas ────────────────────────────────────────────────────────
 
 /** Tipologías que se ofrecen, en el orden del diseño (sin "Dúplex": no existe en el sistema). */
 const TYPE_OPTIONS: { value: PropertyType; label: string }[] = [
@@ -47,6 +56,8 @@ interface SearchSidebarFiltersProps {
   'data-testid'?: string
 }
 
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
 /** Formato "$ 250.000" para los campos de precio. */
 function formatPrice(value: number | string | undefined): string {
   if (value === undefined || value === '') return ''
@@ -62,6 +73,8 @@ function parsePrice(value: string | undefined): number {
 function toggle<T>(list: T[], item: T): T[] {
   return list.includes(item) ? list.filter((current) => current !== item) : [...list, item]
 }
+
+// ─── Piezas internas ───────────────────────────────────────────────────────
 
 /**
  * Grupo de botones "Todos / 1 / 2 / 3 / 4+" de selección múltiple
@@ -109,6 +122,8 @@ function Section({ title, unit, children }: { title: string; unit?: string; chil
     </div>
   )
 }
+
+// ─── Componente ────────────────────────────────────────────────────────────
 
 /**
  * Filtros de `/buscar` (US-34) como barra lateral (escritorio) o contenido

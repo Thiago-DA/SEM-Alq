@@ -1,3 +1,8 @@
+/**
+ * locale.ts — textos de antd en español (Argentina) y locale de dayjs.
+ *
+ * Quién lo usa: `apps/web/src/app/layout.tsx` y `ThemeProvider`.
+ */
 import esES from 'antd/locale/es_ES'
 import dayjs from 'dayjs'
 import 'dayjs/locale/es'

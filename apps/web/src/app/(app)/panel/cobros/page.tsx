@@ -7,6 +7,7 @@
  */
 import { PlaceholderScreen } from '@/components/PlaceholderScreen'
 
+/** Placeholder de Cobros (otro sprint). */
 export default function CobrosPage() {
   return <PlaceholderScreen title="Cobros" userStory="US-08 y US-09 Registrar y consultar cobros" />
 }

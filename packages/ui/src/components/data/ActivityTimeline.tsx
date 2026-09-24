@@ -1,3 +1,9 @@
+/**
+ * ActivityTimeline.tsx — línea de tiempo de eventos (historial de un cobro, un contrato, un
+ * reclamo).
+ *
+ * Quién lo usa: el catálogo `/design-system` (todavía no hay una pantalla del Sprint 1 que la use).
+ */
 import { Timeline } from 'antd'
 import type { SemanticColorKey } from '../../tokens/semantic'
 import { formatRelative } from '../../utils/formatDate'

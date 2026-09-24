@@ -7,6 +7,7 @@
  */
 import { PlaceholderScreen } from '@/components/PlaceholderScreen'
 
+/** Placeholder de Reclamos (otro sprint). */
 export default function ReclamosPage() {
   return <PlaceholderScreen title="Reclamos" userStory="US-14 a US-18 Reclamos" />
 }

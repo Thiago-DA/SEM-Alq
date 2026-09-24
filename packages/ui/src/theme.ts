@@ -1,3 +1,8 @@
+/**
+ * theme.ts — tema de antd de RentAR (claro y oscuro), armado con los tokens.
+ *
+ * Quién lo usa: `apps/web/src/app/layout.tsx`, `ThemeProvider` y el catálogo.
+ */
 import { theme as antdThemeApi, type ThemeConfig } from 'antd'
 // Importa directo de los archivos de primitives/semantic (no del barrel
 // ./tokens) a propósito: ese barrel también re-exporta statusMeta, que

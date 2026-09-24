@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * MoneyInput.tsx — campo numérico con formato de pesos.
+ *
+ * Quién lo usa: el catálogo `/design-system`.
+ */
 import { InputNumber } from 'antd'
 
 /** Da formato de miles al valor mostrado (ej. `550000` -> "$ 550.000"). */

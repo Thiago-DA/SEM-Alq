@@ -1,3 +1,8 @@
+/**
+ * DetailList.tsx — lista de pares etiqueta/valor (resúmenes y fichas).
+ *
+ * Quién lo usa: la revisión del alta (US-01) y el catálogo `/design-system`.
+ */
 import type { ReactNode } from 'react'
 import { Descriptions } from 'antd'
 

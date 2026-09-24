@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * AppShell.tsx — layout de los paneles autenticados: menú lateral, header con campanita y UserMenu,
+ * y barra móvil.
+ *
+ * Quién lo usa: el layout del panel (`app/(app)/panel/layout.tsx`) y el catálogo.
+ */
 import { useState, type ReactNode } from 'react'
 import { Drawer, Layout, Menu } from 'antd'
 import { MenuOutlined } from '@ant-design/icons'
@@ -12,6 +18,9 @@ import styles from './AppShell.module.css'
 
 const { Sider, Header: LayoutHeader, Content } = Layout
 
+// ─── Tipos ─────────────────────────────────────────────────────────────────
+
+/** Un ítem del menú lateral (lo arma `apps/web` en `lib/navigation/navConfig.tsx`). */
 export interface AppShellNavItem {
   key: string
   label: string
@@ -48,7 +57,7 @@ interface AppShellProps {
    */
   contextSwitcher?: ReactNode
   /**
-   * `'admin'` aplica el header oscuro del rol admin (US-44/US-45): setea
+   * `'admin'` aplica el header oscuro del rol admin (panel de administración: sin US en Sprint 0, mapa US-44/US-45): setea
    * `data-rentar-theme="dark"` sobre el header, reusando la paleta dark ya
    * calibrada de `tokens/css-vars.css` (la misma que usa el toggle de tema
    * de `/design-system`) en vez de inventar tokens nuevos. NOTA: los
@@ -79,6 +88,8 @@ interface AppShellProps {
   mobileHeader?: ReactNode
   'data-testid'?: string
 }
+
+// ─── Componente ────────────────────────────────────────────────────────────
 
 /**
  * Layout base de los paneles autenticados (locador, locatario, garante,

@@ -1,3 +1,8 @@
+/**
+ * PageHeader.tsx — encabezado de pantalla: migas, título, subtítulo y acciones.
+ *
+ * Quién lo usa: `/panel/propiedades`, el alta y `PlaceholderScreen`.
+ */
 import type { ReactNode } from 'react'
 import { Breadcrumb } from 'antd'
 import styles from './PageHeader.module.css'

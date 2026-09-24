@@ -1,10 +1,16 @@
 'use client'
 
+/**
+ * FilterBar.tsx — barra de búsqueda y chips de estado para listados.
+ *
+ * Quién lo usa: el catálogo `/design-system`.
+ */
 import type { ReactNode } from 'react'
 import { Input } from 'antd'
 import { SearchOutlined } from '@ant-design/icons'
 import styles from './FilterBar.module.css'
 
+/** Un chip de estado de la barra de filtros. */
 export interface FilterBarStatusOption {
   value: string
   label: string

@@ -17,6 +17,7 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { SESSION_COOKIE_NAME } from '@/lib/auth/session-cookie'
 
+/** Rutas que pasan por el proxy: solo el panel. */
 export const config = {
   matcher: ['/panel/:path*'],
 }

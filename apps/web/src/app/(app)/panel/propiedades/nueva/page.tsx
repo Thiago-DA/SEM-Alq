@@ -9,6 +9,7 @@
  */
 import { AltaPropiedad } from '@/components/alta/AltaPropiedad'
 
+/** Monta el alta de propiedad (US-01). */
 export default function NuevaPropiedadPage() {
   return <AltaPropiedad />
 }

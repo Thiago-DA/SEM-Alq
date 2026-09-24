@@ -10,6 +10,7 @@
  */
 import { MisPropiedades } from '@/components/mis-propiedades/MisPropiedades'
 
+/** Monta el listado de Mis propiedades (US-02). */
 export default function MisPropiedadesPage() {
   return <MisPropiedades />
 }

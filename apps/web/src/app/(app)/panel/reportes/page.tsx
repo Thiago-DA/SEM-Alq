@@ -7,6 +7,7 @@
  */
 import { PlaceholderScreen } from '@/components/PlaceholderScreen'
 
+/** Placeholder de Reportes (otro sprint). */
 export default function ReportesPage() {
   return <PlaceholderScreen title="Reportes" userStory="US-28 Histograma de cobros" />
 }

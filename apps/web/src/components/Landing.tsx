@@ -1,5 +1,13 @@
 'use client'
 
+/**
+ * Landing.tsx — la página `/`: Hero con buscador, vista previa de propiedades y "Cómo funciona".
+ *
+ * De dónde saca los datos: `app/(public)/page.tsx` le pasa las propiedades
+ * publicadas (`propiedades.service#listarPropiedadesPublicadas`); los filtros
+ * se aplican acá, en el cliente.
+ * Quién lo usa: `app/(public)/page.tsx`.
+ */
 import { useMemo, useState } from 'react'
 import { Button } from 'antd'
 import type { FilterState, PropiedadResumen } from '@rentar/shared-types'

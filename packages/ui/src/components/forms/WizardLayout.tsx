@@ -1,5 +1,12 @@
 'use client'
 
+/**
+ * WizardLayout.tsx — formulario en pasos con Steps, contenido y botones Anterior/Siguiente; versión
+ * compacta en móvil.
+ *
+ * Diseño: "Alta de propiedad" · 01, 06, 07 y 09.
+ * Quién lo usa: el alta (US-01) y el catálogo.
+ */
 import type { ReactNode } from 'react'
 import { Button, Steps } from 'antd'
 import styles from './WizardLayout.module.css'

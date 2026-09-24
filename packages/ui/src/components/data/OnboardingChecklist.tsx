@@ -1,9 +1,16 @@
 'use client'
 
+/**
+ * OnboardingChecklist.tsx — checklist vertical de primeros pasos (listo, activo, bloqueado).
+ *
+ * Quién lo usa: el catálogo `/design-system`. NOTA: el onboarding de `/panel` sigue el template
+ * "Panel de inicio" · 02 (tres tarjetas) y se compone en `apps/web`.
+ */
 import { CheckCircleFilled, LockOutlined } from '@ant-design/icons'
 import { useNextBridge } from '../../providers/NextBridge'
 import styles from './OnboardingChecklist.module.css'
 
+/** Un paso del checklist; con `href` y sin bloqueo, se puede tocar. */
 export interface OnboardingChecklistItem {
   key: string
   label: string

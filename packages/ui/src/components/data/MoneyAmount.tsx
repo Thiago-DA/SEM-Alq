@@ -1,3 +1,8 @@
+/**
+ * MoneyAmount.tsx — monto en pesos con el formato y el dorado de RentAR ("dorado = plata").
+ *
+ * Quién lo usa: `/panel`, `/panel/propiedades`, `PropertyCard`, `PlanCard` y el catálogo.
+ */
 import { formatARS } from '../../utils/formatARS'
 import styles from './MoneyAmount.module.css'
 

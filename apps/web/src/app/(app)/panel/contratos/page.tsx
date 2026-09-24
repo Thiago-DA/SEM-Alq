@@ -7,6 +7,7 @@
  */
 import { PlaceholderScreen } from '@/components/PlaceholderScreen'
 
+/** Placeholder de Contratos (otro sprint). */
 export default function ContratosPage() {
   return <PlaceholderScreen title="Contratos" userStory="US-05 Registrar contrato de alquiler" />
 }

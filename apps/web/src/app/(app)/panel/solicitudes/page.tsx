@@ -7,6 +7,7 @@
  */
 import { PlaceholderScreen } from '@/components/PlaceholderScreen'
 
+/** Placeholder de Solicitudes (otro sprint). */
 export default function SolicitudesPage() {
   return <PlaceholderScreen title="Solicitudes" userStory="US-36 y US-37 Consultar, aceptar o rechazar solicitudes" />
 }

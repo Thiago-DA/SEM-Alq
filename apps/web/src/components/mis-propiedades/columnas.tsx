@@ -23,6 +23,8 @@ import { tipoCorto } from '@/lib/catalogs/propiedad'
 import { diasHasta, nombreMes } from '@/lib/utils/fechas'
 import styles from './MisPropiedades.module.css'
 
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
 /** El próximo ajuste va en ámbar si falta menos de esto (Listado · 02). */
 const DIAS_AJUSTE_CERCANO = 60
 
@@ -30,6 +32,8 @@ const DIAS_AJUSTE_CERCANO = 60
 function cortarClick(event: MouseEvent) {
   event.stopPropagation()
 }
+
+// ─── Celdas ────────────────────────────────────────────────────────────────
 
 /** Miniatura de la foto principal (64×48, US-02: "imagen principal"). */
 export function FotoPropiedad({ propiedad, size = 'table' }: { propiedad: PropiedadLocador; size?: 'table' | 'card' }) {
@@ -103,6 +107,7 @@ export function EstadoAlquiler({ propiedad }: { propiedad: PropiedadLocador }) {
   )
 }
 
+/** "septiembre" → "Septiembre". */
 function capitalizar(texto: string): string {
   return texto.charAt(0).toUpperCase() + texto.slice(1)
 }
@@ -164,6 +169,8 @@ function ProximoAjuste({ propiedad }: { propiedad: PropiedadLocador }) {
   }
   return <span className={styles.muted}>—</span>
 }
+
+// ─── Columnas y tarjeta móvil ──────────────────────────────────────────────
 
 /** Las 8 columnas del diseño. Foto y dirección no se repiten en la tarjeta móvil (van en su cabecera). */
 export const columnasMisPropiedades: DataTableColumn<PropiedadLocador>[] = [

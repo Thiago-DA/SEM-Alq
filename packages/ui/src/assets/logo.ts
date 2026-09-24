@@ -1,3 +1,8 @@
+/**
+ * logo.ts — el logo de RentAR como asset importable (src, ancho y alto).
+ *
+ * Quién lo usa: `Header`, `Footer`, `AppShell` y `AuthLayout`.
+ */
 import raw from './logo-rentar.svg'
 
 /**
@@ -10,6 +15,7 @@ import raw from './logo-rentar.svg'
  */
 const isStaticImageData = typeof raw === 'object' && raw !== null
 
+/** El logo listo para `<Image>`: `src`, `width` y `height`. */
 export const LOGO = {
   src: isStaticImageData ? raw.src : (raw as unknown as string),
   width: isStaticImageData ? raw.width : 202,

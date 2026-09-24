@@ -7,7 +7,8 @@
  * Qué es: el registro pide aceptar los términos, pero los textos legales
  * todavía no existen. Para que los links del checkbox no queden rotos (y sin
  * inventar rutas nuevas), abren este modal con un aviso.
- * TODO: reemplazar por el texto legal real cuando exista (no es de backend).
+ * NOTA: provisorio. Se reemplaza por el texto legal real cuando exista (no
+ * depende del backend).
  *
  * Quién lo usa: `RegistroForm`.
  */

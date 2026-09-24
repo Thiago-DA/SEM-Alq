@@ -10,6 +10,7 @@
  */
 import type { CharacteristicKey, CharacteristicOption } from '@rentar/shared-types'
 
+/** Las 5 características, en el orden en que se muestran en filtros y en el alta. */
 export const characteristicOptions: CharacteristicOption[] = [
   { key: 'amoblado', label: 'Amoblado' },
   { key: 'mascotas', label: 'Acepta mascotas' },

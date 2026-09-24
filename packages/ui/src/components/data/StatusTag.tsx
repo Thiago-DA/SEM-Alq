@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * StatusTag.tsx — etiqueta de estado (propiedad, contrato, cobro, reclamo…) con color e ícono de
+ * `statusMeta`.
+ *
+ * Quién lo usa: `/panel`, `/panel/propiedades`, el alta y el catálogo.
+ */
 import { Tag } from 'antd'
 import type { StatusDomain, StatusDomainMap } from '@rentar/shared-types'
 import type { SemanticColorKey } from '../../tokens/semantic'

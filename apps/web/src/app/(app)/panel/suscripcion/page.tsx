@@ -7,6 +7,7 @@
  */
 import { PlaceholderScreen } from '@/components/PlaceholderScreen'
 
+/** Placeholder de Suscripción (otro sprint). */
 export default function SuscripcionPage() {
   return <PlaceholderScreen title="Suscripción" userStory="US-30 a US-33 Suscripción" />
 }

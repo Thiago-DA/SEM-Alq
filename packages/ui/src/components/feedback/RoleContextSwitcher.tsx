@@ -1,10 +1,17 @@
 'use client'
 
+/**
+ * RoleContextSwitcher.tsx — selector "Viendo como" del header de escritorio, para cuentas con dos
+ * roles.
+ *
+ * Quién lo usa: el layout del panel (`app/(app)/panel/layout.tsx`) y el catálogo.
+ */
 import { DownOutlined, SwapOutlined } from '@ant-design/icons'
 import { Dropdown } from 'antd'
 import type { UserRole } from '@rentar/shared-types'
 import styles from './RoleContextSwitcher.module.css'
 
+/** Un rol elegible y su texto visible. */
 export interface RoleContextOption {
   role: UserRole
   label: string

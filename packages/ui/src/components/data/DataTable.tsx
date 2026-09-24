@@ -1,9 +1,16 @@
 'use client'
 
+/**
+ * DataTable.tsx — tabla que en móvil se convierte en tarjetas, con fila clickeable opcional.
+ *
+ * Diseño: "Listado de propiedades" · 01-03.
+ * Quién lo usa: `/panel/propiedades` (US-02) y el catálogo `/design-system`.
+ */
 import type { KeyboardEvent, ReactNode } from 'react'
 import { Empty, Skeleton, Table, type TableColumnsType } from 'antd'
 import styles from './DataTable.module.css'
 
+/** Una columna: su título y cómo se dibuja la celda para cada fila. */
 export interface DataTableColumn<T> {
   key: string
   title: string

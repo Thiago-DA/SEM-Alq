@@ -1,5 +1,12 @@
 'use client'
 
+/**
+ * UserMenu.tsx — menú de usuario: cabecera, "Viendo como", ítems y "Cerrar sesión"; hoja desde
+ * abajo en móvil.
+ *
+ * Diseño: "Mi perfil y legajo" · 02 y "Cambio de rol" · 04.
+ * Quién lo usa: `AppShell` y el catálogo.
+ */
 import { useState, type ReactNode } from 'react'
 import { CheckOutlined, LogoutOutlined, UserOutlined } from '@ant-design/icons'
 import { Avatar, Drawer, Dropdown, Grid, type MenuProps } from 'antd'

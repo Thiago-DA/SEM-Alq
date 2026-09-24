@@ -132,6 +132,10 @@ export const reglasEmail: Rule[] = [
 /** Login: solo que no esté vacía. La regla de formato es del registro, no del login. */
 export const reglasPasswordLogin: Rule[] = [{ required: true, message: MENSAJES.passwordVacia }]
 
+/**
+ * Registro: contraseña nueva (US-19: al menos 8 caracteres, con mayúscula,
+ * minúscula y número; ver `PASSWORD_REGEX`).
+ */
 export const reglasPasswordNueva: Rule[] = [
   { required: true, message: MENSAJES.passwordVacia },
   { pattern: PASSWORD_REGEX, message: MENSAJES.passwordInvalida },
@@ -150,16 +154,19 @@ export function reglasPasswordRepetida(campoPassword: string): Rule[] {
   ]
 }
 
+/** US-19: nombre obligatorio; acepta tildes y apóstrofes (`NOMBRE_REGEX`). */
 export const reglasNombre: Rule[] = [
   { required: true, whitespace: true, message: MENSAJES.nombreVacio },
   { pattern: NOMBRE_REGEX, message: MENSAJES.nombreInvalido },
 ]
 
+/** US-19: apellido obligatorio, con la misma regla que el nombre. */
 export const reglasApellido: Rule[] = [
   { required: true, whitespace: true, message: MENSAJES.apellidoVacio },
   { pattern: NOMBRE_REGEX, message: MENSAJES.nombreInvalido },
 ]
 
+/** US-19: fecha de nacimiento obligatoria y mayor de edad (`EDAD_MINIMA`). */
 export const reglasFechaNacimiento: Rule[] = [
   { required: true, message: MENSAJES.fechaVacia },
   {
@@ -170,6 +177,7 @@ export const reglasFechaNacimiento: Rule[] = [
   },
 ]
 
+/** US-19: número de documento de 7 u 8 dígitos (se ignoran puntos y espacios). */
 export const reglasDni: Rule[] = [
   {
     // "Se debe ingresar un número de documento" (US-19) + 7 u 8 números (diseño).
@@ -180,6 +188,7 @@ export const reglasDni: Rule[] = [
   },
 ]
 
+/** US-19: teléfono obligatorio, con el formato del diseño (se ignoran espacios y guiones). */
 export const reglasTelefono: Rule[] = [
   {
     // "Se debe ingresar un número de teléfono" (US-19) + formato del diseño.

@@ -1,3 +1,9 @@
+/**
+ * (public)/layout.tsx — zona pública (arquetipo A1): Header y Footer.
+ *
+ * Qué es: envuelve `/`, `/buscar` y `/propiedad/[id]` con `PublicLayout`.
+ * Quién lo usa: Next.js, para todas las rutas de `app/(public)/`.
+ */
 import type { ReactNode } from 'react'
 // Import directo (no del barrel @rentar/ui): ese barrel también re-exporta
 // statusMeta (usa @ant-design/icons, que llama createContext a nivel de
@@ -7,7 +13,7 @@ import { PublicLayout } from '@rentar/ui/src/components/layouts/PublicLayout'
 
 /**
  * layout.tsx — arquetipo A1 (zona pública), compartido por `/`, `/buscar`,
- * `/propiedad/[id]` y `/planes`. Layout anidado (no root): el root layout
+ * `/propiedad/[id]`. Layout anidado (no root): el root layout
  * (`app/layout.tsx`) ya pone `<html>`/`<body>`/`AntdRegistry`/
  * `ConfigProvider` una sola vez — duplicarlos acá causaría el
  * "full page reload" que Next 16 documenta entre root layouts distintos.

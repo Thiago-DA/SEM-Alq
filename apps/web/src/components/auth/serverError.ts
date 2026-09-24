@@ -8,6 +8,7 @@
  */
 import { ServiceError } from '@/services/shared/errors'
 
+/** Título y texto del bloque de error del servidor ("No pudimos…"). */
 export interface ServerErrorCopy {
   title: string
   description: string

@@ -19,7 +19,8 @@
  * Acciones: la fila entera abre el detalle (`/panel/propiedades/[id]`,
  * placeholder), con mouse o teclado. En móvil, "Ver detalle" y el "⋯" (que
  * por ahora solo ofrece "Ver detalle"). NOTA: pausar, publicar y eliminar
- * viven en el detalle, que es de otro sprint (US-40, US-04).
+ * viven en el detalle, que es de otro sprint (US-03 Modificar y US-04
+ * Eliminar mis propiedades; publicar/pausar no tiene US en Sprint 0, mapa US-40).
  *
  * Quién lo usa: `app/(app)/panel/propiedades/page.tsx`.
  */
@@ -311,7 +312,7 @@ export function MisPropiedades() {
                 <Button type="primary" className={styles.cardPrimary} onClick={() => abrirDetalle(propiedad)} data-testid="mis-propiedades-ver-detalle">
                   Ver detalle
                 </Button>
-                {/* NOTA: por ahora el menú solo tiene "Ver detalle"; pausar, publicar y eliminar llegan con el detalle (US-40, US-04). */}
+                {/* NOTA: por ahora el menú solo tiene "Ver detalle"; pausar, publicar y eliminar llegan con el detalle (US-03, US-04). */}
                 <Dropdown
                   trigger={['click']}
                   menu={{ items: [{ key: 'detalle', label: 'Ver detalle', onClick: () => abrirDetalle(propiedad) }] }}

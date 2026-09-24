@@ -31,6 +31,7 @@ const leagueSpartan = League_Spartan({
   display: 'swap',
 })
 
+/** Título y descripción de la pestaña del navegador (Next.js los lee de este export). */
 export const metadata: Metadata = {
   title: 'RentAR — Alquilá directo, sin inmobiliaria',
   description:

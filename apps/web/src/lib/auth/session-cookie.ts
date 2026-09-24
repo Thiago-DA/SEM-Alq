@@ -14,6 +14,7 @@
  */
 import type { UserRole } from '@rentar/shared-types'
 
+/** Nombre de la cookie de sesión. Lo comparten `proxy.ts` y `AuthProvider`. */
 export const SESSION_COOKIE_NAME = 'rentar_session'
 
 /**
@@ -23,6 +24,7 @@ export const SESSION_COOKIE_NAME = 'rentar_session'
  */
 export const REMEMBER_ME_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
 
+/** Lo que guarda la cookie de sesión (JSON, URI-encodeado). */
 export interface SessionCookiePayload {
   /** `UsuarioSesion.id` del usuario en sesión (texto, ver `usuario-sesion.ts`). */
   userId: string

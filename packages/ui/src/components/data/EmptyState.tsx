@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * EmptyState.tsx — estado vacío: título, explicación y una acción.
+ *
+ * Quién lo usa: `/buscar`, `/panel`, `/panel/propiedades`, `PlaceholderScreen`, `/recuperar` y el
+ * catálogo.
+ */
 // NOTA: `@ant-design/icons` crea un Context de React a nivel de módulo
 // (para el theming/tamaño heredado de los íconos) — eso rompe cualquier
 // Server Component que importe este archivo sin `'use client'` (el mismo

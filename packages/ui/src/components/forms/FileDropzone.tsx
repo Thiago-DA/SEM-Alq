@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * FileDropzone.tsx — zona de arrastrar y soltar archivos (no sube nada).
+ *
+ * Quién lo usa: el catálogo `/design-system`. NOTA: el alta compone su propia carga de fotos en
+ * `apps/web` (`components/alta/FotosField.tsx`).
+ */
 import { InboxOutlined } from '@ant-design/icons'
 import { Upload, type UploadFile } from 'antd'
 import styles from './FileDropzone.module.css'

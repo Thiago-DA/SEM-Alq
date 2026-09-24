@@ -18,6 +18,9 @@ import { ServiceError } from './shared/errors'
 import { saveMockRecord } from './shared/mockStore'
 import { readUsuariosMock, toUsuarioSesion } from './usuarios.service'
 
+// ─── Login y logout (US-39) ────────────────────────────────────────────────
+
+/** Lo que se carga en el formulario de `/login` (US-39). */
 export interface LoginCredentials {
   email: string
   password: string
@@ -90,6 +93,8 @@ export async function logout(): Promise<void> {
   }
   await apiRequest<void>('/auth/logout', { method: 'POST' })
 }
+
+// ─── Registro (US-19) ──────────────────────────────────────────────────────
 
 /** Datos del registro (US-19): el rol del paso 1 y los datos del paso 2. */
 export interface RegistroInput {

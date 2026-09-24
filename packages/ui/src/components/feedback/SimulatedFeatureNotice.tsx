@@ -1,3 +1,9 @@
+/**
+ * SimulatedFeatureNotice.tsx — aviso de que una función está simulada (por ejemplo, el email de
+ * confirmación).
+ *
+ * Quién lo usa: el registro (US-19) y el catálogo.
+ */
 import { Alert } from 'antd'
 
 /** Props de {@link SimulatedFeatureNotice}. */

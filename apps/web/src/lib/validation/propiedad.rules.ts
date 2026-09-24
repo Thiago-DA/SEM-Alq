@@ -59,6 +59,7 @@ export interface AltaValues {
 
 /** Ubicación del piloto: RentAR opera solo en Córdoba Capital (Alta · 01). */
 export const CIUDAD_PILOTO = 'Córdoba Capital'
+/** Provincia del piloto (fija en el alta). */
 export const PROVINCIA_PILOTO = 'Córdoba'
 
 /** Valores con que arranca un alta nueva. Tipo y estado arrancan vacíos: US-01 pide elegirlos. */
@@ -76,16 +77,18 @@ export const ALTA_VALORES_INICIALES: AltaValues = {
 
 // ─── Límites ────────────────────────────────────────────────────────────
 
-/** US-01: "al menos tres fotos" y "hasta 50 fotos por propiedad". */
+/** US-01: "Se deben cargar al menos tres fotos". */
 export const FOTOS_MINIMO = 3
+/** US-01: "Se pueden cargar hasta 50 fotos por propiedad". */
 export const FOTOS_MAXIMO = 50
 /** US-01: "no superar los 350kb". */
 export const FOTO_PESO_MAXIMO_BYTES = 350 * 1024
 /** US-01: "formato JPG o PNG". */
 export const FOTO_TIPOS_ACEPTADOS = ['image/jpeg', 'image/png']
 
-/** Superficie razonable (Alta · 06: "m² entre 10 y 2000"). */
+/** Superficie mínima razonable (Alta · 06: "m² entre 10 y 2000"). */
 export const M2_MINIMO = 10
+/** Tope de superficie (Alta · 06). */
 export const M2_MAXIMO = 2000
 /** Descripción: el contador del diseño. */
 export const DESCRIPCION_MAXIMO = 1200

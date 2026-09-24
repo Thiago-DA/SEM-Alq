@@ -1,11 +1,17 @@
 'use client'
 
+/**
+ * NotificationBell.tsx — campanita con la lista de notificaciones.
+ *
+ * Quién lo usa: `AppShell` y el catálogo.
+ */
 import { useState } from 'react'
 import { BellOutlined } from '@ant-design/icons'
 import { Badge, Dropdown } from 'antd'
 import { formatRelative } from '../../utils/formatDate'
 import styles from './NotificationBell.module.css'
 
+/** Una notificación de la lista; sin `read` (o en `false`) cuenta como no leída. */
 export interface NotificationItem {
   id: string
   title: string

@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * ConfirmActionModal.tsx — modal de confirmación para acciones que no se pueden deshacer.
+ *
+ * Quién lo usa: el catálogo `/design-system` (lo usará el detalle, por ejemplo para eliminar,
+ * US-04).
+ */
 import { ExclamationCircleFilled } from '@ant-design/icons'
 import { Modal } from 'antd'
 

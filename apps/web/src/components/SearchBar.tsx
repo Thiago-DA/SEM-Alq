@@ -1,5 +1,12 @@
 'use client'
 
+/**
+ * SearchBar.tsx — buscador de la landing: barrio, tipo, dormitorios, precio y características.
+ *
+ * Qué es: filtra la vista previa de la landing en el cliente. La búsqueda
+ * completa (US-34) está en `/buscar`.
+ * Quién lo usa: `Hero.tsx` y el catálogo `/design-system`.
+ */
 import { Card, Col, InputNumber, Row, Select, Slider, Tag } from 'antd'
 import type { FilterState } from '@rentar/shared-types'
 import { characteristicOptions } from '@/lib/catalogs/characteristics'

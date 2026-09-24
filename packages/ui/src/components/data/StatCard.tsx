@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * StatCard.tsx — tarjeta de una cifra (KPI) con variación opcional.
+ *
+ * Quién lo usa: `/panel` y el catálogo `/design-system`.
+ */
 // NOTA: `@ant-design/icons` crea un Context de React a nivel de módulo —
 // rompe cualquier Server Component que importe este archivo sin
 // `'use client'` (ver el mismo comentario en `tokens/status-meta.ts`).

@@ -1,5 +1,12 @@
 'use client'
 
+/**
+ * PropertyCardBusqueda.tsx — la tarjeta de `/buscar`: precio, dirección aproximada, barrio,
+ * descripción, disponibilidad, chips y carrusel.
+ *
+ * Diseño: "Búsqueda de propiedades" · 01.
+ * Quién lo usa: `PropertyCard` (con `layout="busqueda"`).
+ */
 import { useState } from 'react'
 import { LeftOutlined, RightOutlined } from '@ant-design/icons'
 import type { AdjustmentIndex, PropertyType } from '@rentar/shared-types'
@@ -8,6 +15,8 @@ import { formatARS } from '../../utils/formatARS'
 import { formatDate } from '../../utils/formatDate'
 import { IndexBadge } from './IndexBadge'
 import styles from './PropertyCardBusqueda.module.css'
+
+// ─── Props ─────────────────────────────────────────────────────────────────
 
 /** Props de {@link PropertyCardBusqueda}. */
 export interface PropertyCardBusquedaProps {
@@ -37,12 +46,16 @@ export interface PropertyCardBusquedaProps {
   'data-testid'?: string
 }
 
+// ─── Helpers ───────────────────────────────────────────────────────────────
+
 /** "Disponible desde dd/mm/aaaa" si la fecha es futura; si no, "Disponible ahora". */
 function availabilityLabel(availableFrom: string | null | undefined): string {
   if (!availableFrom) return 'Disponible ahora'
   const date = new Date(availableFrom)
   return date.getTime() > Date.now() ? `Disponible desde ${formatDate(availableFrom)}` : 'Disponible ahora'
 }
+
+// ─── Componente ────────────────────────────────────────────────────────────
 
 /**
  * Tarjeta de propiedad de `/buscar` (Claude Design, "Búsqueda de
@@ -54,7 +67,7 @@ function availabilityLabel(availableFrom: string | null | undefined): string {
  * La descripción y la disponibilidad no están en el diseño: las pide US-34
  * ("mostrar la descripción" y "la fecha de disponibilidad").
  *
- * NOTA de accesibilidad: toda la tarjeta navega al detalle, pero el link es
+ * NOTA: accesibilidad — toda la tarjeta navega al detalle, pero el link es
  * solo la dirección (un `<a>` "estirado" con `::after` que cubre la tarjeta).
  * Así las flechas del carrusel pueden ser `<button>` de verdad: un botón
  * dentro de un link es HTML inválido.

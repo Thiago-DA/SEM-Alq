@@ -7,6 +7,7 @@
  */
 import { PlaceholderScreen } from '@/components/PlaceholderScreen'
 
+/** Placeholder de Notificaciones (otro sprint). */
 export default function NotificacionesPage() {
   return <PlaceholderScreen title="Notificaciones" userStory="US-22 y US-23 Notificaciones" />
 }

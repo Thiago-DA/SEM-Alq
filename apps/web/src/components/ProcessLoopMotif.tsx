@@ -1,3 +1,8 @@
+/**
+ * ProcessLoopMotif.tsx — ilustración del ciclo del alquiler (buscar, firmar, pagar…) del Hero.
+ *
+ * Quién lo usa: `Hero.tsx` y el catálogo `/design-system`.
+ */
 import type { ReactNode } from 'react'
 import styles from './ProcessLoopMotif.module.css'
 

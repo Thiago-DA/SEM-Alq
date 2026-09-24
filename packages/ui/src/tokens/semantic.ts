@@ -1,3 +1,8 @@
+/**
+ * semantic.ts — tokens semánticos (fondo, texto, bordes, estados) para claro y oscuro.
+ *
+ * Quién lo usa: `theme.ts`.
+ */
 import { colorScales, seed } from './primitives'
 
 /** Las 5 claves de color con significado (no ligadas a un dominio puntual). */

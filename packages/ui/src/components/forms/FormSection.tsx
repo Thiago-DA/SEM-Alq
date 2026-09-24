@@ -1,3 +1,8 @@
+/**
+ * FormSection.tsx — sección de formulario con título y descripción.
+ *
+ * Quién lo usa: los pasos del alta (US-01) y el catálogo.
+ */
 import type { ReactNode } from 'react'
 import styles from './FormSection.module.css'
 

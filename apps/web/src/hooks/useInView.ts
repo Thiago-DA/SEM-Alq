@@ -1,3 +1,8 @@
+/**
+ * useInView.ts — hook que avisa si un elemento está en pantalla (IntersectionObserver).
+ *
+ * Quién lo usa: `HowItWorks.tsx`, para animar sus pasos al hacer scroll.
+ */
 import { useEffect, useRef, useState, type RefObject } from 'react'
 
 /**

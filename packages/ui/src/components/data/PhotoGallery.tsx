@@ -1,10 +1,16 @@
 'use client'
 
+/**
+ * PhotoGallery.tsx — galería de fotos con imagen principal y miniaturas.
+ *
+ * Quién lo usa: el catálogo `/design-system` (la usará el detalle de la propiedad).
+ */
 import { useState } from 'react'
 import { Image } from 'antd'
 import { useNextBridge } from '../../providers/NextBridge'
 import styles from './PhotoGallery.module.css'
 
+/** Una foto de la galería (el `alt` es obligatorio: describe la foto). */
 export interface PhotoGalleryImage {
   src: string
   alt: string

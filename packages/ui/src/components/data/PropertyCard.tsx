@@ -1,3 +1,9 @@
+/**
+ * PropertyCard.tsx — tarjeta de propiedad; con `layout="busqueda"` delega en
+ * `PropertyCardBusqueda`.
+ *
+ * Quién lo usa: `/buscar` (US-34), la vista previa del alta (US-01) y el catálogo.
+ */
 import { Card } from 'antd'
 import type { AdjustmentIndex, PropertyType } from '@rentar/shared-types'
 import { useNextBridge } from '../../providers/NextBridge'

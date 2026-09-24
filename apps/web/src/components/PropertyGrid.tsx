@@ -1,3 +1,8 @@
+/**
+ * PropertyGrid.tsx — grilla de tarjetas de la landing, con estado vacío.
+ *
+ * Quién lo usa: `Landing.tsx`.
+ */
 import { Col, Empty, Row } from 'antd'
 import type { PropiedadResumen } from '@rentar/shared-types'
 import PropertyCard from './PropertyCard'

@@ -1,3 +1,9 @@
+/**
+ * formatDate.ts — formatos de fecha: corta (dd/mm/aaaa), período ("Septiembre 2026") y relativa.
+ *
+ * Quién lo usa: `PropertyCardBusqueda`, `NotificationBell`, `ActivityTimeline` y pantallas de
+ * `apps/web`.
+ */
 import dayjs from 'dayjs'
 import relativeTime from 'dayjs/plugin/relativeTime'
 import 'dayjs/locale/es'

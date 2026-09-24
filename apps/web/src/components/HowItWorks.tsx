@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * HowItWorks.tsx — sección "Cómo funciona" de la landing (pasos animados al hacer scroll).
+ *
+ * Quién lo usa: `Landing.tsx`.
+ */
 import { useInView } from '@/hooks/useInView'
 import styles from './HowItWorks.module.css'
 

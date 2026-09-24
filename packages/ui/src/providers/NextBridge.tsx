@@ -23,6 +23,7 @@
  */
 import { createContext, useContext, type ComponentType, type CSSProperties, type PropsWithChildren, type ReactNode } from 'react'
 
+/** Props mínimas de imagen que usan los componentes (un subconjunto de `next/image`). */
 export interface ImageComponentProps {
   src: string
   alt: string
@@ -43,8 +44,10 @@ export interface ImageComponentProps {
   className?: string
   style?: CSSProperties
 }
+/** Componente de imagen: `next/image` en la app, `<img>` en las previews. */
 export type ImageComponentType = ComponentType<ImageComponentProps>
 
+/** Props mínimas de link que usan los componentes (un subconjunto de `next/link`). */
 export interface LinkComponentProps {
   href: string
   className?: string
@@ -53,6 +56,7 @@ export interface LinkComponentProps {
   'aria-label'?: string
   'data-testid'?: string
 }
+/** Componente de link: `next/link` en la app, `<a>` en las previews. */
 export type LinkComponentType = ComponentType<LinkComponentProps>
 
 interface NextBridgeValue {

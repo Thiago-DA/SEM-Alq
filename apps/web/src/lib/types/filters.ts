@@ -1,3 +1,9 @@
+/**
+ * lib/types/filters.ts — valores iniciales y límites de los filtros de la landing.
+ *
+ * Quién lo usa: la landing (`Landing.tsx`, que se los pasa al Hero y al buscador) y el
+ * catálogo `/design-system`. `/buscar` tiene sus propios valores en `lib/search/`.
+ */
 import type { FilterState } from '@rentar/shared-types'
 
 /** Techo superior del filtro de precio (slider y campo "hasta"). */

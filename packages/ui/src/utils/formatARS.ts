@@ -1,3 +1,8 @@
+/**
+ * formatARS.ts — formato de montos en pesos argentinos ("$ 550.000").
+ *
+ * Quién lo usa: `MoneyAmount`, `PropertyCardBusqueda` y varias pantallas de `apps/web`.
+ */
 const currencyFormatter = new Intl.NumberFormat('es-AR', {
   style: 'currency',
   currency: 'ARS',

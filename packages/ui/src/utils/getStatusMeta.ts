@@ -1,3 +1,8 @@
+/**
+ * getStatusMeta.ts — devuelve texto, color e ícono de un estado (tipado según el dominio).
+ *
+ * Quién lo usa: `StatusTag`.
+ */
 import type { StatusDomain, StatusDomainMap } from '@rentar/shared-types'
 import { statusMeta } from '../tokens/status-meta'
 import type { StatusMeta } from '../tokens/status-meta'

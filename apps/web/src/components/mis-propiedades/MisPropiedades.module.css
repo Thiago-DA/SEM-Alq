@@ -220,7 +220,7 @@
   padding: 0 0.625rem;
   border-radius: var(--rentar-radius-pill);
   background: var(--rentar-status-warning-bg);
-  color: #8a5a00;
+  color: var(--rentar-color-warning);
   font-size: 0.78125rem;
   font-weight: 700;
   white-space: nowrap;
@@ -259,7 +259,7 @@
 /* A menos de 60 días, la fecha en ámbar (Listado · 02). */
 .adjustSoon {
   font-weight: 700;
-  color: #8a5a00;
+  color: var(--rentar-color-warning);
 }
 
 /* ─── Tarjeta móvil ────────────────────────────────────────────────── */
@@ -299,7 +299,7 @@
   align-items: flex-start;
   gap: 0.5rem;
   padding: 1.25rem;
-  border: 1px solid rgba(168, 32, 26, 0.25);
+  border: 1px solid color-mix(in srgb, var(--rentar-color-error) 25%, transparent);
   border-radius: 1rem;
   background: var(--rentar-status-error-bg);
 }

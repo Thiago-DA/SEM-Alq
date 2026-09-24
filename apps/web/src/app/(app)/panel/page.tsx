@@ -17,6 +17,7 @@ import { PlaceholderScreen } from '@/components/PlaceholderScreen'
 import { PanelLocador } from '@/components/panel/PanelLocador'
 import { useAuth } from '@/lib/auth/AuthProvider'
 
+/** Inicio del panel: el del locador o el placeholder del locatario, según el rol activo. */
 export default function PanelInicioPage() {
   const { user, activeRole } = useAuth()
   // El layout ya esperó al usuario: acá siempre hay sesión.

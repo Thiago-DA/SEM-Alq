@@ -60,7 +60,7 @@ export interface RegistrarUsuarioRequest {
   /** Formato ISO `YYYY-MM-DD`. */
   fecha_nacimiento: string
   acepta_terminos: boolean
-  /** Propuesto, todavía no existe en el back (ver el TODO de arriba). */
+  /** Propuesto, todavía no existe en el back (ver el TODO(backend) de arriba). */
   rol: 'locador' | 'locatario'
 }
 

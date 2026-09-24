@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * IndexBadge.tsx — insignia del índice de ajuste (ICL o IPC), con la explicación en un tooltip.
+ *
+ * Quién lo usa: `PropertyCard`, `SearchSidebarFilters`, `/panel/propiedades`, el alta y el
+ * catálogo.
+ */
 // NOTA: `@ant-design/icons` crea un Context de React a nivel de módulo —
 // rompe cualquier Server Component que importe este archivo sin
 // `'use client'` (ver el mismo comentario en `tokens/status-meta.ts`).

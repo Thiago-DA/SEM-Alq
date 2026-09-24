@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * PasswordStrengthMeter.tsx — barra de fuerza de la contraseña con su checklist de requisitos.
+ *
+ * Diseño: "Autenticación" · 03.
+ * Quién lo usa: el registro (US-19) y el catálogo.
+ */
 import { CheckOutlined } from '@ant-design/icons'
 import styles from './PasswordStrengthMeter.module.css'
 

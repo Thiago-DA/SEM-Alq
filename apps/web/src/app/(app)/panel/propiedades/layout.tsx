@@ -9,6 +9,7 @@
 import type { ReactNode } from 'react'
 import { RequireRole } from '@/components/auth/RequireRole'
 
+/** Deja pasar solo al rol locador; si no, vuelve a `/panel`. */
 export default function PropiedadesLayout({ children }: { children: ReactNode }) {
   return <RequireRole role="locador">{children}</RequireRole>
 }

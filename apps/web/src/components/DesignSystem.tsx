@@ -1,5 +1,14 @@
 'use client'
 
+/**
+ * DesignSystem.tsx — el catálogo vivo de `@rentar/ui` (`/design-system`).
+ *
+ * Qué es: una ficha por token y por componente, con ejemplos en vivo y sus
+ * variantes (vacío, cargando, error, móvil). No es una pantalla del producto.
+ * NOTA: es la única excepción a "los mocks solo los usan los services":
+ * muestra datos del elenco para que los ejemplos sean realistas.
+ * Quién lo usa: `app/design-system/page.tsx`.
+ */
 import { useEffect, useState, type CSSProperties } from 'react'
 import Link from 'next/link'
 import { Button, ConfigProvider, Input, Segmented, Select, Slider, Switch, Tag } from 'antd'
@@ -1042,7 +1051,7 @@ export default function DesignSystem() {
 
               <p className={styles.subheading}>AppShell — variant=&quot;admin&quot;</p>
               <p className={styles.sectionLead} style={{ marginBottom: '0.75rem' }}>
-                Header oscuro de US-44/US-45: reusa la paleta dark ya calibrada de{' '}
+                Header oscuro del panel de administración (sin US en Sprint 0, mapa US-44/US-45): reusa la paleta dark ya calibrada de{' '}
                 <code>tokens/css-vars.css</code> (misma que el toggle de tema de esta página), no
                 tokens nuevos.
               </p>

@@ -1,3 +1,8 @@
+/**
+ * PublicLayout.tsx — layout de la zona pública (arquetipo A1): `Header` + contenido + `Footer`.
+ *
+ * Quién lo usa: `app/(public)/layout.tsx`.
+ */
 import type { ReactNode } from 'react'
 import { Header } from '../Header'
 import { Footer } from '../Footer'

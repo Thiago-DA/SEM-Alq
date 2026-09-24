@@ -138,7 +138,7 @@ export async function buscarPropiedades(filtros: BusquedaFiltros, orden: OrdenBu
     const publicadas = readPropiedadesMock().filter(isSearchable).map(propiedadMockToResumen)
     return buscarEnLista(publicadas, filtros, orden, pagina)
   }
-  // NOTA: respaldo mientras el back no pagine (ver el TODO de arriba).
+  // NOTA: respaldo mientras el back no pagine (ver el TODO(backend) de arriba).
   const disponibles = await traerDisponiblesDelBack(queryDeBusqueda(filtros, orden, pagina))
   return buscarEnLista(disponibles, filtros, orden, pagina)
 }
@@ -255,16 +255,17 @@ function currentBackendUserId(): number {
   return Number(backendId)
 }
 
-// ─── Publicar o pausar (US-40, otro sprint) ─────────────────────────────
+// ─── Publicar o pausar (otro sprint) ────────────────────────────────────
 
 /**
- * US-40 Publicar o pausar propiedad — cambia el estado de la publicación.
+ * Publicar o pausar propiedad (sin US en Sprint 0, mapa US-40) — cambia el
+ * estado de la publicación.
  * @backend PATCH /api/v1/inmuebles/:id/publicacion   (no existe — propuesto) body { activa: boolean }
  * @returns void
  *
  * NOTA: todavía no la usa ninguna pantalla. US-02 no pide acciones en el
  * listado: pausar, publicar y eliminar viven en el detalle de la propiedad,
- * que es del sprint de US-03, US-04 y US-40. Queda lista (y probada en mock)
+ * que es del sprint de US-03 y US-04. Queda lista (y probada en mock)
  * para ese sprint.
  */
 export async function cambiarEstadoPublicacion(propiedadId: string, estado: 'publicada' | 'pausada'): Promise<void> {

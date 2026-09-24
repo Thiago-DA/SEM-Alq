@@ -7,6 +7,7 @@
  */
 import { PlaceholderScreen } from '@/components/PlaceholderScreen'
 
+/** Placeholder del detalle público de una propiedad. */
 export default function PropiedadDetallePage() {
   return <PlaceholderScreen title="Detalle de propiedad" userStory="sin US en Sprint 0 (mapa US-35)" />
 }

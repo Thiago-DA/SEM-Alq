@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * Footer.tsx — pie de la zona pública (links, contacto y marca).
+ *
+ * Quién lo usa: `PublicLayout`.
+ */
 import { useNextBridge } from '../providers/NextBridge'
 import { LOGO } from '../assets/logo'
 import styles from './Footer.module.css'

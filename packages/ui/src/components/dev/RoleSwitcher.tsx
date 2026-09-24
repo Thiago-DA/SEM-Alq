@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * RoleSwitcher.tsx — herramientas flotantes de desarrollo (pestaña al borde izquierdo). No
+ * renderiza nada en producción.
+ *
+ * Quién lo usa: `apps/web/src/components/dev/DevTools.tsx`.
+ */
 import { Button, Segmented } from 'antd'
 import { ReloadOutlined, ToolOutlined } from '@ant-design/icons'
 import type { UserRole } from '@rentar/shared-types'

@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * SearchFilters.tsx — barra horizontal de filtros de búsqueda (versión de `@rentar/ui` del buscador
+ * de la landing).
+ *
+ * Quién lo usa: el catálogo `/design-system`.
+ */
 import { useState } from 'react'
 import { Button, Col, Drawer, InputNumber, Row, Select, Slider, Tag } from 'antd'
 import { FilterOutlined } from '@ant-design/icons'

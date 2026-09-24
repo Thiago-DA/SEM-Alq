@@ -8,7 +8,7 @@
  * Cada bloque es una función aparte: si falla una, la pantalla muestra el
  * error solo en ese bloque (Claude Design, "Panel de inicio" · 03).
  * Cubre: sin US en Sprint 0 (mapa A3, inicio del locador). Los datos son de
- * módulos de sprints futuros (US-09 cobros, US-15 reclamos, US-37
+ * módulos de sprints futuros (US-09 cobros, US-15 reclamos, US-36
  * solicitudes), así que en el back todavía no existe nada de esto.
  *
  * Cómo se calcula cada cifra en modo mock: ver el encabezado de
@@ -191,8 +191,8 @@ export async function getEventosContratos(): Promise<EventoContratoPanel[]> {
 /**
  * Solicitudes de alquiler pendientes sobre las propiedades del locador en
  * sesión (las "cosas para resolver" del saludo).
- * @backend GET /api/v1/solicitudes?estado=pendiente   (no existe — propuesto, US-37) → SolicitudPanel[]
- * TODO(backend): crear la ruta con el módulo de solicitudes (US-36 a US-39).
+ * @backend GET /api/v1/solicitudes?estado=pendiente   (no existe — propuesto, US-36) → SolicitudPanel[]
+ * TODO(backend): crear la ruta con el módulo de solicitudes (US-35 a US-38).
  */
 export async function getSolicitudesPendientes(): Promise<SolicitudPanel[]> {
   if (USE_MOCKS) {

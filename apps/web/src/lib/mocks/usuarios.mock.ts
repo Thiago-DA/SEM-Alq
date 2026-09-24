@@ -30,6 +30,7 @@ export const MOCK_PASSWORD = 'Rentar2026'
  */
 export type UsuarioMock = UsuarioSesion & { password: string }
 
+/** Las tres cuentas del elenco (ver `README.md`). */
 export const usuarios: UsuarioMock[] = [
   {
     id: 'usr-nicolas',

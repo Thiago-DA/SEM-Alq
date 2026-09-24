@@ -14,6 +14,7 @@
 import { AuthLayout } from '@rentar/ui/src/components/layouts/AuthLayout'
 import { EmptyState } from '@rentar/ui/src/components/data/EmptyState'
 
+/** Placeholder de Recuperar contraseña (US-40, otro sprint). */
 export default function RecuperarPage() {
   return (
     <AuthLayout title="Recuperar contraseña" subtitle="Te enviamos un link a tu email.">

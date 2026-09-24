@@ -1,5 +1,11 @@
 'use client'
 
+/**
+ * AuthLayout.tsx — layout de login y registro (arquetipo A2): tarjeta centrada con el logo.
+ *
+ * Diseño: "Autenticación" · 01-04.
+ * Quién lo usa: `/login`, `/registro`, `/recuperar` y el catálogo.
+ */
 import type { ReactNode } from 'react'
 import { useNextBridge } from '../../providers/NextBridge'
 import { LOGO } from '../../assets/logo'

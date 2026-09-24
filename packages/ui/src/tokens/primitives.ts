@@ -1,3 +1,10 @@
+/**
+ * primitives.ts — tokens base: colores de marca, escalas, tipografía, radios, espaciado, sombras y
+ * z-index.
+ *
+ * Fuente de verdad: `docs/DESIGN.md`.
+ * Quién lo usa: `theme.ts`, `semantic.ts`, el `Header` y el catálogo.
+ */
 import { generate } from '@ant-design/colors'
 
 /**

@@ -1,5 +1,10 @@
 'use client'
 
+/**
+ * PlanCard.tsx — tarjeta de un plan de suscripción.
+ *
+ * Quién lo usa: el catálogo `/design-system` (la suscripción no es del Sprint 1).
+ */
 import { CheckOutlined } from '@ant-design/icons'
 import { Button } from 'antd'
 import { MoneyAmount } from './MoneyAmount'

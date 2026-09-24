@@ -35,6 +35,7 @@ import { errorCodeFromHttpStatus, ServiceError } from './errors'
 /** Valor aceptado en un query param. Los arrays se mandan repetidos (`?tags=a&tags=b`). */
 export type QueryValue = string | number | boolean | string[] | undefined
 
+/** Opciones de {@link apiRequest}: método, query params y cuerpo. */
 export interface ApiRequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'PATCH' | 'DELETE'
   /** Query params. Los `undefined` se omiten. */

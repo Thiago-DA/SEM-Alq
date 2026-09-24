@@ -1,3 +1,9 @@
+/**
+ * status-meta.ts — texto, color e ícono de cada estado de dominio (propiedad, contrato, cobro,
+ * reclamo…).
+ *
+ * Quién lo usa: `StatusTag` (vía `getStatusMeta`) y `theme.ts`.
+ */
 import {
   CalendarOutlined,
   CheckCircleFilled,

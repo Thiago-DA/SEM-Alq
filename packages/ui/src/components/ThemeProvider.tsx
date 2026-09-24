@@ -1,5 +1,13 @@
 'use client'
 
+/**
+ * ThemeProvider.tsx — tema de antd de RentAR (claro u oscuro) para previsualizar componentes fuera
+ * de la app.
+ *
+ * En `apps/web` el tema lo pone `app/layout.tsx`; este provider lo usan las previews de
+ * `/design-sync`.
+ * Quién lo usa: las previews de Claude Design (`/design-sync`).
+ */
 import type { ReactNode } from 'react'
 import { ConfigProvider } from 'antd'
 import { antdTheme, antdThemeDark } from '../theme'
