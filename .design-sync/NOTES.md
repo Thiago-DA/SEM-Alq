@@ -1,0 +1,264 @@
+# Notas de `/design-sync` — @rentar/ui
+
+## Fuente de verdad: este repo (desde 2026-09-23)
+
+El frontend de RentAR se mudó al repo del equipo (`SEM-Alq`, rama `feature/vistas` → `develop`).
+**Desde ahora, `/design-sync` se corre solo desde este repo.** El repo anterior
+(`LandingSeminario/versionCompleta`) queda como histórico: no se sincroniza más desde ahí, así
+no hay dos fuentes empujando versiones distintas de `@rentar/ui` al mismo proyecto de Claude Design.
+
+Cambios de `@rentar/ui` hechos en la migración, a tener en cuenta en el próximo sync:
+- `Header`/`Footer`: los botones y links apuntan a rutas reales (`/login`, `/buscar`,
+  `/panel/propiedades/nueva`); el link a `/design-system` solo aparece en desarrollo. Sin cambios
+  visuales.
+- `RoleSwitcher`: ahora es una pestaña plegable al borde izquierdo, con `role`/`onChange` opcionales
+  y el botón "Reiniciar datos de prueba" (`onResetMockData`).
+- `PropertyCard`: etiqueta para el tipo nuevo `monoambiente`.
+- `.ds-sync/` se copió sin `node_modules` y sigue en el `.gitignore` (se regenera en cada sync).
+
+Cambios de la tanda 2 (autenticación), **pendientes de subir** con `/design-sync` al final del
+Sprint 1 (con aprobación del PO), para que Claude Design quede alineado:
+- **Nuevo: `PasswordStrengthMeter`** (`components/forms/`): barra de 4 segmentos, etiqueta
+  "Fuerza: …" y checklist. Lo pedía "Autenticación" · 03 como componente nuevo. Solo muestra: el nivel
+  y los requisitos los calcula `apps/web`. Sin "Un símbolo": el back no acepta símbolos.
+- `UserMenu` ("Mi perfil y legajo" · 02): cabecera del menú desplegado (avatar con iniciales, nombre
+  y `subtitle`), contador opcional por ítem (`badgeCount`), separador antes de "Cerrar sesión" y,
+  debajo de 768px, hoja desde abajo en vez de dropdown. Props nuevas opcionales: la API anterior
+  sigue funcionando.
+- `AppShell`: `user.subtitle` opcional, que pasa al `UserMenu`.
+- `AuthLayout` ("Autenticación" · 02): debajo de 640px la tarjeta ocupa todo el ancho, sin sombra
+  ni borde. Solo CSS; la API no cambia.
+
+Cambios de la tanda 3 (búsqueda, US-34), también **pendientes de subir** al final del Sprint 1:
+- **Nuevo: `SearchSidebarFilters`** (`components/forms/`): la barra lateral de filtros de
+  "Búsqueda de propiedades" · 01 (ubicación con provincia, ciudad y barrios múltiples, precio,
+  tipología, dormitorios y ambientes de selección múltiple, superficie, características e índice) y,
+  con `variant="drawer"`, el contenido del Drawer móvil (· 03: tipología en pastillas y precio con
+  slider). Trabaja sobre un borrador y aplica con `onApply`. `data-testid` con prefijo
+  `search-sidebar-` o `search-drawer-` según la variante. Sin "Dúplex" (no existe en el sistema).
+  `SearchFilters` (la barra horizontal) no cambió.
+- `PropertyCard`: prop `layout="busqueda"` (componente interno `PropertyCardBusqueda`) con la
+  tarjeta de /buscar: precio en dorado "por mes", expensas, dirección aproximada, "barrio · título",
+  descripción en 2 líneas y disponibilidad (estas dos las pide US-34, no el diseño), chips y carrusel
+  si hay más de una foto. Link "estirado" para que las flechas del carrusel sean botones válidos.
+  `adjustmentIndex` acepta `null` (sin badge). La API anterior no cambió.
+
+Cambios de la tanda 4 (locador: /panel, US-02 y US-01), también **pendientes de subir** al final del
+Sprint 1. Todas las props son nuevas y opcionales: los usos anteriores no cambian.
+- `WizardLayout` ("Alta de propiedad" · 01, 06, 07 y 09): `status: 'error'` por paso (el Steps lo
+  marca en rojo), `navigableSteps` (volver a un paso anterior tocándolo; hacia adelante nunca),
+  `loading` (botones en carga y pasos bloqueados), `nextLabel`. Debajo de 768px el Steps se
+  reemplaza por nombre del paso + "Paso N de M" + barra de tramos + "Siguiente: X", y los botones
+  quedan fijos abajo a todo el ancho (en el último paso, solo el primario).
+- `DataTable` ("Listado de propiedades" · 02 y 03): `onRowClick` (la fila entera abre el detalle:
+  cursor, fondo #f4f7fa al pasar, Tab + Enter), `rowLabel` (texto accesible), `cardHeader` y
+  `cardActions` para la tarjeta móvil, y `hideInCard` por columna.
+- `UserMenu` ("Cambio de rol" · 04): sección **"Viendo como"** (`roleOptions` + `onRoleChange`):
+  una fila de 52px por rol, ✓ en el activo y contador rojo en el otro. **Reemplaza al ítem
+  "Cambiar a mi panel de…" de la tanda 2.** Apertura controlada opcional (`open`/`onOpenChange`).
+  En móvil el botón muestra solo el avatar.
+- `AppShell` ("Cambio de rol" · 04): barra móvil ☰ · `mobileTitle` · campanita · avatar; con
+  `activeRoleLabel` (dos roles), debajo de 768px un chip con el rol activo que abre la misma hoja que
+  el avatar. `mobileHeader` reemplaza la barra en flujos enfocados (el alta: "‹ Publicar propiedad ·
+  Salir"). Pasa `roleOptions`/`onRoleChange` al `UserMenu`.
+- `PropertyCard` / `PropertyCardBusqueda`: prop opcional `referenceDate?: Date` (el "hoy" contra el que
+  se decide "Disponible desde" o "Disponible ahora"; por defecto, la fecha actual). `apps/web` le
+  pasa su "hoy", fijo en modo mock.
+- Compuestos en `apps/web` (no en `@rentar/ui`, aprobado por el PO): la carga de fotos del alta, el
+  contador ±, las tarjetas de medios de pago e índice, las StatCards compactas del panel móvil y
+  las tarjetas del onboarding.
+- Lo que no se tomó de los templates (decisión del PO, anotado para no "corregirlo" en el próximo
+  sync): tipos Local y Cochera, el mapa del alta, la antigüedad por rangos, "Disponible" como estado,
+  amenities fuera del catálogo de 5, el banner de suscripción del panel y las personas y barrios del
+  export que no están en el elenco.
+
+## Re-sync del Sprint 1 desde SEM-Alq (2026-09-24)
+
+Primer re-sync desde este repo (camino atómico, anclado en el `_ds_sync.json` del proyecto).
+
+- **`buildCmd` cambió**: ahora es `npm run build --workspace=@rentar/shared-types && npm run build:types --workspace=@rentar/ui`.
+  En SEM-Alq, `packages/ui/tsconfig.json` resuelve `@rentar/shared-types` a su `src/` (así la app no
+  necesita compilarlo), y eso hacía fallar el build de declaraciones con TS6059 (archivos fuera de
+  `rootDir`). `build:types` usa `packages/ui/tsconfig.types.json`, que lee `shared-types` desde
+  `dist/`: por eso hay que compilar `shared-types` antes.
+- **Tres previews faltaban en este repo** (`FileDropzone`, `MoneyInput`, `WizardLayout`): el proyecto
+  las tenía (se subieron desde `feature/design-sync-setup` del repo anterior) pero no se habían
+  copiado. Sin ellas, esas fichas habrían perdido su preview. Se recuperaron de esa rama. **Si otro
+  `_preview/<Name>.js` del proyecto no tiene su `.tsx` en `previews/`, buscarlo ahí antes de subir.**
+- **Previews nuevas**: `PasswordStrengthMeter`, `SearchSidebarFilters` y `SearchFilters`. **Historias nuevas** con las
+  props del sprint: `WizardLayout` (`PasoConError`, `Publicando`), `DataTable` (`FilaClickeable`),
+  `UserMenu` (`ViendoComo`, con `open`) y `PropertyCard` (`Busqueda`, con `referenceDate` fija).
+- **Overrides nuevos** (por `[GRID_OVERFLOW]`): `PasswordStrengthMeter`, `SearchSidebarFilters` y
+  `WizardLayout` en `cardMode: "column"` (`SearchSidebarFilters` con `viewport: 900x1400` para que no
+  se recorte). `UserMenu` en `single` con `primaryStory: "ViendoComo"` y `viewport: 900x480`: con
+  menos de 768px de ancho el `UserMenu` se dibuja como hoja móvil, no como dropdown. En la preview, el
+  botón va arriba a la izquierda para que el dropdown se abra hacia abajo.
+- **Cambios de fin de línea**: los fuentes pasaron de CRLF a LF, y eso cambia el hash del `.prompt.md`
+  de casi todos los componentes aunque el texto sea idéntico (verificado con `DetailList`). Es ruido
+  esperable de una sola vez, no un cambio real.
+- **Known render warns** (triaged): `RoleSwitcher` se ve casi vacía (es una pestaña de 14px al borde,
+  así se ve de verdad). `SearchFilters` mostraba "undefined" en el select de dormitorios: no tenía
+  preview autorada y la floor card lo renderizaba con props vacías. Se autoró su preview (valores
+  reales, sin tocar el componente).
+- Resultado: 34 componentes, 0 floor cards, render check sin `bad`.
+- **Subido desde el commit `98bd25d4455e27991dbf2b9066e3bd4158bc4a69`** (`chore(ui): Preparar la subida de /design-sync del Sprint 1`; era
+  `7a26b94` antes del rebase sobre `origin/develop` — el rebase solo sumó cambios de `apps/api`, el
+  contenido de `packages/`, `.design-sync/` y `apps/web` es idéntico),
+  el 2026-09-24: 178 archivos escritos (136 de `components/`, 34 de `_preview/`, 2 de `_vendor/`, 4 de
+  la raíz, el aviso `_ds_needs_recompile` y `_ds_sync.json` al final), 0 borrados. No se tocó `templates/`.
+  Lo que está en Claude Design corresponde exactamente a ese commit.
+
+## Contexto de esta corrida (2026-09-22)
+
+Re-sync sobre `feature/fundaciones-app` (rama activa, ramificada de `develop`) contra el proyecto
+"RentAR Design System" (`projectId: 0f707fbd-bf3d-4fbc-a8f3-74c68d6e4cb7`), que ya tenía una
+sincronización previa de 24 componentes — hecha, aparentemente, desde `feature/design-sync-setup`
+(rama hermana, nunca mergeada a `develop`). No había `.design-sync/config.json` en este working
+tree; se reconstruyó desde cero en esta corrida.
+
+**Alcance de previews**: el usuario eligió el camino rápido — floor cards para los 32 componentes
+(igual que estaban los 24 originales, no es una regresión) + preview autoral solo para los 2 que
+renderizaban en blanco (`MoneyAmount`, `NotificationBell`). El resto queda como oferta permanente
+para autorar incrementalmente en cualquier sync futuro.
+
+## Decisiones de config (por qué quedaron así)
+
+- `pkg: "@rentar/ui"` — faltaba en el primer intento y el error del build (`required: --config
+  --node-modules --out`) no lo señala directamente; si vuelve a pasar, es casi siempre `cfg.pkg`
+  vacío, no un flag de CLI faltante.
+- `globalName: "RentarUI"` — fijado a mano. Sin esto, la auto-derivación desde `@rentar/ui` da
+  `RentarUi` (I minúscula), distinto del `window.RentarUI` que ya usan las 20 pantallas armadas en
+  `templates/*.dc.html` de este proyecto. **Si algún día se quita este override, revisar que las
+  plantillas existentes no queden rotas.**
+- `cssEntry: "src/design-sync-fonts.css"` — ver la sección de abajo, es el único slot de CSS extra
+  que admite el conversor (un solo archivo, sin resolver `@import` locales).
+- `provider: { component: "ThemeProvider" }` — sin esto, todo antd (Button, Select, Tag...) usa el
+  azul default de antd en vez del azul de marca. Restaurado en esta corrida (ver próxima sección).
+
+## `ThemeProvider` restaurado
+
+`packages/ui/src/components/ThemeProvider.tsx` no existía en `feature/fundaciones-app` — vivía
+solo en `feature/design-sync-setup` (commit `271dcca`), rama que nunca se mergeó a `develop`. Se
+recreó en esta corrida con el mismo contenido (wrapper de `ConfigProvider` + `antdTheme`/
+`antdThemeDark` + `antdLocale`), exportado desde `components/index.ts`, y cableado como
+`cfg.provider` para que las previews de Claude Design apliquen el tema de marca. **Si en algún
+futuro merge `develop` diverge de esto (por ejemplo, alguien borra `ThemeProvider` a propósito
+porque `apps/web` arma su propio `ConfigProvider` a mano y nunca lo usa), hay que decidir de nuevo
+si mantenerlo solo para este propósito.**
+
+## `design-sync-fonts.css` — riesgo de desincronización (leer antes del próximo sync)
+
+`cfg.cssEntry` solo admite **un** archivo, y el conversor lo copia tal cual (no resuelve
+`@import` locales — confirmado empíricamente: un `@import` relativo a otro archivo del paquete
+queda roto una vez servido desde `ds-bundle/`, tira `[CSS_IMPORT_MISSING]`). Por eso
+`packages/ui/src/design-sync-fonts.css` es la **concatenación** de:
+1. Un header fijo (`design-sync-fonts.css.header`, sí commiteado): el `@import` remoto de Google
+   Fonts para League Spartan + la regla `body { font-family: ... }` (necesaria porque acá no hay
+   `next/font` ni `globals.css` de `apps/web`).
+2. Una **copia pegada a mano** del contenido completo de `packages/ui/src/tokens/css-vars.css`.
+
+**Si `tokens/css-vars.css` cambia, hay que regenerar el archivo combinado antes del próximo
+`/design-sync`:**
+
+```bash
+cat packages/ui/src/design-sync-fonts.css.header packages/ui/src/tokens/css-vars.css \
+  > packages/ui/src/design-sync-fonts.css
+```
+
+Si este paso se olvida, el build igual funciona (no hay ningún check automático que lo detecte) —
+pero los tokens `--rentar-*` que vea Claude Design van a quedar desactualizados en silencio.
+
+## Fuente de la tipografía
+
+League Spartan se carga vía `@import` remoto a Google Fonts (no está self-hosteada en el bundle,
+a diferencia de `apps/web` que la sirve vía `next/font/google`). `[FONT_REMOTE]` en el validate es
+esperado y no bloquea — la familia carga en runtime desde el navegador de quien vea el diseño.
+
+## Known render warns (triaged, no perseguir en el próximo sync)
+
+`[RENDER_THIN]` en `StatCard`, `FormSection`, `AuthLayout` — floor cards legítimos (nunca se
+autoró una preview para estos tres), muestran solo el nombre del componente. No es una regresión.
+
+## Re-sync risks
+
+- **`design-sync-fonts.css` puede quedar desactualizado** si `tokens/css-vars.css` cambia y nadie
+  corre el `cat` de arriba — ver la sección dedicada.
+- **20 pantallas ya armadas en `templates/`** (los `.dc.html` del proyecto) dependen de
+  `window.RentarUI` con esa capitalización exacta y de que los 32 componentes existan con estos
+  nombres — no renombrar componentes ni cambiar `globalName` sin revisar esas plantillas primero.
+- **(Histórico, 2026-09-22; desde el 2026-09-24 hay 0 floor cards)** 11 componentes seguían en floor card (`ActivityTimeline`, `AppShell`, `ConfirmActionModal`,
+  `DataTable`, `EmptyState`, `NextBridgeProvider`, `PageHeader`, `PhotoGallery`,
+  `RoleContextSwitcher`, `RoleSwitcher`, `ThemeProvider`) + los 3 "thin" de abajo — están para
+  autorar cuando alguien tenga tiempo, no arrastran ningún problema urgente. `StatusTag` salió de
+  esta lista (autorado en el sync de 2026-09-22, ver la sección de componentes genéricos). `AppShell`
+  es floor card por una causa aparte al logo (crashea antes de llegar a renderizarlo, ver `firstErr`
+  en `.render-check.json` si hace falta debuggearlo) — no confundir con el bug del logo de abajo.
+- **`ThemeProvider` es de esta rama, no de `develop`** — si `feature/fundaciones-app` se mergea y
+  alguien decide después que `ThemeProvider` no debería vivir en `apps/web`/`packages/ui` en
+  producción (porque `apps/web/layout.tsx` arma su propio `ConfigProvider` a mano), avisar antes
+  de borrarlo: sigue haciendo falta acá, para `cfg.provider`.
+- **`docsDir` nunca se configuró** — los 32 `.prompt.md` se sintetizan solo desde `.d.ts` + JSDoc,
+  ninguno matchea un doc real (`docs: 0/32 components matched`). Si en algún momento se arma
+  documentación por componente, apuntar `cfg.docsDir`.
+- **`cfg.buildCmd` (`npm run build:types --workspace=@rentar/ui`) es ahora obligatorio antes de
+  cada sync** — ver la sección "Componentes genéricos" de abajo. Si se corre el converter sin
+  regenerar `packages/ui/dist-types/` primero (o si ese directorio se borra y nadie lo regenera),
+  el converter cae de vuelta al modo synth-desde-`src/`, que **silenciosamente vuelve a romper**
+  `StatusTag`/`DataTable` (genérico sin clase `<...>`, `D`/`T` sueltos en el `.d.ts` — ver abajo).
+  No hay ningún check automático que lo detecte; `resync.mjs` no corre `buildCmd` por vos, hay que
+  correrlo a mano antes.
+- **`cfg.dtsPropsFor.StatusTag`/`.DataTable` son uniones a mano, van a quedar desactualizadas
+  solas** — si se agrega un dominio/estado nuevo a `packages/shared-types/src/status.ts`, o un
+  campo nuevo a `DataTableColumn`, hay que actualizar el body de `dtsPropsFor` a mano (no hay forma
+  de que el extractor lo derive automáticamente — ver la sección de abajo). Buscar
+  `"StatusTag":` / `"DataTable":` en `.design-sync/config.json`.
+
+## Componentes genéricos (`StatusTag<D>`, `DataTable<T>`) — por qué necesitan `dtsPropsFor`
+
+Investigado a fondo en el sync de 2026-09-22 (pedido: "el card de StatusTag cae al fallback").
+Root cause real, dos capas:
+
+1. **Sin un `.d.ts` real compilado, el converter usa el modo synth-desde-`src/`** (porque
+   `package.json` de `@rentar/ui` tiene `"types": "src/index.ts"` — código fuente, no un build).
+   En synth mode, `propsBodyFor` (`.ds-sync/lib/dts.mjs`) nunca encuentra la interfaz `<Name>Props`
+   como declaración nombrada (el `Project` de ts-morph solo carga el barrel `src/index.ts`, no cada
+   `.tsx`) y cae a un fallback que **fuerza `generics: ''` sin importar si el componente es
+   genérico** — de ahí `export interface StatusTagProps { domain: D; ... }` con `D` suelto (ni
+   siquiera es el bug de "generic sin default" que sugería el pedido original — pasa igual con o
+   sin default).
+   **Fix**: se agregó `packages/ui/package.json#publishConfig.types` apuntando a
+   `dist-types/index.d.ts` (un build de solo-declaraciones, `npm run build:types`, sin tocar
+   `main`/`types` que sigue usando `apps/web`) + `cfg.buildCmd` en la config. `findTypesRoot`
+   prefiere `publishConfig.types` sobre `types` — con esto el converter encuentra la interfaz real
+   y SÍ preserva la cláusula `<D extends StatusDomain = StatusDomain>`.
+2. **Aún con un `.d.ts` real, un genérico cuyos miembros referencian un tipo nombrado de OTRO
+   paquete no queda resuelto** — `StatusDomainMap` (de `@rentar/shared-types`) nunca se importa en
+   el `.d.ts` aplanado que emite el converter (solo agrega `import * as React from 'react'`, nada
+   más), así que `status: StatusDomainMap[D]` queda como referencia colgante igual, aunque el
+   `<D...>` de la interfaz ahora sí esté. Esto parece ser una limitación real del converter con
+   genéricos + tipos externos, no algo resoluble solo con `publishConfig`.
+   **Fix**: `cfg.dtsPropsFor.StatusTag`/`.DataTable` — body a mano con la unión ya resuelta a texto
+   literal (mismo criterio que "types are fully resolved into body" que ya usa el converter para
+   props que SÍ son unions). Pierde la correlación real domain↔status (en el componente real,
+   `domain="propiedad"` limita `status` a `PropertyStatus`; en el `.d.ts` aplanado, `status` acepta
+   cualquier string de cualquier dominio) — degradación aceptada y documentada, igual que el resto
+   de "generics ... resolve to their structural shape" en los Known Limitations del skill.
+
+**Si aparece el mismo síntoma en otro componente genérico nuevo**: primero confirmar que
+`packages/ui/dist-types/` existe y está actualizado (`npm run build:types --workspace=@rentar/ui`)
+y que el `.d.ts` ahí SÍ tiene la cláusula `<...>` — si la tiene pero el converter igual la pierde,
+es la causa (2) y hace falta `dtsPropsFor`; si no la tiene ahí tampoco, revisar que
+`publishConfig.types` siga apuntando bien.
+
+## Logo roto en el bundle (`logo.src` undefined) — arreglado 2026-09-22
+
+`packages/ui/src/assets/logo-rentar.svg` se importaba directo (`import logo from
+'./logo-rentar.svg'`) y se leía como `logo.src`/`logo.width`/`logo.height` — funciona en Next
+(devuelve `StaticImageData`), pero el build de esbuild de `/design-sync` usa el loader `dataurl` y
+devuelve un string plano, así que `logo.src` quedaba `undefined` en 6 lugares (`AppShell` ×2,
+`AuthLayout`, `Header` ×2, `Footer`) y el `<img>` salía sin fuente en las cards. Se agregó
+`packages/ui/src/assets/logo.ts` (`LOGO.{src,width,height}`, normaliza los dos formatos — el
+fallback de tamaño, 202×113, sale del `viewBox` del SVG) y los 6 usos leen de ahí. Verificado con
+capturas del render check: el logo se ve bien en `Header`/`Footer`/`AuthLayout` (no son floor card,
+así que es el render real). Es el único asset importado así en el paquete — si se agrega uno
+nuevo con el mismo patrón (`import x from './algo.svg'` + `.src`), aplicar el mismo helper.

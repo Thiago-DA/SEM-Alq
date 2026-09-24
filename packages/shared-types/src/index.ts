@@ -225,3 +225,59 @@ export interface ApiResponse<T> {
   data?: T;
   error?: string | null;
 }
+
+// ─── Tipos de vista del front (apps/web + packages/ui) ───────────────────────
+// Archivos propios, uno por dominio. Qué es modelo del back y qué es tipo de
+// vista, y qué adaptador los conecta: ver packages/shared-types/README.md.
+export type {
+  PropertyType,
+  AdjustmentIndex,
+  CharacteristicKey,
+  CharacteristicOption,
+  MedioPagoPreferido,
+  MedioPagoConRecargo,
+  EstadoPago,
+  PropiedadResumen,
+  ProximoAjuste,
+  PropiedadLocador,
+  EstadoPublicacionAlta,
+  FotoNueva,
+  PropiedadNueva,
+} from './propiedad';
+export type { NeighborhoodTier, Neighborhood } from './neighborhood';
+export type {
+  BedroomsFilter,
+  FilterState,
+  BusquedaFiltros,
+  OrdenBusqueda,
+  Paginado,
+  MisPropiedadesFiltros,
+  EstadoFiltroMisPropiedades,
+  ReclamosFiltro,
+  OrdenMisPropiedades,
+  UbicacionOpciones,
+} from './filters';
+export type {
+  PropertyStatus,
+  ContractStatus,
+  SignatureStatus,
+  PaymentStatus,
+  ClaimStatus,
+  SubscriptionStatus,
+  SolicitudStatus,
+  UsuarioStatus,
+  FacturaStatus,
+  UserRole,
+  StatusDomain,
+  StatusDomainMap,
+} from './status';
+export type { UsuarioSesion } from './usuario-sesion';
+export type {
+  CobroPanel,
+  ResumenCobros,
+  ReclamoPanel,
+  ResumenReclamos,
+  EventoContratoPanel,
+  SolicitudPanel,
+  ResumenContextoRol,
+} from './panel';

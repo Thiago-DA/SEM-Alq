@@ -1,0 +1,85 @@
+# `apps/web` — frontend de RentAR
+
+Next.js 16 (App Router) + React 19 + Ant Design 6. Usa el design system `@rentar/ui` y los tipos de
+`@rentar/shared-types`.
+
+> Next.js 16 tiene cambios incompatibles con versiones anteriores (por ejemplo, `middleware.ts` pasó
+> a llamarse `proxy.ts`, y `searchParams` es una promesa). Antes de tocar código, leé `AGENTS.md`.
+
+## Cómo levantarlo
+
+Desde la raíz del monorepo:
+
+```bash
+npm install
+npm run dev:web      # http://localhost:3001
+```
+
+La API (`npm run dev:api`) usa el puerto 3000. Por defecto la web **no la necesita**: corre con datos
+de prueba. Para usar la API real, crear `apps/web/.env.local` a partir de `.env.example` con
+`NEXT_PUBLIC_USE_MOCKS=false` y reiniciar (ver `docs/HANDOFF-BACKEND.md` §3).
+
+Cuentas de prueba (contraseña `Rentar2026`):
+
+| Email | Roles | Para probar |
+|---|---|---|
+| `nicolas.arrieta@rentar.test` | locador | Panel con datos, Mis propiedades (7), alta |
+| `sofia.ledesma@rentar.test` | locador y locatario | Cambio de rol ("Viendo como") |
+| `julieta.peralta@rentar.test` | locatario | Login de locatario (va a `/buscar`) |
+
+Un locador recién registrado en `/registro` ve el panel vacío (onboarding). Lo creado se guarda en
+el navegador; el botón flotante de desarrollo "Reiniciar datos de prueba" lo borra.
+
+## Rutas
+
+| Ruta | Pantalla | US (Sprint 0) | Dónde está |
+|---|---|---|---|
+| `/` | Landing | — | `app/(public)/page.tsx` → `components/Landing.tsx` |
+| `/buscar` | Búsqueda de propiedades | US-34 | `app/(public)/buscar/` → `components/buscar/` |
+| `/login` | Iniciar sesión | US-39 | `app/(auth)/login/` → `components/auth/LoginForm.tsx` |
+| `/registro` | Registro en 2 pasos | US-19 | `app/(auth)/registro/` → `components/auth/RegistroForm.tsx` |
+| `/panel` | Inicio del locador (o placeholder del locatario) | sin US en Sprint 0 | `app/(app)/panel/page.tsx` → `components/panel/` |
+| `/panel/propiedades` | Mis propiedades | US-02 | `components/mis-propiedades/` |
+| `/panel/propiedades/nueva` | Alta de propiedad en 5 pasos | US-01 | `components/alta/` |
+| `/design-system` | Catálogo vivo de `@rentar/ui` (solo desarrollo) | — | `components/DesignSystem.tsx` |
+
+**Placeholders** ("En construcción", `components/PlaceholderScreen.tsx`): existen solo para que
+ningún botón del Sprint 1 quede roto. Se reemplazan ruta por ruta cuando llega su sprint.
+
+| Ruta | Llega desde | US |
+|---|---|---|
+| `/propiedad/[id]` | Tarjetas de `/buscar` y de la landing | sin US en Sprint 0 (mapa US-35) |
+| `/panel/propiedades/[id]` | Filas de Mis propiedades | US-03 / US-04 |
+| `/recuperar` | "¿Olvidaste tu contraseña?" del login | US-40 |
+| `/panel/solicitudes`, `/contratos`, `/cobros`, `/reclamos`, `/mensajes`, `/reportes`, `/suscripcion` | Menú del locador | US-36/37, US-05, US-08/09, US-14 a 18, US-24 a 26, US-28, US-30 a 33 |
+| `/panel/perfil`, `/panel/notificaciones` | UserMenu | US-20/21, US-22/23 |
+
+`proxy.ts` protege `/panel/*`: sin sesión manda a `/login?next=…` y, después del login, vuelve ahí
+(US-39). `/panel/propiedades/*` además exige el rol locador (`propiedades/layout.tsx`).
+
+## Estructura de `src/`
+
+| Carpeta | Qué hay |
+|---|---|
+| `app/` | Rutas. `(public)` con Header y Footer, `(auth)` con `AuthLayout`, `(app)/panel` con `AppShell`. |
+| `components/` | Pantallas y sus piezas, una carpeta por pantalla (`auth/`, `buscar/`, `panel/`, `mis-propiedades/`, `alta/`) más la landing. |
+| `services/` | **La única frontera con el backend.** Ver `services/README.md`. |
+| `lib/mocks/` | El elenco de datos de prueba. Solo lo usan los services. Ver su `README.md`. |
+| `lib/auth/` | Sesión: `AuthProvider`, cookie, redirección después del login. |
+| `lib/validation/` | Reglas de los formularios (`usuario.rules.ts`, `propiedad.rules.ts`), comentadas con el criterio de US que cubren. |
+| `lib/search/`, `lib/mis-propiedades/` | Filtros, orden y paginación (funciones puras) de `/buscar` y de Mis propiedades. |
+| `lib/catalogs/` | Textos fijos: barrios, características, tipos, índices, medios de pago. |
+| `lib/alta/borrador.ts` | Borrador local del alta (`rentar:mock:alta-borrador`). |
+| `lib/hooks/useServiceCall.ts` | Carga de un bloque de datos con sus estados (cargando, error, listo). |
+| `lib/utils/fechas.ts` | "Hoy" (fijo en 23/09/2026 en modo mock) y textos de días. |
+| `lib/navigation/navConfig.tsx` | Menú lateral del panel por rol. |
+| `proxy.ts` | Protección de `/panel/*`. |
+
+## Comandos del workspace
+
+```bash
+npm run dev --workspace=apps/web        # = npm run dev:web desde la raíz
+npm run build --workspace=apps/web
+npm run lint --workspace=apps/web
+npm run typecheck --workspace=apps/web  # genera los tipos de rutas y corre tsc
+```

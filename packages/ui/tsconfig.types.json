@@ -1,0 +1,18 @@
+// tsconfig SOLO para `npm run build:types` (el .d.ts que usa /design-sync, ver
+// .design-sync/NOTES.md). A diferencia de tsconfig.json, lee @rentar/shared-types
+// desde su dist/ compilado: si lee src/, tsc mete esos archivos en el build y
+// rompe con TS6059 (fuera de rootDir). La app no usa este archivo.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+    "declarationDir": "dist-types",
+    "rootDir": "src",
+    "types": ["node"],
+    "paths": {
+      "@rentar/shared-types": ["../shared-types/dist/index.d.ts"]
+    }
+  }
+}

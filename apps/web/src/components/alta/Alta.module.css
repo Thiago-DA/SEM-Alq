@@ -1,0 +1,799 @@
+/* Alta de propiedad (Claude Design, "Alta de propiedad" · 01-09). */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+}
+
+.wizardCard {
+  padding: 1.375rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.12);
+  border-radius: 1.25rem;
+  background: var(--rentar-color-bg-surface);
+}
+
+/* Clase doble: gana a los márgenes del Form de antd. */
+.form.form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.step {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ─── Grillas de campos ────────────────────────────────────────────── */
+
+.fieldNarrow {
+  max-width: 22rem;
+}
+
+.gridAddress {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 0 1rem;
+}
+
+.gridAuto,
+.gridCounters {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(10rem, 100%), 1fr));
+  gap: 0 1rem;
+}
+
+.gridCounters {
+  grid-template-columns: repeat(auto-fit, minmax(min(11.25rem, 100%), 1fr));
+}
+
+.gridTwo {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(15rem, 100%), 1fr));
+  gap: 0 1rem;
+}
+
+.gridAdjust {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 7fr);
+  gap: 0 1.25rem;
+}
+
+.fullWidth.fullWidth {
+  width: 100%;
+}
+
+/* El precio es lo único dorado de la pantalla (Alta · 04). */
+.moneyInput.moneyInput :global(.ant-input-number-input) {
+  font-weight: 700;
+  color: var(--rentar-color-money-ink);
+}
+
+.optional {
+  /* La etiqueta de antd es flex y se come el espacio entre el texto y "(opcional)". */
+  margin-left: 0.3em;
+  font-weight: 400;
+  color: var(--rentar-color-text-tertiary);
+}
+
+.noLabel {
+  margin-bottom: 0;
+}
+
+.infoNote {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 0.875rem;
+  border-radius: 0.875rem;
+  background: var(--rentar-color-sky-light);
+  font-size: 0.84375rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.linkButton {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--rentar-color-blue);
+  cursor: pointer;
+}
+
+/* ─── Contador ± ───────────────────────────────────────────────────── */
+
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 2.75rem;
+  padding: 0 0.375rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.2);
+  border-radius: 0.625rem;
+  background: var(--rentar-color-bg-surface);
+}
+
+.stepperDisabled {
+  background: var(--rentar-color-bg-page);
+}
+
+.stepperButton {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: none;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-sky-light);
+  color: var(--rentar-color-blue);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.stepperButton:disabled {
+  background: rgba(var(--rentar-color-ink-rgb), 0.06);
+  color: rgba(var(--rentar-color-ink-rgb), 0.3);
+  cursor: not-allowed;
+}
+
+.stepperValue {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+/* ─── Características como chips (Alta · 02) ───────────────────────── */
+
+.chips.chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+.chips.chips :global(.ant-checkbox-wrapper) {
+  display: inline-flex;
+  align-items: center;
+  height: 2.375rem;
+  margin: 0;
+  padding: 0 0.9375rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.2);
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-bg-surface);
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.chips.chips :global(.ant-checkbox-wrapper-checked) {
+  border: 2px solid var(--rentar-color-blue);
+  padding: 0 calc(0.9375rem - 1px);
+  background: var(--rentar-color-sky-light);
+  font-weight: 700;
+  color: var(--rentar-color-blue);
+}
+
+/* ─── Medios de pago (Alta · 04) ───────────────────────────────────── */
+
+.paymentList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.paymentCard {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 0.9375rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.18);
+  border-radius: 1rem;
+}
+
+.paymentCardOn {
+  border: 2px solid var(--rentar-color-blue);
+  padding: calc(0.875rem - 1px) calc(0.9375rem - 1px);
+  background: color-mix(in srgb, var(--rentar-color-sky-light) 40%, var(--rentar-color-bg-surface));
+}
+
+.paymentCheck.paymentCheck {
+  flex: 1 1 16rem;
+  align-items: flex-start;
+}
+
+.paymentText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+}
+
+.paymentTitle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.96875rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.paymentHelp {
+  font-size: 0.84375rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.simulatedBadge {
+  display: inline-flex;
+  align-items: center;
+  height: 1.3125rem;
+  padding: 0 0.5625rem;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-sky-light);
+  color: var(--rentar-color-blue);
+  font-size: 0.71875rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.surcharge {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+}
+
+.surchargeLabel {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--rentar-color-text-secondary);
+}
+
+.surchargeInput.surchargeInput {
+  width: 8.125rem;
+}
+
+.paymentOff {
+  font-size: 0.84375rem;
+  font-weight: 600;
+  color: var(--rentar-color-neutral);
+}
+
+/* ─── Índice (Alta · 04) ───────────────────────────────────────────── */
+
+.indexField {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.625rem;
+}
+
+.indexGroup.indexGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+}
+
+.indexCard.indexCard {
+  display: flex;
+  align-items: flex-start;
+  margin: 0;
+  padding: 0.875rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.18);
+  border-radius: 1rem;
+  background: var(--rentar-color-bg-surface);
+}
+
+.indexCardOn.indexCardOn {
+  border: 2px solid var(--rentar-color-blue);
+  padding: calc(0.875rem - 1px);
+  background: var(--rentar-color-sky-light);
+}
+
+.indexText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.indexTitle {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.indexHelp {
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+/* ─── Fotos (Alta · 03) ────────────────────────────────────────────── */
+
+.photos {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.dropzone.dropzone :global(.ant-upload-drag) {
+  border-radius: 0.875rem;
+  background: var(--rentar-color-sky-light);
+  border-color: rgba(var(--rentar-color-blue-rgb), 0.35);
+}
+
+.dropzoneInner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4375rem;
+  padding: 0.75rem;
+}
+
+.dropzoneIcon {
+  font-size: 1.5rem;
+  color: var(--rentar-color-blue);
+}
+
+.dropzoneTitle {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--rentar-color-blue);
+}
+
+.dropzoneHint {
+  font-size: 0.8125rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.rejectList {
+  margin: 0;
+  padding-left: 1.125rem;
+}
+
+.photosHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.625rem;
+}
+
+.photosCount {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.photosMissing {
+  color: var(--rentar-color-error);
+}
+
+.photosHelp {
+  font-size: 0.8125rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.photoGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(11.25rem, 100%), 1fr));
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.photoCard {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.15);
+  border-radius: 0.875rem;
+  background: var(--rentar-color-bg-surface);
+}
+
+.photoCardMain {
+  border: 2px solid var(--rentar-color-blue);
+}
+
+.photoImage {
+  display: block;
+  width: 100%;
+  height: 7.375rem;
+  object-fit: cover;
+}
+
+.photoBar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.5rem 0.625rem;
+}
+
+.photoCardMain .photoBar {
+  background: var(--rentar-color-sky-light);
+}
+
+.coverBadge {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  height: 1.5rem;
+  padding: 0 0.5625rem;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-blue);
+  color: var(--rentar-color-bg-surface);
+  font-size: 0.71875rem;
+  font-weight: 700;
+}
+
+.coverButton.coverButton {
+  align-self: flex-start;
+  border-color: rgba(var(--rentar-color-blue-rgb), 0.3);
+  border-radius: var(--rentar-radius-pill);
+  color: var(--rentar-color-blue);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.photoTools {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ─── Revisión (Alta · 05) ─────────────────────────────────────────── */
+
+.review {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(20rem, 100%), 1fr));
+  gap: 1.125rem;
+  align-items: start;
+}
+
+.reviewColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  min-width: 0;
+}
+
+.summaryCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 1rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.12);
+  border-radius: 1rem;
+}
+
+.summaryHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.summaryTitle {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.summaryPhotos {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.summaryPhoto {
+  width: 100%;
+  height: 3.625rem;
+  border-radius: 0.625rem;
+  object-fit: cover;
+}
+
+.summaryPhotoMain {
+  outline: 2px solid var(--rentar-color-blue);
+  outline-offset: -2px;
+}
+
+.summaryPhotoMore {
+  display: grid;
+  place-items: center;
+  height: 3.625rem;
+  border-radius: 0.625rem;
+  background: var(--rentar-color-bg-page);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-tertiary);
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.1);
+  border-radius: 1rem;
+  background: var(--rentar-color-bg-page);
+}
+
+.previewTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.previewText {
+  font-size: 0.8125rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.previewCard {
+  max-width: 24rem;
+}
+
+.beforeNotes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6875rem;
+  padding: 1rem;
+  border: 1px solid rgba(var(--rentar-color-blue-rgb), 0.2);
+  border-radius: 1rem;
+  background: var(--rentar-color-sky-light);
+}
+
+.beforeTitle {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.beforeList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4375rem;
+  margin: 0;
+  padding-left: 1.125rem;
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+/* ─── Validaciones, carga y error (Alta · 06 y 07) ─────────────────── */
+
+.errorSummary {
+  display: flex;
+  gap: 0.6875rem;
+  padding: 0.8125rem;
+  border: 1px solid color-mix(in srgb, var(--rentar-color-error) 28%, transparent);
+  border-radius: 0.875rem;
+  background: var(--rentar-status-error-bg);
+}
+
+.errorSummaryIcon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-error);
+  color: var(--rentar-color-bg-surface);
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.errorSummaryBody {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+
+.errorSummaryTitle {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.errorSummaryList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  margin: 0;
+  padding-left: 1.125rem;
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.errorSummaryLink {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: 700;
+  color: var(--rentar-color-blue);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.publishing {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.125rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.12);
+  border-radius: 1rem;
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.spinner {
+  width: 1.125rem;
+  height: 1.125rem;
+  border: 3px solid var(--rentar-color-sky);
+  border-top-color: var(--rentar-color-blue);
+  border-radius: var(--rentar-radius-pill);
+  animation: girar 0.8s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spinner {
+    animation: none;
+  }
+}
+
+.publishError {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--rentar-color-error) 28%, transparent);
+  border-radius: 1rem;
+  background: var(--rentar-status-error-bg);
+}
+
+.publishErrorTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.publishErrorText {
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.publishErrorActions {
+  display: flex;
+  gap: 0.5625rem;
+}
+
+/* ─── Aviso de borrador local ──────────────────────────────────────── */
+
+.draftNotice {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.875rem 1rem;
+  border: 1px solid rgba(var(--rentar-color-blue-rgb), 0.25);
+  border-radius: 1rem;
+  background: var(--rentar-color-sky-light);
+}
+
+.draftText {
+  font-size: 0.9375rem;
+  color: var(--rentar-color-text-primary);
+}
+
+.draftActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ─── Éxito (Alta · 08) ────────────────────────────────────────────── */
+
+.result.result {
+  padding: 2.125rem 1rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.12);
+  border-radius: 1.25rem;
+  background: var(--rentar-color-bg-surface);
+}
+
+.resultIcon {
+  display: inline-grid;
+  place-items: center;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-sky-light);
+  color: var(--rentar-color-blue);
+  font-size: 2.125rem;
+  font-weight: 800;
+}
+
+.resultBody {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.125rem;
+}
+
+.resultActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.625rem;
+}
+
+.nextBox {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  max-width: 36rem;
+  padding: 0.875rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.1);
+  border-radius: 0.875rem;
+  background: var(--rentar-color-bg-page);
+  text-align: left;
+}
+
+.nextTitle {
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.nextText {
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+/* ─── Móvil (Alta · 09) ────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  /* La barra "‹ Publicar propiedad · Salir" y "Paso N de 5" reemplazan al encabezado. */
+  .pageHeader {
+    display: none;
+  }
+
+  .wizardCard {
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
+  .gridAddress {
+    grid-template-columns: 2fr 1fr;
+  }
+
+  .gridAddress > :last-child {
+    grid-column: 1 / -1;
+  }
+
+  .gridAdjust {
+    grid-template-columns: 1fr;
+  }
+
+  .gridCounters,
+  .gridAuto {
+    grid-template-columns: 1fr 1fr;
+  }
+}

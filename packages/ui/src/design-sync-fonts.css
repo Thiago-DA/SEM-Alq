@@ -1,0 +1,199 @@
+/*
+ * Solo para el bundle de /design-sync — la app real (apps/web) carga
+ * League Spartan con `next/font/google`, que la self-hostea en el build de
+ * Next.js y no queda accesible desde acá. Las previews que arma Claude
+ * Design no pasan por ese build, así que cargan la misma tipografía desde
+ * Google Fonts en runtime.
+ */
+@import url('https://fonts.googleapis.com/css2?family=League+Spartan:wght@400;500;600;700;800&display=swap');
+
+/*
+ * apps/web pone `font-family` en `body` vía globals.css (con la variable de
+ * next/font). Acá no hay globals.css ni next/font, así que sin esta regla
+ * cualquier elemento propio que no pase por un token de antd cae al serif
+ * por default del navegador.
+ */
+body {
+  font-family: 'League Spartan', system-ui, sans-serif;
+}
+
+/*
+ * NOTA (mantenimiento): lo que sigue es una COPIA del contenido de
+ * tokens/css-vars.css, pegada acá a mano — no una referencia local al
+ * archivo original. El conversor de /design-sync copia este archivo tal
+ * cual (sin pasarlo por un bundler que resuelva rutas relativas), así que
+ * una referencia local a otro archivo del paquete queda rota una vez
+ * servido desde ds-bundle/ (la estructura de carpetas ahí es otra).
+ * Si tokens/css-vars.css cambia, hay que regenerar este archivo antes del
+ * próximo /design-sync concatenando este header con el contenido actual
+ * de ese archivo (ver .design-sync/NOTES.md para el comando exacto).
+ */
+/*
+ * Variables CSS propias de RentAR (`--rentar-*`), consumidas por los
+ * `.module.css` de componentes (tanto de la landing como los nuevos de
+ * packages/ui). Se importa una vez desde apps/web/src/app/layout.tsx.
+ *
+ * Por qué no usar directamente las `var(--ant-*)` que genera `cssVar: true`
+ * en theme.ts: antd v6 las declara por instancia de componente (cada nodo
+ * raíz de un componente de antd renderizado lleva su propia clase con esas
+ * variables), no en `:root` ni en un wrapper único — así que solo están
+ * disponibles dentro del árbol DOM de un componente de antd. Elementos
+ * propios que no cuelgan de un componente de antd (secciones, headers,
+ * wrappers de layout) no las heredan. Estas variables sí viven en `:root`,
+ * por eso son la forma confiable de tokenizar CSS propio en cualquier lugar
+ * del árbol. `cssVar` en theme.ts se mantiene igual: sigue siendo lo que
+ * themea los componentes de antd (Button, Card, Input, etc.) y lo que hace
+ * que /design-system pueda cambiar de tema sin recalcular todo el CSS-in-JS.
+ *
+ * Modo oscuro: overrides bajo `[data-rentar-theme="dark"]`, aplicado solo
+ * al wrapper de /design-system — la landing pública nunca setea ese
+ * atributo, así que siempre ve los valores de :root (light).
+ */
+:root {
+  /* Colores semánticos */
+  --rentar-color-bg-page: #f7f9fb;
+  --rentar-color-bg-surface: #ffffff;
+  --rentar-color-bg-surface-alt: #e3f2fb;
+  --rentar-color-text-primary: #12202e;
+  --rentar-color-text-secondary: rgba(18, 32, 46, 0.7);
+  --rentar-color-text-tertiary: rgba(18, 32, 46, 0.6);
+  --rentar-color-border-hairline: rgba(18, 32, 46, 0.1);
+  --rentar-color-success: #166534;
+  --rentar-color-warning: #92400e;
+  --rentar-color-error: #9f1239;
+  --rentar-color-info: #004d98;
+  --rentar-color-neutral: rgba(18, 32, 46, 0.5);
+  --rentar-color-money: #d7b15d;
+  --rentar-color-money-ink: #8c6b1d;
+
+  /*
+   * Superficies de estado — el fondo/tinta/borde que usa `StatusTag` para
+   * cada `colorKey`. Antes `StatusTag` delegaba en los presets de `Tag` de
+   * antd (`success`/`warning`/`processing`/...), que antd deriva de
+   * `colorSuccess`/`colorWarning`/etc. — acá esos tokens son tintas oscuras
+   * pensadas para texto (`--rentar-color-success`, no una semilla de
+   * paleta), así que el preset generaba un fondo pastel lavado con texto de
+   * bajo contraste. Estos tres valores por clave están calculados a mano
+   * para cumplir ≥4.5:1 texto/fondo (el borde es decorativo, no crítico
+   * para contraste). `ink` reusa el token semántico existente donde ya
+   * alcanza el contraste — no se duplica el color, solo se define su fondo
+   * y borde a juego.
+   */
+  --rentar-status-success-bg: #e6f4ea;
+  --rentar-status-success-ink: var(--rentar-color-success);
+  --rentar-status-success-border: #408258;
+  --rentar-status-warning-bg: #fff6e6;
+  --rentar-status-warning-ink: var(--rentar-color-warning);
+  --rentar-status-warning-border: #a86439;
+  --rentar-status-error-bg: #fdecec;
+  --rentar-status-error-ink: var(--rentar-color-error);
+  --rentar-status-error-border: #b23e5d;
+  --rentar-status-info-bg: #e3f2fb;
+  --rentar-status-info-ink: var(--rentar-color-info);
+  --rentar-status-info-border: #2d6eac;
+  --rentar-status-neutral-bg: #f1f2f2;
+  --rentar-status-neutral-ink: #434e59;
+  --rentar-status-neutral-border: #6f777f;
+  --rentar-status-money-bg: #fcf8e6;
+  --rentar-status-money-ink: var(--rentar-color-money-ink);
+  --rentar-status-money-border: #a28745;
+
+  /* Marca "cruda" — cuando hace falta el hue base, no el rol semántico */
+  --rentar-color-blue: #004d98;
+  --rentar-color-blue-dark: #003b74;
+  --rentar-color-sky: #a0d1ef;
+  --rentar-color-sky-light: #e3f2fb;
+
+  /*
+   * Tripletas RGB (sin rgb()/rgba() alrededor) para componer opacidades
+   * puntuales que no forman parte de la escala semántica de texto/borde
+   * (ej. `rgba(var(--rentar-color-ink-rgb), 0.055)`). El color en sí queda
+   * tokenizado; el número de opacidad es un valor de diseño legítimo, no
+   * un color hardcodeado.
+   */
+  --rentar-color-ink-rgb: 18, 32, 46;
+  --rentar-color-blue-rgb: 0, 77, 152;
+  --rentar-color-gold-rgb: 215, 177, 93;
+  --rentar-color-sky-rgb: 227, 242, 251;
+  --rentar-color-paper-rgb: 247, 249, 251;
+
+  /* Radios */
+  --rentar-radius-pill: 9999px;
+  --rentar-radius-sm: 8px;
+  --rentar-radius-md: 12px;
+  --rentar-radius-lg: 16px;
+  --rentar-radius-xl: 24px;
+
+  /* Espaciado */
+  --rentar-spacing-xs: 0.5rem;
+  --rentar-spacing-sm: 1rem;
+  --rentar-spacing-md: 1.5rem;
+  --rentar-spacing-lg: 2.5rem;
+  --rentar-spacing-xl: 4rem;
+
+  /* Sombras con nombre */
+  --rentar-shadow-resting: 0 1px 2px 0 rgba(18, 32, 46, 0.05), 0 1px 3px 0 rgba(18, 32, 46, 0.06);
+  --rentar-shadow-lifted: 0 10px 15px -3px rgba(18, 32, 46, 0.1), 0 4px 6px -4px rgba(18, 32, 46, 0.1);
+  --rentar-shadow-button: 0 10px 25px -5px rgba(0, 77, 152, 0.35);
+  --rentar-shadow-deep: 0 25px 50px -12px rgba(0, 77, 152, 0.2);
+  --rentar-shadow-form: 0 20px 25px -5px rgba(0, 77, 152, 0.1);
+
+  /* z-index con nombre */
+  --rentar-z-sticky: 50; /* @kind other */
+  --rentar-z-sticky-secondary: 40; /* @kind other */
+  --rentar-z-decorative: 10; /* @kind other */
+}
+
+[data-rentar-theme='dark'] {
+  --rentar-color-bg-page: #0b1420;
+  --rentar-color-bg-surface: #12202e;
+  --rentar-color-bg-surface-alt: #16283a;
+  --rentar-color-text-primary: #f7f9fb;
+  --rentar-color-text-secondary: rgba(247, 249, 251, 0.72);
+  --rentar-color-text-tertiary: rgba(247, 249, 251, 0.58);
+  --rentar-color-border-hairline: rgba(247, 249, 251, 0.12);
+  --rentar-color-success: #4ade80;
+  --rentar-color-warning: #fbbf24;
+  --rentar-color-error: #fb7185;
+  --rentar-color-info: #1b65a6;
+  --rentar-color-neutral: rgba(247, 249, 251, 0.5);
+  /* --rentar-color-money y money-ink no cambian: el dorado se mantiene igual en dark. */
+
+  /*
+   * Superficies de estado en dark — mismo fondo/tinta/borde tintados que en
+   * light, pero invertidos (fondo oscuro, tinta clara). `success`/`warning`/
+   * `error` reusan el token semántico existente porque ya está bien resuelto
+   * para dark (`--rentar-color-success` etc. ya son las variantes claras).
+   * `info` y `money` NO reusan `--rentar-color-info`/`--rentar-color-money-ink`
+   * acá: esos dos siguen siendo tintas oscuras en este scope (pensadas para
+   * texto sobre fondo claro, `--rentar-color-info` es el `colorInfo` que usa
+   * antd), y sobre un fondo de chip oscuro dan ~2.7:1 y ~3:1 — por debajo del
+   * mínimo. En su lugar se reusa el hue "crudo" de marca, que sí se mantiene
+   * claro en ambos temas: `--rentar-color-sky` para info, `--rentar-color-money`
+   * (el dorado en sí, no `money-ink`) para money.
+   */
+  --rentar-status-success-bg: #1b3324;
+  --rentar-status-success-ink: var(--rentar-color-success);
+  --rentar-status-success-border: #3aa260;
+  --rentar-status-warning-bg: #3a2c0f;
+  --rentar-status-warning-ink: var(--rentar-color-warning);
+  --rentar-status-warning-border: #b78c1d;
+  --rentar-status-error-bg: #3a1620;
+  --rentar-status-error-ink: var(--rentar-color-error);
+  --rentar-status-error-border: #b75162;
+  --rentar-status-info-bg: #16283a;
+  --rentar-status-info-ink: var(--rentar-color-sky);
+  --rentar-status-info-border: #7096b0;
+  --rentar-status-neutral-bg: #293643;
+  --rentar-status-neutral-ink: #d5d8dc;
+  --rentar-status-neutral-border: #90979f;
+  --rentar-status-money-bg: #2e2712;
+  --rentar-status-money-ink: var(--rentar-color-money);
+  --rentar-status-money-border: #9c8143;
+
+  /* Mismo RGB que --rentar-color-bg-page en dark (#0B1420) — lo usan los
+     headers translúcidos/sticky (Header, topbar de /design-system). Sin
+     este override quedaban con el fondo "paper" claro aunque el resto de
+     la página ya estuviera en modo oscuro. */
+  --rentar-color-paper-rgb: 11, 20, 32;
+}

@@ -1,0 +1,109 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+.content {
+  min-height: 12rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-top: 1px solid var(--rentar-color-border-hairline);
+  padding-top: 1.5rem;
+}
+
+/* ─── Cabecera compacta (móvil, Alta de propiedad · 09) ─────────────── */
+
+.compact {
+  display: none;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem 1rem;
+  border-radius: var(--rentar-radius-md);
+  background: var(--rentar-color-bg-page);
+}
+
+.compactTitleRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.compactTitle {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.compactCount {
+  flex: none;
+  font-size: 0.8125rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.progress {
+  display: grid;
+  grid-auto-columns: 1fr;
+  grid-auto-flow: column;
+  gap: 0.3125rem;
+}
+
+.progressSegment {
+  height: 0.3125rem;
+  border-radius: var(--rentar-radius-pill);
+  background: rgba(var(--rentar-color-ink-rgb), 0.12);
+}
+
+.progressDone {
+  background: var(--rentar-color-blue);
+}
+
+.progressError {
+  background: var(--rentar-color-error);
+}
+
+.compactNext {
+  font-size: 0.75rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+@media (max-width: 767px) {
+  .wrap {
+    gap: 1rem;
+  }
+
+  /* Clase doble: le gana al `display` que pone antd en `.ant-steps`. */
+  .steps.steps {
+    display: none;
+  }
+
+  .compact {
+    display: flex;
+  }
+
+  /* Botones fijos abajo, a todo el ancho y de 48px (Alta · 09). */
+  .actions {
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding: 0.75rem 0;
+    background: var(--rentar-color-bg-surface);
+    box-shadow: 0 -1px 0 var(--rentar-color-border-hairline);
+    border-top: none;
+  }
+
+  .actions > :global(.ant-btn) {
+    flex: 1;
+    height: 3rem;
+  }
+
+  /* En el último paso solo queda el primario ("Publicar la propiedad"). */
+  .actionsLast .prevButton {
+    display: none;
+  }
+}

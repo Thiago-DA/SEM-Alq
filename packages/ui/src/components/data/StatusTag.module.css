@@ -1,0 +1,42 @@
+/*
+ * Un par fondo/tinta/borde por `colorKey`, leído de los tokens
+ * `--rentar-status-*` (ver css-vars.css). `:global(.ant-tag)` combinado con
+ * la clase propia sube la especificidad por encima de los estilos base de
+ * antd sin depender del orden de inserción del `<style>` de cssVar.
+ */
+
+:global(.ant-tag).success {
+  background: var(--rentar-status-success-bg);
+  color: var(--rentar-status-success-ink);
+  border-color: var(--rentar-status-success-border);
+}
+
+:global(.ant-tag).warning {
+  background: var(--rentar-status-warning-bg);
+  color: var(--rentar-status-warning-ink);
+  border-color: var(--rentar-status-warning-border);
+}
+
+:global(.ant-tag).error {
+  background: var(--rentar-status-error-bg);
+  color: var(--rentar-status-error-ink);
+  border-color: var(--rentar-status-error-border);
+}
+
+:global(.ant-tag).info {
+  background: var(--rentar-status-info-bg);
+  color: var(--rentar-status-info-ink);
+  border-color: var(--rentar-status-info-border);
+}
+
+:global(.ant-tag).neutral {
+  background: var(--rentar-status-neutral-bg);
+  color: var(--rentar-status-neutral-ink);
+  border-color: var(--rentar-status-neutral-border);
+}
+
+:global(.ant-tag).money {
+  background: var(--rentar-status-money-bg);
+  color: var(--rentar-status-money-ink);
+  border-color: var(--rentar-status-money-border);
+}

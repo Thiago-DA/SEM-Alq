@@ -95,3 +95,28 @@ tools/gotestsum.exe.hash
 !packages/typescript/vendor/**/*.txt
 !tsc/testdata/submoduleAccepted.txt
 !tsc/testdata/submoduleTriaged.txt
+
+# ─── Frontend (apps/web + packages/ui) ────────────────────────────────
+# `/.next/` de arriba solo cubre la raíz: Next genera `.next/` dentro de
+# apps/web, así que hace falta el patrón sin ancla.
+.next/
+next-env.d.ts
+# Logs y capturas de la skill playwright-cli.
+.playwright-cli/
+# .d.ts de @rentar/ui: se regeneran con `npm run build:types --workspace=@rentar/ui`
+# (los usa solo /design-sync, apps/web consume src/ directo).
+packages/ui/dist-types/
+
+# design-sync: scripts/deps escenificados y build regenerado — se
+# reproducen desde .design-sync/config.json en cada sync (ver
+# .design-sync/NOTES.md). El set durable (config.json, NOTES.md,
+# conventions.md, previews/) SÍ se commitea.
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+
+# Exports de Claude Design descargados en modo lectura, para implementar
+# cada tanda. La fuente de verdad sigue siendo el proyecto de Claude Design.
+.design-exports/

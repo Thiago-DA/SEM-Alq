@@ -1,0 +1,24 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.section + .section {
+  margin-top: 2rem;
+  padding-top: 2rem;
+  border-top: 1px solid var(--rentar-color-border-hairline);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--rentar-color-text-primary);
+}
+
+.description {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-secondary);
+}

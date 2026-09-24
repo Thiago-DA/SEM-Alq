@@ -1,0 +1,64 @@
+.trigger {
+  display: grid;
+  place-items: center;
+  height: 2.25rem;
+  width: 2.25rem;
+  border-radius: var(--rentar-radius-pill);
+  border: none;
+  background: transparent;
+  color: var(--rentar-color-text-primary);
+  font-size: 1.125rem;
+  cursor: pointer;
+}
+
+.trigger:hover {
+  background: var(--rentar-color-sky-light);
+}
+
+.panel {
+  width: 20rem;
+  max-height: 24rem;
+  overflow-y: auto;
+  border-radius: var(--rentar-radius-md);
+  background: var(--rentar-color-bg-surface);
+  box-shadow: var(--rentar-shadow-lifted);
+  padding: 0.5rem;
+}
+
+.item {
+  display: block;
+  width: 100%;
+  border: none;
+  background: none;
+  text-align: left;
+  border-radius: var(--rentar-radius-sm);
+  padding: 0.625rem 0.75rem;
+  cursor: pointer;
+}
+
+.item:hover {
+  background: var(--rentar-color-sky-light);
+}
+
+.itemUnread {
+  font-weight: 600;
+}
+
+.itemTitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-primary);
+}
+
+.itemDate {
+  margin: 0.125rem 0 0;
+  font-size: 0.75rem;
+  color: var(--rentar-color-text-tertiary);
+}
+
+.empty {
+  padding: 1.5rem;
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--rentar-color-text-tertiary);
+}

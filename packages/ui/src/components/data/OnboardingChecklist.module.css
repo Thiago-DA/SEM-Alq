@@ -1,0 +1,101 @@
+.wrap {
+  background: var(--rentar-color-bg-surface);
+  border-radius: var(--rentar-radius-lg);
+  box-shadow: var(--rentar-shadow-resting);
+  padding: var(--rentar-spacing-md);
+}
+
+.header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--rentar-spacing-sm);
+}
+
+.title {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.counter {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--rentar-color-text-tertiary);
+}
+
+.list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.item {
+  border-top: 1px solid var(--rentar-color-border-hairline);
+}
+
+.item:first-child {
+  border-top: none;
+}
+
+.itemLink,
+.itemStatic {
+  display: flex;
+  align-items: center;
+  gap: var(--rentar-spacing-xs);
+  padding: 0.75rem 0.25rem;
+  color: inherit;
+  text-decoration: none;
+}
+
+.itemLink {
+  cursor: pointer;
+}
+
+.itemLink:hover {
+  background: var(--rentar-color-sky-light);
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 1.5rem;
+  height: 1.5rem;
+}
+
+.iconListo {
+  color: var(--rentar-color-success);
+}
+
+.iconBloqueado {
+  color: var(--rentar-color-neutral);
+}
+
+.iconActivo {
+  display: block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: var(--rentar-radius-pill);
+  border: 2px solid var(--rentar-color-blue);
+}
+
+.label {
+  flex: 1;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--rentar-color-text-primary);
+}
+
+.item_bloqueado .label {
+  color: var(--rentar-color-text-tertiary);
+  font-weight: 500;
+}
+
+.motivo {
+  font-size: 0.75rem;
+  color: var(--rentar-color-text-tertiary);
+}

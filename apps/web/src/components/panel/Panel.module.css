@@ -1,0 +1,461 @@
+/* Panel de inicio del locador (Claude Design, "Panel de inicio" · 01-03). */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ─── Saludo y acciones ────────────────────────────────────────────── */
+
+.top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.greeting {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+  min-width: 0;
+}
+
+.greetingTitle {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+  line-height: 1.15;
+  color: var(--rentar-color-text-primary);
+}
+
+.greetingText {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+.mobileOnly.mobileOnly {
+  display: none;
+}
+
+/* ─── StatCards ────────────────────────────────────────────────────── */
+
+.statsDesktop {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+
+.statsRow3,
+.statsRow2 {
+  display: grid;
+  gap: 0.875rem;
+}
+
+.statsRow3 {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.statsRow2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+/* Los vencidos se cuentan en pesos pero van en rojo de estado, no en dorado (· 01). */
+.overdueValue {
+  color: var(--rentar-color-error);
+}
+
+/* `!important`: antd le pone el tamaño inline al nodo del Skeleton (igual que en /buscar). */
+.skeletonStat,
+.skeletonStat :global(.ant-skeleton-node) {
+  width: 100% !important;
+  height: 7rem !important;
+  border-radius: var(--rentar-radius-lg);
+}
+
+.statsMobile {
+  display: none;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+}
+
+.miniStat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.75rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.12);
+  border-radius: 0.875rem;
+  background: var(--rentar-color-bg-surface);
+}
+
+.miniStatGold {
+  border-color: color-mix(in srgb, var(--rentar-color-money-ink) 30%, transparent);
+}
+
+.miniStatRed {
+  border-color: color-mix(in srgb, var(--rentar-color-error) 28%, transparent);
+}
+
+.miniStatLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--rentar-color-text-tertiary);
+}
+
+.miniStatValue {
+  font-size: 1.25rem;
+  font-weight: 800;
+  line-height: 1.2;
+  color: var(--rentar-color-text-primary);
+  overflow-wrap: anywhere;
+}
+
+.miniStatGold .miniStatValue {
+  color: var(--rentar-color-money-ink);
+}
+
+.miniStatRed .miniStatValue {
+  color: var(--rentar-color-error);
+}
+
+/* `!important`: antd le pone el tamaño inline al nodo del Skeleton (igual que en /buscar). */
+.skeletonMiniStat,
+.skeletonMiniStat :global(.ant-skeleton-node) {
+  width: 100% !important;
+  height: 5.5rem !important;
+  border-radius: 0.875rem;
+}
+
+/* ─── Bloques ──────────────────────────────────────────────────────── */
+
+.blocksGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(21.25rem, 100%), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+  min-width: 0;
+  padding: 1.125rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.12);
+  border-radius: 1.125rem;
+  background: var(--rentar-color-bg-surface);
+}
+
+.blockHeader {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.625rem;
+}
+
+.blockTitle {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.blockLink {
+  flex: none;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--rentar-color-blue);
+}
+
+.blockEmpty {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.8125rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.12);
+  border-radius: 0.875rem;
+}
+
+.rowOverdue {
+  border-color: color-mix(in srgb, var(--rentar-color-error) 25%, transparent);
+  background: var(--rentar-status-error-bg);
+}
+
+.rowStacked {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.4375rem;
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1875rem;
+  min-width: 0;
+}
+
+.rowTitleLine {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.rowTitle {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.rowDetail {
+  font-size: 0.8125rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.rowAside {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.rowLink {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--rentar-color-blue);
+}
+
+/* `!important`: antd le pone el tamaño inline al nodo del Skeleton (igual que en /buscar). */
+.skeletonRow,
+.skeletonRow :global(.ant-skeleton-node) {
+  width: 100% !important;
+  height: 3.625rem !important;
+  border-radius: 0.875rem;
+}
+
+/* Contratos por vencer o por ajustar. */
+
+.contractGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(17.5rem, 100%), 1fr));
+  gap: 0.75rem;
+}
+
+.contractCard {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  padding: 0.875rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.12);
+  border-radius: 0.875rem;
+}
+
+/* El ajuste es plata que cambia: el tono dorado del diseño (· 01). */
+.contractCardAdjust {
+  border-color: color-mix(in srgb, var(--rentar-color-money-ink) 30%, transparent);
+  background: var(--rentar-status-money-bg);
+}
+
+.contractHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.contractWhen {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-tertiary);
+}
+
+.contractWhenAdjust {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--rentar-color-money-ink);
+}
+
+.contractText {
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--rentar-color-text-secondary);
+}
+
+/* Error parcial de un bloque (· 03). */
+
+.blockError {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 1px solid color-mix(in srgb, var(--rentar-color-error) 25%, transparent);
+  border-radius: 0.875rem;
+  background: var(--rentar-status-error-bg);
+}
+
+.blockErrorIcon {
+  display: grid;
+  place-items: center;
+  width: 2.625rem;
+  height: 2.625rem;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-error);
+  color: var(--rentar-color-bg-surface);
+  font-size: 1.1875rem;
+  font-weight: 700;
+}
+
+.blockErrorTitle {
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.blockErrorText {
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+/* ─── Onboarding (· 02) ────────────────────────────────────────────── */
+
+.onboardingGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(16.25rem, 100%), 1fr));
+  gap: 0.875rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.onboardingStep {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding: 1.125rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.15);
+  border-radius: 1rem;
+  background: var(--rentar-color-bg-surface);
+}
+
+.onboardingStepActive {
+  border: 2px solid var(--rentar-color-blue);
+  background: var(--rentar-color-sky-light);
+}
+
+.onboardingStepHead {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.onboardingNumber {
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: var(--rentar-radius-pill);
+  background: rgba(var(--rentar-color-ink-rgb), 0.08);
+  color: var(--rentar-color-text-tertiary);
+  font-size: 0.9375rem;
+  font-weight: 800;
+}
+
+.onboardingNumberActive {
+  background: var(--rentar-color-blue);
+  color: var(--rentar-color-bg-surface);
+}
+
+.onboardingLabel {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-tertiary);
+}
+
+.onboardingLabelActive {
+  color: var(--rentar-color-blue);
+}
+
+.onboardingTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.onboardingText {
+  flex: 1;
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.onboardingBlocked {
+  display: grid;
+  place-items: center;
+  height: 2.75rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.15);
+  border-radius: var(--rentar-radius-pill);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--rentar-color-neutral);
+}
+
+.onboardingEmpty {
+  padding: 0.5rem;
+  border: 1px dashed rgba(var(--rentar-color-ink-rgb), 0.22);
+  border-radius: 1.125rem;
+  background: var(--rentar-color-bg-page);
+}
+
+/* ─── Móvil (· 03) ─────────────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .greetingTitle {
+    font-size: 1.25rem;
+  }
+
+  .actions,
+  .statsDesktop {
+    display: none;
+  }
+
+  .statsMobile {
+    display: grid;
+  }
+
+  .mobileOnly.mobileOnly {
+    display: inline-flex;
+    height: 3rem;
+  }
+
+  .row {
+    align-items: flex-start;
+  }
+}
+
