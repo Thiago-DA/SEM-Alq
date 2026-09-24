@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { inmuebleService } from '../services/inmueble.service';
-import { ApiResponse, InmuebleDTO,InmuebleDetalleDTO } from '../dtos';
+import { ApiResponse, InmuebleDTO, InmuebleDetalleDTO } from '../dtos';
 
 export class InmuebleController {
   async getAll(req: Request, res: Response<ApiResponse<InmuebleDTO[]>>, next: NextFunction): Promise<void> {
@@ -45,10 +45,9 @@ export class InmuebleController {
     }
   }
 
-  async getInmueblesDisponibles( req: Request, res: Response<ApiResponse<InmuebleDTO[]>>, next: NextFunction): Promise<void> {
+  async getInmueblesDisponibles(req: Request, res: Response<ApiResponse<InmuebleDTO[]>>, next: NextFunction): Promise<void> {
     try {
       const inmuebles = await inmuebleService.getInmueblesDisponibles();
-  
       res.status(200).json({
         success: true,
         message: 'Propiedades disponibles obtenidas exitosamente',
@@ -58,22 +57,27 @@ export class InmuebleController {
       next(error);
     }
   }
+
+  /**
+   * Endpoint de registro de propiedad (US-01).
+   * Todo inmueble debe registrarse con fotos y condiciones de contrato asociadas.
+   */
   async create(req: Request, res: Response<ApiResponse<InmuebleDTO>>, next: NextFunction): Promise<void> {
     try {
-      // El ID no debe ser provisto por el cliente, es autogenerado
-      const { id, ...createData } = req.body;
-      const nuevoInmueble = await inmuebleService.create(createData);
+      const user = (req as any).user;
+      const locadorId = user.id;
 
+      const nuevo = await inmuebleService.registrarPropiedadCompleta(req.body, locadorId);
       res.status(201).json({
         success: true,
-        message: 'Inmueble creado exitosamente con ID generado automáticamente.',
-        data: nuevoInmueble
+        message: 'Propiedad registrada exitosamente con contrato y fotos vinculadas.',
+        data: nuevo
       });
     } catch (error) {
       next(error);
     }
   }
-
+  // TODO: mantener consistencia con la creación. Pendiente para cuando se defina la US de modificar propiedades.
   async update(req: Request, res: Response<ApiResponse<InmuebleDTO>>, next: NextFunction): Promise<void> {
     try {
       const id = parseInt(req.params.id, 10);
@@ -135,3 +139,4 @@ export class InmuebleController {
 }
 
 export const inmuebleController = new InmuebleController();
+

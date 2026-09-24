@@ -1,147 +1,112 @@
-import { InmuebleDTO, CreateInmuebleDTO, UpdateInmuebleDTO } from '../dtos';
+import {
+  InmuebleDTO,
+  FotoInmuebleDTO,
+  CreateFotoDTO,
+  InmuebleXTagDTO,
+  TagInmuebleDTO
+} from '../dtos';
+import { getSupabaseAdmin } from '../config/supabase';
 
 export interface IInmuebleRepository {
   findAll(): Promise<InmuebleDTO[]>;
   findById(id: number): Promise<InmuebleDTO | null>;
   findByLocadorId(locadorId: number): Promise<InmuebleDTO[]>;
-  create(data: CreateInmuebleDTO): Promise<InmuebleDTO>;
-  update(id: number, data: UpdateInmuebleDTO): Promise<InmuebleDTO | null>;
+  create(data: Omit<InmuebleDTO, 'id'>): Promise<InmuebleDTO>;
+  update(id: number, data: Partial<InmuebleDTO>): Promise<InmuebleDTO | null>;
   delete(id: number): Promise<boolean>;
+  addFotos(idInmueble: number, fotos: CreateFotoDTO[]): Promise<FotoInmuebleDTO[]>;
+  getFotosByInmuebleId(idInmueble: number): Promise<FotoInmuebleDTO[]>;
+  addTags(idInmueble: number, tagIds: number[]): Promise<void>;
+  getTagsByInmuebleId(idInmueble: number): Promise<TagInmuebleDTO[]>;
 }
 
 export class InmuebleRepository implements IInmuebleRepository {
-  private nextId = 10; // Contador secuencial para autogeneración de ID
-
-  private inmuebles: InmuebleDTO[] = [
-    {
-      id: 1,
-      tipo: 1, // Departamento
-      direccion: 'Av. Colón',
-      numero: 1550,
-      piso: '4B',
-      ciudad: 'Córdoba',
-      ambientes: 3,
-      dormitorios: 2,
-      banos: 1,
-      m2: 65,
-      descripcion: 'Hermoso departamento luminoso con balcón y excelentes accesos',
-      tags: 1,
-      id_locador: 1, // Carlos Propietario
-      servicios: 4, // Internet
-      created_at: new Date('2026-09-01T09:00:00Z')
-    },
-    {
-      id: 2,
-      tipo: 1, // Departamento
-      direccion: 'Bv. Chacabuco',
-      numero: 720,
-      piso: '2A',
-      ciudad: 'Córdoba',
-      ambientes: 2,
-      dormitorios: 1,
-      banos: 1,
-      m2: 48,
-      descripcion: 'Departamento en Nueva Córdoba a metros de Ciudad Universitaria',
-      tags: 2,
-      id_locador: 1, // Carlos Propietario
-      servicios: 1, // Luz
-      created_at: new Date('2026-02-10T10:00:00Z')
-    },
-    {
-      id: 3,
-      tipo: 2, // Casa
-      direccion: 'Calle Los Plátanos',
-      numero: 340,
-      piso: null,
-      ciudad: 'Córdoba',
-      ambientes: 4,
-      dormitorios: 3,
-      banos: 2,
-      m2: 120,
-      descripcion: 'Casa familiar con amplio patio y asador',
-      tags: 1,
-      id_locador: 1, // Carlos Propietario (no publicada aún)
-      servicios: 2, // Gas natural
-      created_at: new Date('2026-08-15T11:00:00Z')
-    },
-    {
-      id: 4,
-      tipo: 3, // PH
-      direccion: 'Av. Rafael Núñez',
-      numero: 4100,
-      piso: null,
-      ciudad: 'Córdoba',
-      ambientes: 3,
-      dormitorios: 2,
-      banos: 1,
-      m2: 80,
-      descripcion: 'PH en Cerro de las Rosas con entrada independiente',
-      tags: 2,
-      id_locador: 3, // Segundo Propietario
-      servicios: 3, // Agua corriente
-      created_at: new Date('2026-09-10T14:00:00Z')
-    }
-  ];
-
   async findAll(): Promise<InmuebleDTO[]> {
-    return this.inmuebles.map(i => ({ ...i }));
+    const { data, error } = await getSupabaseAdmin().from('inmueble').select('*').order('id');
+    if (error) throw error;
+    return (data ?? []) as InmuebleDTO[];
   }
 
   async findById(id: number): Promise<InmuebleDTO | null> {
-    const inmueble = this.inmuebles.find(i => i.id === id);
-    return inmueble ? { ...inmueble } : null;
+    const { data, error } = await getSupabaseAdmin().from('inmueble').select('*').eq('id', id).maybeSingle();
+    if (error) throw error;
+    return data as InmuebleDTO | null;
   }
 
   async findByLocadorId(locadorId: number): Promise<InmuebleDTO[]> {
-    return this.inmuebles
-      .filter(i => i.id_locador === locadorId)
-      .map(i => ({ ...i }));
+    const { data, error } = await getSupabaseAdmin()
+      .from('inmueble')
+      .select('*')
+      .eq('id_locador', locadorId)
+      .order('id');
+    if (error) throw error;
+    return (data ?? []) as InmuebleDTO[];
   }
 
-  /**
-   * El ID del inmueble se genera de forma automática.
-   */
-  async create(data: CreateInmuebleDTO): Promise<InmuebleDTO> {
-    const nuevoId = ++this.nextId;
-    const nuevoInmueble: InmuebleDTO = {
-      id: nuevoId,
-      tipo: data.tipo,
-      direccion: data.direccion,
-      numero: data.numero,
-      piso: data.piso || null,
-      ciudad: data.ciudad,
-      ambientes: data.ambientes,
-      dormitorios: data.dormitorios,
-      banos: data.banos,
-      m2: data.m2,
-      descripcion: data.descripcion || null,
-      tags: data.tags || null,
-      id_locador: data.id_locador,
-      servicios: data.servicios || null,
-      created_at: new Date()
-    };
-
-    this.inmuebles.push(nuevoInmueble);
-    return { ...nuevoInmueble };
+  async create(data: Omit<InmuebleDTO, 'id'>): Promise<InmuebleDTO> {
+    const { data: inmueble, error } = await getSupabaseAdmin().from('inmueble').insert(data).select('*').single();
+    if (error || !inmueble) throw error ?? new Error('No se pudo crear el inmueble.');
+    return inmueble as InmuebleDTO;
   }
 
-  async update(id: number, data: UpdateInmuebleDTO): Promise<InmuebleDTO | null> {
-    const index = this.inmuebles.findIndex(i => i.id === id);
-    if (index === -1) return null;
-
-    this.inmuebles[index] = {
-      ...this.inmuebles[index],
-      ...data
-    };
-    return { ...this.inmuebles[index] };
+  async update(id: number, data: Partial<InmuebleDTO>): Promise<InmuebleDTO | null> {
+    const { data: inmueble, error } = await getSupabaseAdmin()
+      .from('inmueble')
+      .update(data)
+      .eq('id', id)
+      .select('*')
+      .maybeSingle();
+    if (error) throw error;
+    return inmueble as InmuebleDTO | null;
   }
 
   async delete(id: number): Promise<boolean> {
-    const index = this.inmuebles.findIndex(i => i.id === id);
-    if (index === -1) return false;
+    const { error, count } = await getSupabaseAdmin()
+      .from('inmueble')
+      .delete({ count: 'exact' })
+      .eq('id', id);
+    if (error) throw error;
+    return (count ?? 0) > 0;
+  }
 
-    this.inmuebles.splice(index, 1);
-    return true;
+  async addFotos(idInmueble: number, fotos: CreateFotoDTO[]): Promise<FotoInmuebleDTO[]> {
+    const tienePrincipal = fotos.some(foto => foto.es_principal === true);
+    const filas = fotos.map((foto, index) => ({
+      id_inmueble: idInmueble,
+      url: foto.url,
+      es_principal: tienePrincipal ? Boolean(foto.es_principal) : index === 0,
+      peso_kb: foto.peso_kb,
+      formato: foto.formato.toLowerCase(),
+      orden: index + 1
+    }));
+    const { data, error } = await getSupabaseAdmin().from('foto_inmueble').insert(filas).select('*');
+    if (error) throw error;
+    return (data ?? []) as FotoInmuebleDTO[];
+  }
+
+  async getFotosByInmuebleId(idInmueble: number): Promise<FotoInmuebleDTO[]> {
+    const { data, error } = await getSupabaseAdmin()
+      .from('foto_inmueble')
+      .select('*')
+      .eq('id_inmueble', idInmueble)
+      .order('orden');
+    if (error) throw error;
+    return (data ?? []) as FotoInmuebleDTO[];
+  }
+
+  async addTags(idInmueble: number, tagIds: number[]): Promise<void> {
+    const filas = tagIds.map(id_tag => ({ id_inmueble: idInmueble, id_tag }));
+    const { error } = await getSupabaseAdmin().from('inmueble_x_tag').insert(filas);
+    if (error) throw error;
+  }
+
+  async getTagsByInmuebleId(idInmueble: number): Promise<TagInmuebleDTO[]> {
+    const { data, error } = await getSupabaseAdmin()
+      .from('inmueble_x_tag')
+      .select('id_tag, tags_inmueble(id, descripcion, estado)')
+      .eq('id_inmueble', idInmueble);
+    if (error) throw error;
+    return (data ?? []).map((row: any) => row.tags_inmueble).filter(Boolean) as TagInmuebleDTO[];
   }
 }
 
