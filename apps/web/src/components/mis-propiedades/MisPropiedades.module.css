@@ -1,0 +1,460 @@
+/* Mis propiedades (Claude Design, "Listado de propiedades" · 01-05). */
+
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* ─── Pestañas de estado ───────────────────────────────────────────── */
+
+.tabs {
+  display: flex;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--rentar-color-border-hairline);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.tab {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.5rem;
+  height: 2.625rem;
+  padding: 0 0.625rem;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: none;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--rentar-color-text-secondary);
+  cursor: pointer;
+}
+
+.tabActive {
+  border-bottom-color: var(--rentar-color-blue);
+  font-weight: 700;
+  color: var(--rentar-color-blue);
+}
+
+.tabCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.375rem;
+  height: 1.375rem;
+  padding: 0 0.4375rem;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-sky-light);
+  color: var(--rentar-color-blue);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.tabActive .tabCount {
+  background: var(--rentar-color-blue);
+  color: var(--rentar-color-bg-surface);
+}
+
+/* ─── Buscador y filtros ───────────────────────────────────────────── */
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.625rem;
+}
+
+.toolbarFilters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.search.search {
+  width: 18.75rem;
+  height: 2.5rem;
+  border-radius: var(--rentar-radius-pill);
+}
+
+.select.select {
+  min-width: 8rem;
+}
+
+.select.select :global(.ant-select-selector),
+.select.select:global(.ant-select) {
+  border-radius: var(--rentar-radius-pill);
+}
+
+.desktopOnlyFlex {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+
+.mobileFiltersRow {
+  display: none;
+}
+
+.summary {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.summaryDot {
+  margin: 0 0.5rem;
+  color: rgba(var(--rentar-color-ink-rgb), 0.3);
+}
+
+.linkButton {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--rentar-color-blue);
+  cursor: pointer;
+}
+
+.filtersBadge {
+  display: inline-grid;
+  place-items: center;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-left: 0.4375rem;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-blue);
+  color: var(--rentar-color-bg-surface);
+  font-size: 0.6875rem;
+  font-weight: 700;
+}
+
+.pagination {
+  align-self: flex-end;
+}
+
+/* ─── Celdas ───────────────────────────────────────────────────────── */
+
+.photo {
+  display: block;
+  flex: none;
+  border-radius: var(--rentar-radius-sm);
+  object-fit: cover;
+  background: var(--rentar-color-bg-page);
+}
+
+.address {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.addressLine {
+  font-size: 0.90625rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.addressSub {
+  font-size: 0.8125rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+
+.availableChip {
+  display: inline-flex;
+  align-items: center;
+  height: 1.375rem;
+  padding: 0 0.5625rem;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-sky-light);
+  color: var(--rentar-color-blue);
+  font-size: 0.71875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  height: 1.5rem;
+  padding: 0 0.625rem;
+  border-radius: var(--rentar-radius-pill);
+  font-size: 0.78125rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.chipGreen {
+  background: var(--rentar-status-success-bg);
+  color: var(--rentar-color-success);
+}
+
+.chipAmber {
+  background: var(--rentar-status-warning-bg);
+  color: var(--rentar-color-warning);
+}
+
+.chipRed {
+  background: var(--rentar-status-error-bg);
+  color: var(--rentar-color-error);
+}
+
+.claimsChip {
+  display: inline-flex;
+  align-items: center;
+  height: 1.5rem;
+  padding: 0 0.625rem;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-status-warning-bg);
+  color: #8a5a00;
+  font-size: 0.78125rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.subText {
+  font-size: 0.78125rem;
+  color: var(--rentar-color-text-tertiary);
+}
+
+.muted {
+  font-size: 0.84375rem;
+  color: var(--rentar-color-neutral);
+}
+
+.tenant {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--rentar-color-text-primary);
+}
+
+.inlineLink {
+  font-size: 0.78125rem;
+  font-weight: 700;
+  color: var(--rentar-color-blue);
+}
+
+.adjust {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.84375rem;
+  white-space: nowrap;
+}
+
+/* A menos de 60 días, la fecha en ámbar (Listado · 02). */
+.adjustSoon {
+  font-weight: 700;
+  color: #8a5a00;
+}
+
+/* ─── Tarjeta móvil ────────────────────────────────────────────────── */
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  gap: 0.6875rem;
+}
+
+.cardHeader .photo {
+  border-radius: 0.625rem;
+}
+
+.cardPrimary.cardPrimary {
+  flex: 1;
+  height: 2.75rem;
+}
+
+.cardMore.cardMore {
+  width: 3.25rem;
+  height: 2.75rem;
+}
+
+/* ─── Vacíos y error ───────────────────────────────────────────────── */
+
+.emptyBlock {
+  padding: 1rem;
+  border-radius: 1.125rem;
+  background: var(--rentar-color-bg-surface);
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.1);
+}
+
+.errorBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 1.25rem;
+  border: 1px solid rgba(168, 32, 26, 0.25);
+  border-radius: 1rem;
+  background: var(--rentar-status-error-bg);
+}
+
+.errorIcon {
+  display: grid;
+  place-items: center;
+  width: 2.625rem;
+  height: 2.625rem;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-error);
+  color: var(--rentar-color-bg-surface);
+  font-size: 1.1875rem;
+  font-weight: 700;
+}
+
+.errorTitle {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.errorText {
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.errorActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+/* ─── Drawer de filtros (móvil) ────────────────────────────────────── */
+
+.drawerBody {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.drawerField {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.drawerLabel {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--rentar-color-text-primary);
+}
+
+.drawerChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.drawerChip {
+  height: 2.25rem;
+  padding: 0 0.875rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.2);
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-bg-surface);
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-secondary);
+  cursor: pointer;
+}
+
+.drawerChipActive {
+  border: 2px solid var(--rentar-color-blue);
+  background: var(--rentar-color-sky-light);
+  font-weight: 700;
+  color: var(--rentar-color-blue);
+}
+
+.drawerFooter {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.625rem;
+}
+
+.mobileCta {
+  display: none;
+}
+
+/* ─── Móvil (Listado · 03) ─────────────────────────────────────────── */
+
+@media (max-width: 767px) {
+  .desktopOnly,
+  .desktopOnlyFlex,
+  .desktopOnlyBlock {
+    display: none;
+  }
+
+  /* Pestañas como chips con scroll horizontal. */
+  .tabs {
+    gap: 0.5rem;
+    border-bottom: none;
+  }
+
+  .tab {
+    height: 2.125rem;
+    padding: 0 0.8125rem;
+    border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.2);
+    border-radius: var(--rentar-radius-pill);
+    font-size: 0.875rem;
+  }
+
+  .tabActive {
+    border-color: var(--rentar-color-blue);
+    background: var(--rentar-color-blue);
+    color: var(--rentar-color-bg-surface);
+  }
+
+  .tabActive .tabCount {
+    background: transparent;
+  }
+
+  .toolbar,
+  .toolbarFilters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .search.search {
+    width: 100%;
+    height: 2.625rem;
+  }
+
+  .mobileFiltersRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .filtersButton.filtersButton {
+    border-radius: var(--rentar-radius-pill);
+  }
+
+  /* CTA principal fijo abajo, 50px (Listado · 03). */
+  .mobileCta {
+    display: block;
+    position: sticky;
+    bottom: 0;
+    z-index: 2;
+    padding: 0.75rem 0;
+    background: var(--rentar-color-bg-page);
+  }
+
+  .mobileCta :global(.ant-btn) {
+    height: 3.125rem;
+    font-size: 1rem;
+  }
+}
