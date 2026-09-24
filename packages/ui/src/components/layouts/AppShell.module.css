@@ -78,3 +78,84 @@
   padding: 1.5rem;
   background: var(--rentar-color-bg-page);
 }
+
+/* ─── Barra móvil (Cambio de rol · 04) ─────────────────────────────── */
+
+.mobileCenter {
+  display: none;
+  flex: 1;
+  min-width: 0;
+  justify-content: center;
+}
+
+@media (max-width: 1023px) {
+  .mobileCenter {
+    display: flex;
+  }
+}
+
+.mobileTitle {
+  overflow: hidden;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--rentar-color-text-primary);
+}
+
+.roleChip {
+  display: none;
+  align-items: center;
+  gap: 0.4375rem;
+  height: 1.875rem;
+  padding: 0 0.6875rem;
+  border: none;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-sky-light);
+  color: var(--rentar-color-blue);
+  font-family: inherit;
+  font-size: 0.78125rem;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.roleChipDot {
+  width: 0.4375rem;
+  height: 0.4375rem;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-blue);
+}
+
+.mobileBar {
+  display: none;
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 767px) {
+  .header {
+    padding: 0 0.75rem;
+  }
+
+  /* Cuentas con dos roles: el chip reemplaza al título y al selector del header. */
+  .mobileCenterWithRole .mobileTitle,
+  .contextSwitcherDesktopOnly {
+    display: none;
+  }
+
+  .mobileCenterWithRole .roleChip {
+    display: inline-flex;
+  }
+
+  /* Flujos enfocados: la barra propia reemplaza a todo el header. */
+  .headerWithMobileBar > :not(.mobileBar) {
+    display: none;
+  }
+
+  .headerWithMobileBar > .mobileBar {
+    display: flex;
+    align-items: center;
+  }
+}

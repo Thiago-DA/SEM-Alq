@@ -43,6 +43,32 @@ Cambios de la tanda 3 (búsqueda, US-34), también **pendientes de subir** al fi
   si hay más de una foto. Link "estirado" para que las flechas del carrusel sean botones válidos.
   `adjustmentIndex` acepta `null` (sin badge). La API anterior no cambió.
 
+Cambios de la tanda 4 (locador: /panel, US-02 y US-01), también **pendientes de subir** al final del
+Sprint 1. Todas las props son nuevas y opcionales: los usos anteriores no cambian.
+- `WizardLayout` ("Alta de propiedad" · 01, 06, 07 y 09): `status: 'error'` por paso (el Steps lo
+  marca en rojo), `navigableSteps` (volver a un paso anterior tocándolo; hacia adelante nunca),
+  `loading` (botones en carga y pasos bloqueados), `nextLabel`. Debajo de 768px el Steps se
+  reemplaza por nombre del paso + "Paso N de M" + barra de tramos + "Siguiente: X", y los botones
+  quedan fijos abajo a todo el ancho (en el último paso, solo el primario).
+- `DataTable` ("Listado de propiedades" · 02 y 03): `onRowClick` (la fila entera abre el detalle:
+  cursor, fondo #f4f7fa al pasar, Tab + Enter), `rowLabel` (texto accesible), `cardHeader` y
+  `cardActions` para la tarjeta móvil, y `hideInCard` por columna.
+- `UserMenu` ("Cambio de rol" · 04): sección **"Viendo como"** (`roleOptions` + `onRoleChange`):
+  una fila de 52px por rol, ✓ en el activo y contador rojo en el otro. **Reemplaza al ítem
+  "Cambiar a mi panel de…" de la tanda 2.** Apertura controlada opcional (`open`/`onOpenChange`).
+  En móvil el botón muestra solo el avatar.
+- `AppShell` ("Cambio de rol" · 04): barra móvil ☰ · `mobileTitle` · campanita · avatar; con
+  `activeRoleLabel` (dos roles), debajo de 768px un chip con el rol activo que abre la misma hoja que
+  el avatar. `mobileHeader` reemplaza la barra en flujos enfocados (el alta: "‹ Publicar propiedad ·
+  Salir"). Pasa `roleOptions`/`onRoleChange` al `UserMenu`.
+- Compuestos en `apps/web` (no en `@rentar/ui`, aprobado por el PO): la carga de fotos del alta, el
+  contador ±, las tarjetas de medios de pago e índice, las StatCards compactas del panel móvil y
+  las tarjetas del onboarding.
+- Lo que no se tomó de los templates (decisión del PO, anotado para no "corregirlo" en el próximo
+  sync): tipos Local y Cochera, el mapa del alta, la antigüedad por rangos, "Disponible" como estado,
+  amenities fuera del catálogo de 5, el banner de suscripción del panel y las personas y barrios del
+  export que no están en el elenco.
+
 ## Contexto de esta corrida (2026-09-22)
 
 Re-sync sobre `feature/fundaciones-app` (rama activa, ramificada de `develop`) contra el proyecto

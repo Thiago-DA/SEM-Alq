@@ -55,3 +55,34 @@
   font-size: 0.875rem;
   color: var(--rentar-color-text-primary);
 }
+
+/* ─── Fila clickeable (Listado de propiedades · 02) ─────────────────── */
+
+.clickableRow {
+  cursor: pointer;
+}
+
+/* Selector largo para ganarle al fondo de hover que inyecta antd
+   (`.ant-table-wrapper .ant-table-tbody > tr.ant-table-row:hover > td`). */
+:global(.ant-table-wrapper) :global(.ant-table-tbody) > tr.clickableRow.clickableRow:hover > td,
+:global(.ant-table-wrapper) :global(.ant-table-tbody) > tr.clickableRow.clickableRow:focus-visible > td {
+  /* #f4f7fa del diseño, como tinta al 4% para que también funcione en oscuro. */
+  background: rgba(var(--rentar-color-ink-rgb), 0.04);
+}
+
+.clickableRow:focus-visible {
+  outline: 2px solid var(--rentar-color-blue);
+  outline-offset: -2px;
+}
+
+/* ─── Encabezado y pie de la tarjeta móvil ──────────────────────────── */
+
+.cardHeader {
+  padding-bottom: 0.625rem;
+}
+
+.cardActions {
+  display: flex;
+  gap: 0.5625rem;
+  padding-top: 0.75rem;
+}

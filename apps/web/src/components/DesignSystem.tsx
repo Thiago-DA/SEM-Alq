@@ -43,6 +43,7 @@ import {
   type DataTableColumn,
   type NotificationItem,
   type UserMenuItem,
+  type UserMenuRoleOption,
 } from '@rentar/ui'
 import PropertyCard from './PropertyCard'
 import SearchBar from './SearchBar'
@@ -398,11 +399,16 @@ const demoNotifications: NotificationItem[] = [
   { id: '2', title: 'Cobro vencido: Depto Nueva Córdoba', date: new Date(Date.now() - 1000 * 60 * 60 * 5), read: true },
 ]
 
-/** Mismos ítems que arma `(app)/panel/layout.tsx` para una cuenta con dos roles. */
+/** Mismos ítems que arma `(app)/panel/layout.tsx`. El cambio de rol va aparte, en "Viendo como". */
 const demoUserMenuItems: UserMenuItem[] = [
-  { key: 'perfil', label: 'Mi perfil', href: '/panel/perfil' },
-  { key: 'notificaciones', label: 'Notificaciones', href: '/panel/notificaciones' },
-  { key: 'switch-role', label: 'Cambiar de rol', onClick: () => {} },
+  { key: 'perfil', label: 'Mi perfil y legajo', href: '/panel/perfil' },
+  { key: 'notificaciones', label: 'Mis notificaciones', href: '/panel/notificaciones' },
+]
+
+/** Filas de "Viendo como" para una cuenta con dos roles (Cambio de rol · 04; datos de Sofía del elenco). */
+const demoRoleOptions: UserMenuRoleOption[] = [
+  { role: 'locador', label: 'Locador', description: '1 propiedad · 1 cobro vencido', badgeCount: 1 },
+  { role: 'locatario', label: 'Locatario', description: 'Obispo Trejo 1250 · 1 contrato' },
 ]
 
 const demoActivityEvents = [
@@ -1008,6 +1014,10 @@ export default function DesignSystem() {
                     user={{ name: 'Sofía Ledesma', role: demoRole }}
                     notifications={demoNotifications}
                     userMenuItems={demoUserMenuItems}
+                    mobileTitle="Mi panel"
+                    activeRoleLabel={demoRole === 'locador' ? 'Locador' : 'Locatario'}
+                    roleOptions={demoRoleOptions}
+                    onRoleChange={(role) => setDemoRole(role as 'locador' | 'locatario')}
                     contextSwitcher={
                       <RoleContextSwitcher
                         roles={[
@@ -1094,6 +1104,29 @@ export default function DesignSystem() {
                 </div>
                 <div className={styles.liveFramePadded}>
                   <DataTable columns={demoTableColumns} data={properties.slice(0, 4)} rowKey={(p) => p.id} />
+                </div>
+              </div>
+              <p className={styles.subheading}>DataTable — fila clickeable y tarjeta móvil con cabecera y acciones</p>
+              <p className={styles.sectionLead} style={{ marginBottom: '0.75rem' }}>
+                Con <code>onRowClick</code> la fila entera abre el detalle (mouse, Tab y Enter), sin columna de
+                acciones (Listado de propiedades · 02). En móvil, <code>cardHeader</code> y{' '}
+                <code>cardActions</code> arman la tarjeta; las columnas con <code>hideInCard</code> no se repiten.
+              </p>
+              <div className={styles.liveFrame}>
+                <div className={styles.liveFramePadded}>
+                  <DataTable
+                    columns={demoTableColumns.map((col, index) => (index === 0 ? { ...col, hideInCard: true } : col))}
+                    data={properties.slice(0, 3)}
+                    rowKey={(p) => p.id}
+                    onRowClick={() => {}}
+                    rowLabel={(p) => `Ver detalle de ${p.title}`}
+                    cardHeader={(p) => <strong>{p.title}</strong>}
+                    cardActions={() => (
+                      <Button type="primary" block>
+                        Ver detalle
+                      </Button>
+                    )}
+                  />
                 </div>
               </div>
               <p className={styles.subheading}>DataTable — estado vacío</p>
@@ -1201,6 +1234,25 @@ export default function DesignSystem() {
                   <WizardLayout steps={wizardSteps} currentStep={wizardStep} onStepChange={setWizardStep} onFinish={() => setWizardStep(0)} />
                 </div>
               </div>
+              <p className={styles.subheading}>WizardLayout — pasos navegables, paso con error y carga</p>
+              <p className={styles.sectionLead} style={{ marginBottom: '0.75rem' }}>
+                <code>navigableSteps</code> deja volver a un paso anterior tocándolo en el Steps;{' '}
+                <code>status: &apos;error&apos;</code> lo marca en rojo; <code>loading</code> bloquea todo mientras
+                se confirma. Debajo de 768px el Steps pasa a &quot;Paso N de M&quot; con barra y los botones quedan
+                fijos abajo (Alta de propiedad · 09).
+              </p>
+              <div className={styles.liveFrame}>
+                <div className={styles.liveFramePadded}>
+                  <WizardLayout
+                    steps={wizardSteps.map((step, index) => (index === 0 ? { ...step, status: 'error' as const } : step))}
+                    currentStep={wizardStep}
+                    onStepChange={setWizardStep}
+                    onFinish={() => setWizardStep(0)}
+                    navigableSteps
+                    data-testid="design-system-wizard-navegable"
+                  />
+                </div>
+              </div>
 
               <p className={styles.subheading}>SearchSidebarFilters</p>
               <p className={styles.sectionLead} style={{ marginBottom: '0.75rem' }}>
@@ -1254,7 +1306,7 @@ export default function DesignSystem() {
                     Eliminar propiedad
                   </Button>
                   <NotificationBell notifications={demoNotifications} />
-                  <UserMenu name="Nico A" role="locador" items={demoUserMenuItems} />
+                  <UserMenu name="Sofía Ledesma" role="locador" items={demoUserMenuItems} roleOptions={demoRoleOptions} />
                 </div>
               </div>
 
