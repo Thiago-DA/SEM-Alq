@@ -148,6 +148,7 @@ export type {
   OrdenBusqueda,
   Paginado,
   MisPropiedadesFiltros,
+  UbicacionOpciones,
 } from './filters';
 export type {
   PropertyStatus,

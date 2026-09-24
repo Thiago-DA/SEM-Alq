@@ -25,15 +25,46 @@ export interface FilterState {
 }
 
 /**
- * Filtros de `/buscar` (US-34): los de la landing más ambientes, superficie
- * mínima e índice de ajuste.
+ * Filtros de `/buscar` (US-34: barrio, precio mensual, tipo, dormitorios,
+ * ambientes, superficie, tags e índice de ajuste), tal como los arma la
+ * barra lateral del diseño ("Búsqueda de propiedades" · 01).
+ *
+ * Criterio de las listas: vacía = "todos" (no filtra). Dormitorios y
+ * ambientes son de selección múltiple en el diseño; el `4` significa "4 o más".
+ * `null` en un número = sin límite.
+ *
+ * En la URL se guardan como query params (ver `apps/web/src/lib/search/busquedaParams.ts`).
  */
-export interface BusquedaFiltros extends FilterState {
-  /** Cantidad de ambientes; `4` se interpreta como "4 o más". */
-  rooms: number | 'todos'
-  /** Superficie total mínima en m²; `undefined` = sin mínimo. */
-  minAreaM2?: number
-  adjustmentIndex: AdjustmentIndex | 'todos'
+export interface BusquedaFiltros {
+  /** Provincia (selección única). `null` = cualquiera. */
+  province: string | null
+  /** Ciudad de esa provincia (selección única). `null` = cualquiera. */
+  city: string | null
+  /** Barrios de la ciudad elegida (selección múltiple). */
+  neighborhoodSlugs: string[]
+  minPrice: number | null
+  maxPrice: number | null
+  types: PropertyType[]
+  bedrooms: number[]
+  rooms: number[]
+  /** Superficie total en m². */
+  minAreaM2: number | null
+  maxAreaM2: number | null
+  /** Hay que cumplir todas las elegidas. */
+  characteristics: CharacteristicKey[]
+  /** `null` = cualquiera. */
+  adjustmentIndex: AdjustmentIndex | null
+}
+
+/**
+ * Opciones de ubicación para los filtros, sacadas de las propiedades
+ * publicadas (así el filtro nunca ofrece un lugar sin resultados).
+ */
+export interface UbicacionOpciones {
+  provinces: Array<{
+    name: string
+    cities: Array<{ name: string; neighborhoods: Array<{ slug: string; name: string }> }>
+  }>
 }
 
 /**

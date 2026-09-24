@@ -65,15 +65,27 @@ export interface PropiedadResumen {
   id: string
   /** Título de la publicación, ej. "Monoambiente luminoso a metros de Plaza España". */
   title: string
-  /** Calle, altura y piso, ej. "Rondeau 480, PB" (US-34: dirección visible). */
+  /**
+   * Dirección APROXIMADA, ej. "Rondeau al 400" (US-34: dirección visible).
+   * NOTA: decisión de privacidad del diseño: en la zona pública nunca se
+   * muestra la altura exacta ni el piso; se redondea al centenar. La
+   * dirección exacta la ve solo el locador y, más adelante, quien firma el
+   * contrato.
+   */
   address: string
+  province: string
+  city: string
   neighborhoodSlug: string
   neighborhoodName: string
   type: PropertyType
   /** Monto mensual del alquiler, en pesos (US-34: precio visible). */
   priceMonthly: number
-  /** Expensas mensuales, en pesos (US-34: expensas visibles). */
-  expenses: number
+  /**
+   * Expensas mensuales, en pesos (US-34: expensas visibles). `0` = sin
+   * expensas; `null` = no informadas (el back todavía no las devuelve): en
+   * ese caso no se muestra nada, en vez de decir "Sin expensas".
+   */
+  expenses: number | null
   bedrooms: number
   rooms: number
   /** Superficie total en m² (US-34: m² visibles). */
@@ -90,6 +102,8 @@ export interface PropiedadResumen {
   availableFrom: string | null
   /** URL de la foto principal (US-01: la primera foto cargada, cambiable). */
   imageSrc: string
+  /** Todas las fotos, empezando por la principal (el carrusel de la tarjeta). */
+  photoSrcs: string[]
   /** Fecha ISO de publicación; se usa para ordenar por "más recientes". */
   publishedAt: string
   /** Solo los dos estados buscables: una propiedad `alquilada` o `pausada` nunca llega acá. */
