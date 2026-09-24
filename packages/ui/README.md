@@ -35,11 +35,15 @@ Ver el inventario completo con cuándo usar cada uno en
 | --- | --- |
 | Landing | `Header`, `Footer` |
 | Layouts | `PublicLayout`, `AuthLayout`, `AppShell` |
-| Navegación | `PageHeader` |
-| Datos | `StatusTag`, `MoneyAmount`, `IndexBadge`, `StatCard`, `DataTable`, `DetailList`, `EmptyState`, `ActivityTimeline` |
-| Formularios | `FormSection`, `WizardLayout`, `MoneyInput`, `FileDropzone` |
-| Feedback | `ConfirmActionModal`, `SimulatedFeatureNotice`, `NotificationBell`, `UserMenu` |
+| Navegación | `PageHeader`, `FilterBar` |
+| Datos | `StatusTag`, `MoneyAmount`, `IndexBadge`, `StatCard`, `DataTable`, `DetailList`, `EmptyState`, `ActivityTimeline`, `PropertyCard` (con `layout="busqueda"`), `PhotoGallery`, `OnboardingChecklist`, `PlanCard` |
+| Formularios | `FormSection`, `WizardLayout`, `MoneyInput`, `FileDropzone`, `SearchFilters`, `SearchSidebarFilters`, `PasswordStrengthMeter` |
+| Feedback | `ConfirmActionModal`, `SimulatedFeatureNotice`, `NotificationBell`, `UserMenu`, `RoleContextSwitcher` |
 | Dev | `RoleSwitcher` (no renderiza nada en producción) |
+
+Props y componentes nuevos del Sprint 1 (por ejemplo, "Viendo como" en `UserMenu`, la fila
+clickeable de `DataTable` o los pasos con error de `WizardLayout`): ver `.design-sync/NOTES.md`,
+que además lista lo que falta subir a Claude Design.
 
 ## Tokens
 
