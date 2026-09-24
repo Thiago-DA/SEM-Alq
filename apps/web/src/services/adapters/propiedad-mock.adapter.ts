@@ -15,7 +15,7 @@ import type { CobroMock, PropiedadMock } from '@/lib/mocks'
 import { neighborhoods } from '@/lib/catalogs/neighborhoods'
 import { diasDesde } from '@/lib/utils/fechas'
 import { formatApproxAddress, formatFloorUnit } from './direccion'
-import { tituloDePropiedadNueva } from './propiedad.adapter'
+import { estadoDePropiedadNueva, tituloDePropiedadNueva } from './propiedad.adapter'
 
 /** Dirección exacta: "Calle 123, 7° B". Solo para el locador (US-02), nunca en la zona pública. */
 export function formatAddress(propiedad: Pick<PropiedadMock, 'street' | 'streetNumber' | 'floor'>): string {
@@ -136,18 +136,16 @@ export function propiedadMockToLocador(propiedad: PropiedadMock, { cobro, openCl
  * `PropiedadNueva` (formulario del alta) → `PropiedadMock` (lo que se guarda
  * en `localStorage`).
  *
- * NOTA: una propiedad cargada como `alquilada` queda `alquilada` aunque
- * tenga fecha de disponibilidad: no pasa sola a `alquilada_publicada` ni
- * aparece en `/buscar`. Volver a publicarla es una acción del detalle (US-40,
- * otro sprint). Así lo pidió producto para el alta ("quedó guardada y no
- * aparece en la búsqueda").
+ * El estado sale de `estadoDePropiedadNueva`: una alquilada con fecha de
+ * disponibilidad queda `alquilada_publicada` (aparece en `/buscar`); sin
+ * fecha, `alquilada` (no aparece).
  */
 export function propiedadNuevaToMock(nueva: PropiedadNueva, ids: { id: string; ownerId: string; publishedAt: string }): PropiedadMock {
   const barrio = neighborhoods.find((item) => item.slug === nueva.neighborhoodSlug)
   return {
     id: ids.id,
     ownerId: ids.ownerId,
-    status: nueva.status,
+    status: estadoDePropiedadNueva(nueva),
     publishedAt: ids.publishedAt,
     availableFrom: nueva.availableFrom,
     title: tituloDePropiedadNueva(nueva),

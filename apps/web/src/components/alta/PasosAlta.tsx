@@ -11,7 +11,7 @@
  * NOTA: diferencias con el diseño, pedidas por producto: los tipos son los 4
  * de RentAR (sin Local ni Cochera: es residencial); las características son
  * las 5 del catálogo de `/buscar`; el estado es "Publicada / Pausada /
- * Alquilada"; no hay mapa; la antigüedad, el depósito y la duración van en
+ * Alquilada" (alquilada con fecha → alquilada/publicada); no hay mapa; la antigüedad, el depósito y la duración van en
  * números (años y meses); la actualización es "cada N meses" (1 a 12).
  * Quién lo usa: `AltaPropiedad.tsx`.
  */
@@ -55,7 +55,8 @@ import {
   type AltaValues,
 } from '@/lib/validation/propiedad.rules'
 import { formatApproxAddress, formatFloorUnit } from '@/services/adapters/direccion'
-import { tituloDePropiedadNueva } from '@/services/adapters/propiedad.adapter'
+import { seVeEnBusqueda, tituloDePropiedadNueva } from '@/services/adapters/propiedad.adapter'
+import { hoy } from '@/lib/utils/fechas'
 import { CaracteristicasField, IndiceField, MediosPagoField, Stepper } from './CamposAlta'
 import { FotosField } from './FotosField'
 import styles from './Alta.module.css'
@@ -209,23 +210,22 @@ export function PasoCaracteristicas() {
             name="status"
             label="Estado de la publicación"
             rules={reglasEstado}
-            extra="Publicada se ve en la búsqueda. Pausada y Alquilada quedan guardadas, sin aparecer."
+            extra="Publicada se ve en la búsqueda. Pausada no. Alquilada, solo si cargás desde cuándo vuelve a estar disponible."
           >
             <Select size="large" placeholder="Elegí el estado" options={ESTADO_ALTA_OPTIONS} data-testid="alta-estado" />
           </Form.Item>
           <Form.Item
             name="availableFrom"
-            label={estado === 'alquilada' ? 'Disponible desde' : <Opcional>Disponible desde</Opcional>}
-            rules={reglasDisponibleDesde(estado)}
-            dependencies={['status']}
-            extra={estado === 'alquilada' ? 'Desde cuándo se puede volver a alquilar.' : 'Dejalo vacío si ya está disponible.'}
+            label={<Opcional>Disponible desde</Opcional>}
+            rules={reglasDisponibleDesde}
+            extra={estado === 'alquilada' ? 'Si la cargás, la propiedad se publica para el próximo inquilino.' : 'Dejalo vacío si ya está disponible.'}
             {...fechaIso}
           >
             <DatePicker
               size="large"
               format="DD/MM/YYYY"
               placeholder="dd/mm/aaaa"
-              disabledDate={(fecha) => fecha.isBefore(dayjs().startOf('day'))}
+              disabledDate={(fecha) => fecha.isBefore(hoy())}
               className={styles.fullWidth}
               data-testid="alta-disponible"
             />
@@ -432,7 +432,8 @@ export function PasoRevision({ valores, onEditar }: PasoRevisionProps) {
   const fotosOrdenadas = principal ? [principal, ...valores.photos.filter((foto) => foto.id !== principal.id)] : []
   const estadoTexto = ESTADO_ALTA_OPTIONS.find((opcion) => opcion.value === valores.status)?.label ?? '—'
   const medios = valores.paymentMethods.map((medio) => (medio.surchargePct > 0 ? `${MEDIO_PAGO_CORTO[medio.method]} +${String(medio.surchargePct).replace('.', ',')} %` : MEDIO_PAGO_CORTO[medio.method]))
-  const publicada = valores.status === 'publicada'
+  // Publicada, o alquilada con fecha de disponibilidad (alquilada/publicada).
+  const publicada = valores.status ? seVeEnBusqueda({ status: valores.status, availableFrom: valores.availableFrom ?? null }) : false
 
   return (
     <div className={styles.review}>
@@ -511,7 +512,7 @@ export function PasoRevision({ valores, onEditar }: PasoRevisionProps) {
           <span className={styles.previewText}>
             {publicada
               ? 'Esta es la tarjeta que aparece en la búsqueda de propiedades.'
-              : 'Mientras esté pausada o alquilada no aparece en la búsqueda. Así se va a ver cuando la publiques.'}
+              : 'Mientras esté pausada, o alquilada sin fecha de disponibilidad, no aparece en la búsqueda. Así se va a ver cuando la publiques.'}
           </span>
           {/* `inert`: es una vista previa, la tarjeta no se puede tocar. */}
           <div className={styles.previewCard} inert data-testid="alta-vista-previa">
@@ -541,7 +542,11 @@ export function PasoRevision({ valores, onEditar }: PasoRevisionProps) {
           <span className={styles.beforeTitle}>{publicada ? 'Antes de publicar' : 'Antes de guardar'}</span>
           <ul className={styles.beforeList}>
             {publicada ? (
-              <li>Al publicar, la propiedad queda visible para cualquiera que busque en Córdoba.</li>
+              <li>
+                {valores.status === 'alquilada'
+                  ? 'Como cargaste desde cuándo vuelve a estar disponible, se publica para el próximo inquilino: se ve en la búsqueda con esa fecha.'
+                  : 'Al publicar, la propiedad queda visible para cualquiera que busque en Córdoba.'}
+              </li>
             ) : (
               <li>Queda guardada en Mis propiedades como {estadoTexto.toLowerCase()}, sin aparecer en la búsqueda.</li>
             )}

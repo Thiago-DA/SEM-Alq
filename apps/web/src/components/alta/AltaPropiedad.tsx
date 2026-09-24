@@ -29,7 +29,7 @@ import { neighborhoods } from '@/lib/catalogs/neighborhoods'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { ALTA_BORRADOR_KEY, borrarBorrador, guardarBorrador, type BorradorAlta } from '@/lib/alta/borrador'
 import { ALTA_VALORES_INICIALES, CAMPOS_POR_PASO, ETIQUETA_CAMPO, type AltaValues } from '@/lib/validation/propiedad.rules'
-import { tituloDePropiedadNueva } from '@/services/adapters/propiedad.adapter'
+import { seVeEnBusqueda, tituloDePropiedadNueva } from '@/services/adapters/propiedad.adapter'
 import { registrarPropiedad, type PropiedadRegistrada } from '@/services/propiedades.service'
 import { ServiceError } from '@/services/shared/errors'
 import { PasoCaracteristicas, PasoCondiciones, PasoFotos, PasoRevision, PasoUbicacion } from './PasosAlta'
@@ -291,6 +291,8 @@ export function AltaPropiedad() {
   // ─── Éxito (· 08) ───────────────────────────────────────────────────
   if (fase === 'exito' && registrada) {
     const publicada = registrada.status === 'publicada'
+    const alquiladaPublicada = registrada.status === 'alquilada_publicada'
+    const seVe = publicada || alquiladaPublicada
     return (
       <div className={styles.page}>
         <Result
@@ -300,22 +302,24 @@ export function AltaPropiedad() {
               ✓
             </span>
           }
-          title={publicada ? 'Tu propiedad ya está publicada' : 'Tu propiedad quedó guardada'}
+          title={publicada ? 'Tu propiedad ya está publicada' : alquiladaPublicada ? 'Tu propiedad quedó publicada para el próximo inquilino' : 'Tu propiedad quedó guardada'}
           subTitle={
             publicada
               ? `${registrada.resumen}. Desde ahora aparece en la búsqueda y puede recibir solicitudes.`
-              : `${registrada.resumen} quedó guardada como ${registrada.status} y no aparece en la búsqueda.`
+              : alquiladaPublicada
+                ? `${registrada.resumen} quedó alquilada, y como cargaste la fecha de disponibilidad aparece en la búsqueda como "Disponible desde".`
+                : `${registrada.resumen} quedó guardada como ${registrada.status} y no aparece en la búsqueda.`
           }
           extra={
             <div className={styles.resultBody}>
               <StatusTag domain="propiedad" status={registrada.status} />
               <div className={styles.resultActions}>
-                {publicada && (
+                {seVe && (
                   <Button type="primary" size="large" onClick={() => router.push(`/propiedad/${registrada.id}`)} data-testid="alta-exito-ver">
                     Ver la publicación
                   </Button>
                 )}
-                <Button type={publicada ? 'default' : 'primary'} size="large" onClick={() => router.push('/panel/propiedades')} data-testid="alta-exito-mis-propiedades">
+                <Button type={seVe ? 'default' : 'primary'} size="large" onClick={() => router.push('/panel/propiedades')} data-testid="alta-exito-mis-propiedades">
                   Ir a mis propiedades
                 </Button>
                 <Button size="large" onClick={publicarOtra} data-testid="alta-exito-otra">
@@ -325,7 +329,7 @@ export function AltaPropiedad() {
               <div className={styles.nextBox}>
                 <span className={styles.nextTitle}>Lo que sigue</span>
                 <span className={styles.nextText}>
-                  {publicada
+                  {seVe
                     ? 'Cuando alguien la solicite, la vas a ver en Solicitudes. Desde ahí se arma el contrato con estos mismos datos.'
                     : 'La vas a encontrar en Mis propiedades con su estado. Cuando quieras que se vea en la búsqueda, la publicás desde su detalle.'}
                 </span>
@@ -340,7 +344,8 @@ export function AltaPropiedad() {
 
   // ─── Contenido de los pasos ─────────────────────────────────────────
   const publicando = fase === 'publicando'
-  const publicada = valores.status === 'publicada'
+  // Publicada, o alquilada con fecha de disponibilidad: las dos se ven en la búsqueda.
+  const publicada = valores.status ? seVeEnBusqueda({ status: valores.status, availableFrom: valores.availableFrom ?? null }) : false
 
   const formulario = (
     <Form<AltaValues>

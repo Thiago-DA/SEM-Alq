@@ -38,10 +38,12 @@ Todas están en Córdoba Capital (provincia "Córdoba", ciudad "Córdoba Capital
 ## Reglas que no hay que volver a romper
 
 1. Una propiedad `alquilada` o `pausada` nunca aparece en `/buscar`. Sí aparece una
-   `alquilada_publicada` (alquilada, pero con fecha de "Disponible desde" cargada).
+   `alquilada_publicada` (alquilada, pero con fecha de "Disponible desde" cargada). Las alquiladas
+   del elenco no tienen fecha: ninguna aparece en `/buscar`. En el alta, una alquilada con fecha
+   queda `alquilada_publicada`.
 2. Un inquilino pertenece a una sola propiedad; un monto, a un solo contrato.
 3. Los montos futuros siempre llevan la palabra "estimado".
-4. "Hoy" es **septiembre de 2026** en todas las vistas.
+4. "Hoy" es el **23/09/2026** en todas las vistas (fijo en modo mock, ver `lib/utils/fechas.ts`).
 5. Barrios válidos: los de `lib/catalogs/neighborhoods.ts`.
 6. Prefijos de ID: propiedades `prop-…`, contratos `CT-2026-XXXX`, recibos `RC-2026-XXXX`,
    reclamos `RCL-2026-XXXX`, solicitudes `SOL-2026-XXXX`.
@@ -69,11 +71,28 @@ reclamos no se escriben en la propiedad: se calculan a partir de los cobros y re
 
 Solicitudes: Julieta Peralta por Rondeau 480 (SOL-2026-0031, pendiente).
 
-Los "vence en N días" y "N días de atraso" se calculan contra la fecha real
-(`lib/utils/fechas.ts`): el 23/09/2026, Laprida lleva 19 días y Belgrano 7. Cómo se calcula cada
-cifra del panel está documentado en el encabezado de `panel.mock.ts`.
+Los "vence en N días" y "N días de atraso" se calculan contra "hoy" (`lib/utils/fechas.ts`), que
+en modo mock está FIJO en el **23/09/2026**: Laprida lleva 19 días de atraso y Belgrano 7, siempre.
+Con el backend real, "hoy" es la fecha del sistema. Cómo se calcula cada cifra del panel está
+documentado en el encabezado de `panel.mock.ts`.
 
 Lo que el export mostraba y **no** se usa porque contradice el elenco: Cerro de las Rosas, Villa
 Belgrano, Bv. San Juan, Duarte Quirós, el tipo "Local", Familia Suárez, Tomás Bustos y Rocío
 Medina. Tampoco se usa el banner de suscripción del export ("Locador Plus vence el 30/09"): la
 suscripción no es de este sprint y el elenco no la define.
+
+## Datos completados en el sprint 1
+
+**No son datos del diseño ni del mapa.** Se completaron para que el panel y el listado de la tanda
+"Locador" tuvieran algo coherente que mostrar, con el OK del PO. Si el mapa o el diseño definen
+otros valores, ganan ellos.
+
+| Dato | Valor elegido | Dónde |
+|---|---|---|
+| Ids de contrato | CT-2026-0102 (Laprida 340), CT-2026-0115 (Belgrano 1120), CT-2026-0121 (Av. Colón 2450), CT-2026-0133 (Mariano Moreno 285). CT-2026-0148 (Obispo Trejo) sí es del mapa. | `rental.contractId` en `propiedades.mock.ts` |
+| Fechas de contrato | Laprida 01/03/2025–29/02/2028, Belgrano 01/07/2025–30/06/2028, Av. Colón 01/10/2025–30/09/2028, Mariano Moreno 01/12/2025–30/11/2028 (36 meses, a partir de su `publishedAt`) | `rental.startDate` / `endDate` |
+| Vencimiento del cobro de septiembre | Laprida 04/09, Belgrano 16/09, Av. Colón 28/09, Obispo Trejo 10/09, Mariano Moreno 05/09. Elegidos para que, al 23/09, den los 19 y 7 días de atraso y el "vence este mes" pedidos. | `cobros` en `panel.mock.ts` |
+| Fecha de pago de Obispo Trejo | 03/09 (al día) | `cobros` en `panel.mock.ts` |
+| Próximos ajustes | Belgrano 01/11/2026 (IPC cada 4 meses), Av. Colón 01/10/2026 (ICL anual), Mariano Moreno 01/12/2026 (IPC cada 4 meses). Laprida (01/03/2027) y Obispo Trejo (01/04/2027) sí vinieron de producto y del mapa. | `rental.nextAdjustmentDate` |
+| Reclamos | "Pérdida de agua en el baño" (abierto, sin responder) y "El termotanque no calienta" (en proceso) → Laprida 340; "Ruido de la bomba de agua" (en proceso) → Av. Colón 2450. Títulos del export del panel; ids RCL-2026-0036/0039/0041 y fechas elegidos acá. | `reclamos` en `panel.mock.ts` |
+| Solicitud de Julieta | SOL-2026-0031, del 20/09/2026 | `solicitudes` en `panel.mock.ts` |

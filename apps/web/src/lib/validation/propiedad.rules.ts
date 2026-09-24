@@ -14,6 +14,7 @@ import type { FormRule } from 'antd'
 import dayjs from 'dayjs'
 import type { AdjustmentIndex, CharacteristicKey, EstadoPublicacionAlta, FotoNueva, MedioPagoConRecargo, PropertyType } from '@rentar/shared-types'
 import { RECARGO_MAXIMO_PCT } from '@/lib/catalogs/propiedad'
+import { hoy } from '@/lib/utils/fechas'
 
 // ─── Valores del formulario ─────────────────────────────────────────────
 
@@ -110,7 +111,6 @@ export const MENSAJES_ALTA = {
   superficieRango: `Tiene que estar entre ${M2_MINIMO} y ${M2_MAXIMO} m².`,
   cubiertaMayor: 'La superficie cubierta no puede ser mayor que la total.',
   estado: 'Elegí el estado de la publicación.',
-  disponibleObligatoria: 'Si está alquilada, indicá desde cuándo vuelve a estar disponible.',
   disponiblePasada: 'La fecha no puede ser anterior a hoy.',
   fotosMinimo: `Necesitás al menos ${FOTOS_MINIMO} fotos.`,
   precio: 'Completá el precio mensual.',
@@ -187,18 +187,16 @@ export const reglasEstado: FormRule[] = [{ required: true, message: MENSAJES_ALT
 
 /**
  * US-01: "Si la propiedad se encuentra alquilada, se puede ingresar desde qué
- * fecha estará disponible". Producto la hizo obligatoria para las alquiladas.
- * En cualquier estado, nunca anterior a hoy (Alta · 06).
+ * fecha estará disponible": es OPCIONAL. Si una alquilada la trae, queda
+ * alquilada/publicada (ver `propiedad.adapter.ts#estadoDePropiedadNueva`).
+ * Nunca anterior a hoy (Alta · 06).
  */
-export function reglasDisponibleDesde(estado: EstadoPublicacionAlta | undefined): FormRule[] {
-  return [
-    { required: estado === 'alquilada', message: MENSAJES_ALTA.disponibleObligatoria },
-    {
-      validator: (_rule, value?: string | null) =>
-        value && dayjs(value).isBefore(dayjs().startOf('day')) ? Promise.reject(new Error(MENSAJES_ALTA.disponiblePasada)) : Promise.resolve(),
-    },
-  ]
-}
+export const reglasDisponibleDesde: FormRule[] = [
+  {
+    validator: (_rule, value?: string | null) =>
+      value && dayjs(value).isBefore(hoy()) ? Promise.reject(new Error(MENSAJES_ALTA.disponiblePasada)) : Promise.resolve(),
+  },
+]
 
 /** US-01: "al menos tres fotos" (el máximo, el formato y el peso se controlan al agregarlas). */
 export const reglasFotos: FormRule[] = [

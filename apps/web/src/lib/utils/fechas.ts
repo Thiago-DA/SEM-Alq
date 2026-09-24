@@ -2,9 +2,8 @@
  * fechas.ts — "hoy" y cuentas de días para los textos relativos del panel.
  *
  * Qué es: un solo lugar para "vence en 5 días", "19 días de atraso" o "hace 2
- * días". Nada de eso se escribe fijo en los mocks: se calcula contra la
- * fecha real del navegador, que para el elenco es septiembre de 2026 (ver
- * `lib/mocks/README.md`, "Hoy es septiembre de 2026").
+ * días". Nada de eso se escribe fijo en los mocks: se calcula contra
+ * {@link hoy} (en modo mock, el 23/09/2026 del elenco; ver `lib/mocks/README.md`).
  *
  * Quién lo usa: la rama mock de `services/panel.service.ts` y
  * `services/propiedades.service.ts`, y las pantallas del panel para los
@@ -12,15 +11,26 @@
  */
 import dayjs, { type Dayjs } from 'dayjs'
 import 'dayjs/locale/es'
+import { USE_MOCKS } from '@/services/shared/config'
+
+/**
+ * "Hoy" del elenco en modo mock: los datos de prueba se armaron contra esta
+ * fecha (Laprida 340 lleva 19 días de atraso, Belgrano 1120 lleva 7).
+ */
+export const HOY_ELENCO = '2026-09-23'
 
 /**
  * Hoy, a las 00:00 (así las cuentas de días no dependen de la hora).
- * NOTA: es la fecha real. Si el elenco se mira fuera de septiembre de 2026,
- * los vencimientos del mock cambian de estado solos (un pendiente pasa a
- * vencido); es a propósito: las fechas del elenco son fijas, "hoy" no.
+ *
+ * NOTA: en modo mock (`NEXT_PUBLIC_USE_MOCKS`, el default) es FIJO:
+ * {@link HOY_ELENCO}. Con la fecha real, los datos del elenco se
+ * desacomodarían solos día a día (un cobro pendiente pasaría a vencido, los
+ * "19 días de atraso" pasarían a 20) y los tests de Selenium, que comparan
+ * esos textos, dejarían de ser estables. Con el backend real
+ * (`NEXT_PUBLIC_USE_MOCKS=false`) es la fecha del sistema.
  */
 export function hoy(): Dayjs {
-  return dayjs().startOf('day')
+  return (USE_MOCKS ? dayjs(HOY_ELENCO) : dayjs()).startOf('day')
 }
 
 /** Días que faltan desde hoy hasta `fecha` (negativo si ya pasó). */

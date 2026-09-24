@@ -220,7 +220,10 @@ export interface PropiedadNueva {
   characteristics: CharacteristicKey[]
   description: string
   status: EstadoPublicacionAlta
-  /** Fecha ISO. Obligatoria si `status` es `alquilada`. */
+  /**
+   * Fecha ISO desde la que vuelve a estar disponible (US-01: opcional). Una
+   * `alquilada` con fecha queda `alquilada_publicada` y aparece en `/buscar`.
+   */
   availableFrom: string | null
 
   // Paso 3 · Fotos

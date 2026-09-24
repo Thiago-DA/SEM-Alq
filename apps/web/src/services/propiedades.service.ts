@@ -20,6 +20,7 @@ import type {
   MisAlquileresItem,
   OrdenBusqueda,
   Paginado,
+  PropertyStatus,
   PropiedadLocador,
   PropiedadNueva,
   PropiedadResumen,
@@ -32,6 +33,7 @@ import { cobros as cobrosElenco, propiedades as propiedadesElenco, reclamos as r
 import { hoy } from '@/lib/utils/fechas'
 import { isSearchable, propiedadMockToLocador, propiedadMockToResumen, propiedadNuevaToMock } from './adapters/propiedad-mock.adapter'
 import {
+  estadoDePropiedadNueva,
   inmuebleToPropiedadResumen,
   misAlquileresItemToPropiedadLocador,
   propiedadNuevaToCrearInmueble,
@@ -195,10 +197,13 @@ export async function listarMisPropiedades(): Promise<PropiedadLocador[]> {
 
 // ─── Alta (US-01) ───────────────────────────────────────────────────────
 
-/** Lo que devuelve el alta: el id nuevo (para "Ver la publicación") y el estado con que quedó. */
+/**
+ * Lo que devuelve el alta: el id nuevo (para "Ver la publicación") y el
+ * estado con que quedó (una alquilada con fecha queda `alquilada_publicada`).
+ */
 export interface PropiedadRegistrada {
   id: string
-  status: PropiedadNueva['status']
+  status: PropertyStatus
 }
 
 /** Mensaje si el navegador no pudo guardar la propiedad en modo mock (por ejemplo, fotos muy pesadas). */
@@ -207,7 +212,8 @@ const MOCK_STORAGE_FULL_MESSAGE =
 
 /**
  * US-01 Registrar mis propiedades — da de alta la propiedad del locador en
- * sesión y, en el mismo paso, su publicación (publicada, pausada o alquilada).
+ * sesión y, en el mismo paso, su publicación (publicada, pausada o alquilada;
+ * alquilada con fecha de disponibilidad → alquilada/publicada).
  * @backend POST /api/v1/inmuebles       (existe · faltan casi todos los campos de US-01)
  *          POST /api/v1/publicaciones   (existe · hoy exige un contrato previo)
  * @body    CrearInmuebleRequest, después CrearPublicacionRequest (ver shared/backend-dtos.ts)
@@ -230,13 +236,13 @@ export async function registrarPropiedad(nueva: PropiedadNueva): Promise<Propied
     if (!saveMockRecord('propiedades', propiedad)) {
       throw new ServiceError('server', MOCK_STORAGE_FULL_MESSAGE)
     }
-    return { id: propiedad.id, status: nueva.status }
+    return { id: propiedad.id, status: propiedad.status }
   }
 
   const idLocador = currentBackendUserId()
   const inmueble = await apiRequest<Inmueble>('/inmuebles', { method: 'POST', body: propiedadNuevaToCrearInmueble(nueva, idLocador) })
   await apiRequest<Publicacion>('/publicaciones', { method: 'POST', body: propiedadNuevaToCrearPublicacion(nueva, inmueble.id) })
-  return { id: String(inmueble.id), status: nueva.status }
+  return { id: String(inmueble.id), status: estadoDePropiedadNueva(nueva) }
 }
 
 /**

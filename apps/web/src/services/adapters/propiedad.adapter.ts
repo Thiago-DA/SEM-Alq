@@ -13,6 +13,7 @@ import type {
   CharacteristicKey,
   Inmueble,
   MisAlquileresItem,
+  PropertyStatus,
   PropertyType,
   PropiedadLocador,
   PropiedadNueva,
@@ -200,6 +201,22 @@ export function misAlquileresItemToPropiedadLocador(item: MisAlquileresItem): Pr
 
 // ─── PropiedadNueva → cuerpos del alta (US-01) ──────────────────────────
 
+/**
+ * Estado con que queda la propiedad del alta. Una alquilada CON fecha de
+ * disponibilidad pasa a `alquilada_publicada`: se publica para el próximo
+ * inquilino y aparece en `/buscar` con "Disponible desde" (US-02, US-34 y la
+ * nota de `PropertyStatus`). Sin fecha queda `alquilada` y no se ve.
+ */
+export function estadoDePropiedadNueva(nueva: Pick<PropiedadNueva, 'status' | 'availableFrom'>): PropertyStatus {
+  return nueva.status === 'alquilada' && nueva.availableFrom ? 'alquilada_publicada' : nueva.status
+}
+
+/** `true` si la propiedad del alta aparece en `/buscar` (publicada, o alquilada con fecha). */
+export function seVeEnBusqueda(nueva: Pick<PropiedadNueva, 'status' | 'availableFrom'>): boolean {
+  const estado = estadoDePropiedadNueva(nueva)
+  return estado === 'publicada' || estado === 'alquilada_publicada'
+}
+
 /** Nombre del tipo para armar el título de la publicación ("Departamento de 2 ambientes"). */
 const TYPE_TITLE: Record<PropiedadNueva['type'], string> = {
   departamento: 'Departamento',
@@ -251,13 +268,16 @@ export function propiedadNuevaToCrearInmueble(nueva: PropiedadNueva, idLocador: 
 
 /**
  * `PropiedadNueva` → cuerpo de `POST /api/v1/publicaciones`: el título y
- * el precio. `activa` = quedó publicada (pausada o alquilada → inactiva).
+ * el precio. `activa` = aparece en la búsqueda (publicada, o alquilada con
+ * fecha de disponibilidad; pausada o alquilada sin fecha → inactiva).
+ * TODO(backend): la publicación no guarda la fecha de disponibilidad: el
+ * back no puede distinguir una "alquilada/publicada" (ver HANDOFF).
  */
 export function propiedadNuevaToCrearPublicacion(nueva: PropiedadNueva, idInmueble: number): CrearPublicacionRequest {
   return {
     id_inmueble: idInmueble,
     titulo: tituloDePropiedadNueva(nueva),
     precio: nueva.priceMonthly,
-    activa: nueva.status === 'publicada',
+    activa: seVeEnBusqueda(nueva),
   }
 }
