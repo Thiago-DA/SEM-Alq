@@ -43,16 +43,26 @@ export interface PropertyCardBusquedaProps {
   photoSrcs?: string[]
   /** Una característica destacada para los chips (ej. "Mascotas"). */
   characteristicLabel?: string
+  /**
+   * "Hoy" contra el que se decide entre "Disponible desde" y "Disponible
+   * ahora". Por defecto, la fecha actual. `apps/web` le pasa su "hoy"
+   * (fijo en modo mock, ver `lib/utils/fechas.ts`), así la tarjeta no
+   * contradice al resto de la app.
+   */
+  referenceDate?: Date
   'data-testid'?: string
 }
 
 // ─── Helpers ───────────────────────────────────────────────────────────────
 
-/** "Disponible desde dd/mm/aaaa" si la fecha es futura; si no, "Disponible ahora". */
-function availabilityLabel(availableFrom: string | null | undefined): string {
+/**
+ * "Disponible desde dd/mm/aaaa" si la fecha es posterior a `referenceDate`;
+ * si no, "Disponible ahora".
+ */
+function availabilityLabel(availableFrom: string | null | undefined, referenceDate: Date): string {
   if (!availableFrom) return 'Disponible ahora'
   const date = new Date(availableFrom)
-  return date.getTime() > Date.now() ? `Disponible desde ${formatDate(availableFrom)}` : 'Disponible ahora'
+  return date.getTime() > referenceDate.getTime() ? `Disponible desde ${formatDate(availableFrom)}` : 'Disponible ahora'
 }
 
 // ─── Componente ────────────────────────────────────────────────────────────
@@ -91,6 +101,7 @@ export function PropertyCardBusqueda({
   availableFrom,
   photoSrcs,
   characteristicLabel,
+  referenceDate,
   ...rest
 }: PropertyCardBusquedaProps) {
   const { ImageComponent, LinkComponent } = useNextBridge()
@@ -150,7 +161,7 @@ export function PropertyCardBusqueda({
 
         {description && <p className={styles.description}>{description}</p>}
         <span className={styles.availability} data-testid="property-card-availability">
-          {availabilityLabel(availableFrom)}
+          {availabilityLabel(availableFrom, referenceDate ?? new Date())}
         </span>
 
         <div className={styles.chips}>

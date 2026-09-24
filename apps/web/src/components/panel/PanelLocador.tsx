@@ -36,7 +36,11 @@ import styles from './Panel.module.css'
 
 // ─── Helpers ────────────────────────────────────────────────────────────
 
-/** "Buen día" hasta las 13, "Buenas tardes" hasta las 20, después "Buenas noches". */
+/**
+ * "Buen día" hasta las 13, "Buenas tardes" hasta las 20, después "Buenas noches".
+ * NOTA: usa la hora real a propósito: el "hoy" fijo del modo mock fija la
+ * fecha (los días de atraso), no la hora del día.
+ */
 function saludo(): string {
   const hora = new Date().getHours()
   if (hora < 13) return 'Buen día'

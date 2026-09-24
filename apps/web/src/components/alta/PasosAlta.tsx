@@ -534,6 +534,7 @@ export function PasoRevision({ valores, onEditar }: PasoRevisionProps) {
               description={valores.description}
               availableFrom={valores.availableFrom ?? null}
               characteristicLabel={valores.characteristics[0] ? characteristicShortLabel[valores.characteristics[0]] : undefined}
+              referenceDate={hoy().toDate()}
             />
           </div>
         </section>

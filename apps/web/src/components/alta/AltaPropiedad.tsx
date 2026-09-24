@@ -155,6 +155,7 @@ export function AltaPropiedad() {
   const [decisionBorrador, setDecisionBorrador] = useState<'continuar' | 'nuevo' | null>(null)
   const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Cuándo se abrió el alta: solo se ofrece un borrador guardado ANTES (no el que se va guardando ahora).
+  // NOTA: hora real a propósito (como `savedAt`): compara momentos, no se muestra.
   const [abiertaEn] = useState(() => new Date().toISOString())
 
   // ─── Borrador ───────────────────────────────────────────────────────

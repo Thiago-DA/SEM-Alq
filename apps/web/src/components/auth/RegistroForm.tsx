@@ -24,7 +24,6 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { Button, Checkbox, DatePicker, Form, Input } from 'antd'
 import type { Dayjs } from 'dayjs'
-import dayjs from 'dayjs'
 import { AuthLayout, PasswordStrengthMeter, SimulatedFeatureNotice } from '@rentar/ui'
 import {
   fuerzaPassword,
@@ -40,6 +39,7 @@ import {
   requisitosPassword,
   soloDigitos,
 } from '@/lib/validation/usuario.rules'
+import { hoy } from '@/lib/utils/fechas'
 import { registrarUsuario, type RegistroInput } from '@/services/auth.service'
 import { ServiceError } from '@/services/shared/errors'
 import { FormAlert } from './FormAlert'
@@ -251,7 +251,7 @@ export function RegistroForm({ initialRol, next }: RegistroFormProps) {
               <DatePicker
                 format="DD/MM/YYYY"
                 placeholder="dd/mm/aaaa"
-                disabledDate={(date) => date.isAfter(dayjs(), 'day')}
+                disabledDate={(date) => date.isAfter(hoy(), 'day')}
                 data-testid="registro-fecha-nacimiento-input"
               />
             </Form.Item>

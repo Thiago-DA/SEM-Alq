@@ -61,6 +61,9 @@ Sprint 1. Todas las props son nuevas y opcionales: los usos anteriores no cambia
   `activeRoleLabel` (dos roles), debajo de 768px un chip con el rol activo que abre la misma hoja que
   el avatar. `mobileHeader` reemplaza la barra en flujos enfocados (el alta: "‹ Publicar propiedad ·
   Salir"). Pasa `roleOptions`/`onRoleChange` al `UserMenu`.
+- `PropertyCard` / `PropertyCardBusqueda`: prop opcional `referenceDate?: Date` (el "hoy" contra el que
+  se decide "Disponible desde" o "Disponible ahora"; por defecto, la fecha actual). `apps/web` le
+  pasa su "hoy", fijo en modo mock.
 - Compuestos en `apps/web` (no en `@rentar/ui`, aprobado por el PO): la carga de fotos del alta, el
   contador ±, las tarjetas de medios de pago e índice, las StatCards compactas del panel móvil y
   las tarjetas del onboarding.

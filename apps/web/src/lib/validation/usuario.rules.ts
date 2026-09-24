@@ -10,7 +10,8 @@
  * Quién lo usa: `components/auth/LoginForm.tsx` y `components/auth/RegistroForm.tsx`.
  */
 import type { FormRule as Rule } from 'antd'
-import dayjs, { type Dayjs } from 'dayjs'
+import type { Dayjs } from 'dayjs'
+import { hoy } from '@/lib/utils/fechas'
 import type { PasswordRequirement, PasswordStrength } from '@rentar/ui'
 
 // ─── Expresiones regulares ──────────────────────────────────────────────
@@ -83,10 +84,10 @@ export function soloDigitos(valor: string): string {
 
 /**
  * `true` si alguien nacido en `fechaNacimiento` ya cumplió {@link EDAD_MINIMA}
- * años al día `hoy`.
+ * años al día `referencia` (por defecto, el "hoy" de `lib/utils/fechas.ts`).
  */
-export function esMayorDeEdad(fechaNacimiento: Dayjs, hoy: Dayjs = dayjs()): boolean {
-  return !fechaNacimiento.isAfter(hoy.subtract(EDAD_MINIMA, 'year'), 'day')
+export function esMayorDeEdad(fechaNacimiento: Dayjs, referencia: Dayjs = hoy()): boolean {
+  return !fechaNacimiento.isAfter(referencia.subtract(EDAD_MINIMA, 'year'), 'day')
 }
 
 // ─── Fuerza de la contraseña (para PasswordStrengthMeter) ───────────────

@@ -12,6 +12,7 @@ import { Button, Pagination, Skeleton } from 'antd'
 import type { BusquedaFiltros, Paginado, PropiedadResumen } from '@rentar/shared-types'
 import { EmptyState, PropertyCard } from '@rentar/ui'
 import { characteristicShortLabel } from '@/lib/catalogs/characteristics'
+import { hoy } from '@/lib/utils/fechas'
 import { formatARS } from '@rentar/ui/src/utils/formatARS'
 import styles from './Buscar.module.css'
 
@@ -134,6 +135,7 @@ export function ResultadosGrilla({ resultado, onPagina }: ResultadosGrillaProps)
             description={propiedad.description}
             availableFrom={propiedad.availableFrom}
             characteristicLabel={propiedad.characteristics[0] ? characteristicShortLabel[propiedad.characteristics[0]] : undefined}
+            referenceDate={hoy().toDate()}
             data-testid="buscar-tarjeta"
           />
         ))}
