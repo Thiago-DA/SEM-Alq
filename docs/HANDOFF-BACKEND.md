@@ -159,6 +159,10 @@ Lo que cada pantalla necesita y la API de `develop` todavía no tiene. No se mod
   cliente, con las mismas reglas (`apps/web/src/lib/search/busqueda.ts`).
 - No devuelve la publicación (título, precio, fecha): el front pide `GET /inmuebles/:id` por cada
   inmueble (N+1).
+  **Novedad (24/09):** `develop` sumó `GET /publicaciones/activas`, que devuelve cada publicación
+  activa con su inmueble en un solo pedido (`PublicacionDisponibleDTO`). Resuelve la N+1: cambiar la
+  rama real de `propiedades.service#listarPropiedadesPublicadas`/`#buscarPropiedades` a esa ruta
+  queda para el sprint 2 (hay que sumar un adaptador `PublicacionDisponibleDTO → PropiedadResumen`).
 - Faltan: provincia, barrio, expensas, índice de ajuste, fecha de disponibilidad, fotos, lista de
   características (hoy `tags` es un solo id) y el estado "alquilada/publicada".
 - La ciudad se guarda como "Córdoba"; el front usa "Córdoba Capital" (`normalizarCiudad`).
@@ -264,8 +268,8 @@ Encontradas al integrar. No se tocó `apps/api`: quedan para el equipo.
    en `tests/api/` de la raíz. Desde la raíz, `npx tsx tests/api/mis-alquileres.test.ts` pasa (6/6).
 2. **`x-user-id` por defecto es `'1'`** (`auth.middleware.ts`): un pedido sin el header entra como el
    locador de prueba. Sin sesión, el front no manda el header; conviene responder 401.
-3. **Rutas duplicadas** en `inmuebles.routes.ts`: `GET /disponibles` y `GET /:id` se registran dos
-   veces.
+3. **Rutas duplicadas**: en `inmuebles.routes.ts`, `GET /disponibles` y `GET /:id` se registran dos
+   veces; en `publicaciones.routes.ts`, `GET /activas` también.
 4. **Mensajes de error**: el manejador de errores responde 400 por defecto con el texto interno del
    `Error` (ej. "Regla de negocio no cumplida: …"). El front lo muestra tal cual, así que tiene que ser
    un texto para el usuario, en español y diciendo qué hacer.

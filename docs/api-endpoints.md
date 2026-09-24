@@ -34,6 +34,7 @@ como "credenciales incorrectas".
 | Método y ruta | Estado | US | Service | Body / query | Respuesta (`data`) |
 |---|---|---|---|---|---|
 | `GET /inmuebles/disponibles` | existe (faltan filtros, orden y paginación) | US-34 | `propiedades.service#listarPropiedadesPublicadas`, `#buscarPropiedades`, `#contarPropiedades` | query propuesto: `provincia, ciudad, barrio[], precioMin, precioMax, tipo[], dorm[], amb[], m2Min, m2Max, tag[], indice, orden, pagina, tamanioPagina` (mismos nombres que la URL de `/buscar`) | hoy `Inmueble[]`; propuesto `{ items, page, pageSize, total }` con la publicación de cada uno |
+| `GET /publicaciones/activas` | existe (desde el 24/09, todavía sin usar en el front) | US-34 | — (reemplaza la N+1 de arriba: cada publicación activa con su inmueble) | — | `PublicacionDisponibleDTO[]` |
 | `GET /inmuebles/:id` | existe | US-34 | (lo usa la búsqueda para traer título y precio de cada inmueble) | — | `InmuebleDetalleResponse` |
 | `GET /catalogos/ubicaciones` | propuesto | US-34 | `propiedades.service#listarUbicaciones` | — | `UbicacionOpciones` (provincias → ciudades → barrios con propiedades publicadas) |
 | `GET /mis-alquileres` | existe (solo las publicadas, faltan campos) | US-02 | `propiedades.service#listarMisPropiedades` | query opcional a futuro: `barrio, tipo, estado, reclamos, q` | `MisAlquileresItem[]` → `misAlquileresItemToPropiedadLocador` |
