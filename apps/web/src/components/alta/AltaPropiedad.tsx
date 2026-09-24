@@ -1,0 +1,470 @@
+'use client'
+
+/**
+ * AltaPropiedad.tsx — `/panel/propiedades/nueva`, US-01 Registrar mis
+ * propiedades.
+ *
+ * Qué hace (Claude Design, "Alta de propiedad" · 01-10): un `WizardLayout`
+ * de 5 pasos (tipo y ubicación, características, fotos, condiciones y
+ * revisión). Cada paso se valida al tocar "Siguiente": si falta algo, arriba
+ * del paso aparece "Faltan N datos para seguir" con un link a cada campo, el
+ * paso se marca en rojo en el Steps y el foco salta al primero (· 06).
+ * Después: publicando (· 07), error con "Intentar de nuevo" (· 07) o éxito
+ * con el próximo paso (· 08).
+ *
+ * Borrador LOCAL (no es un estado de la propiedad, ver `lib/alta/borrador.ts`):
+ * lo cargado se guarda en el navegador mientras se escribe. Si al entrar hay
+ * uno, se pregunta "Continuar / Empezar de nuevo" (nunca se restaura en
+ * silencio) y no se pisa hasta que la persona elige. Se borra al terminar.
+ *
+ * De dónde saca los datos: `propiedades.service#registrarPropiedad`.
+ * Quién lo usa: `app/(app)/panel/propiedades/nueva/page.tsx`.
+ */
+import { useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { Button, Form, Result } from 'antd'
+import { useRouter } from 'next/navigation'
+import type { PropiedadNueva } from '@rentar/shared-types'
+import { PageHeader, StatusTag, WizardLayout } from '@rentar/ui'
+import { neighborhoods } from '@/lib/catalogs/neighborhoods'
+import { useAuth } from '@/lib/auth/AuthProvider'
+import { ALTA_BORRADOR_KEY, borrarBorrador, guardarBorrador, type BorradorAlta } from '@/lib/alta/borrador'
+import { ALTA_VALORES_INICIALES, CAMPOS_POR_PASO, ETIQUETA_CAMPO, type AltaValues } from '@/lib/validation/propiedad.rules'
+import { tituloDePropiedadNueva } from '@/services/adapters/propiedad.adapter'
+import { registrarPropiedad, type PropiedadRegistrada } from '@/services/propiedades.service'
+import { ServiceError } from '@/services/shared/errors'
+import { PasoCaracteristicas, PasoCondiciones, PasoFotos, PasoRevision, PasoUbicacion } from './PasosAlta'
+import styles from './Alta.module.css'
+
+/** Los 5 pasos del diseño. */
+const PASOS = [
+  { key: 'ubicacion', title: 'Tipo y ubicación' },
+  { key: 'caracteristicas', title: 'Características' },
+  { key: 'fotos', title: 'Fotos' },
+  { key: 'condiciones', title: 'Condiciones' },
+  { key: 'revision', title: 'Revisión' },
+] as const
+
+const MIGA = [
+  { label: 'Mi panel', href: '/panel' },
+  { label: 'Propiedades', href: '/panel/propiedades' },
+  { label: 'Nueva' },
+]
+
+/** Espera entre una tecla y el guardado del borrador. */
+const BORRADOR_DEBOUNCE_MS = 600
+
+/** Un error del paso para el resumen de arriba ("Faltan N datos para seguir"). */
+interface ErrorDePaso {
+  name: keyof AltaValues
+  label: string
+  message: string
+}
+
+/** En qué etapa está el alta. */
+type Fase = 'formulario' | 'publicando' | 'error' | 'exito'
+
+// ─── Helpers ────────────────────────────────────────────────────────────
+
+/** Borrador guardado, leído sin efectos (el texto crudo; se parsea abajo). */
+function useBorradorGuardado(): string | null {
+  return useSyncExternalStore(
+    () => () => {},
+    () => {
+      try {
+        return window.localStorage.getItem(ALTA_BORRADOR_KEY)
+      } catch {
+        return null
+      }
+    },
+    () => null,
+  )
+}
+
+/** Valores ya validados del formulario → `PropiedadNueva` (lo que recibe el service). */
+function aPropiedadNueva(valores: AltaValues): PropiedadNueva {
+  const principal = Math.max(
+    0,
+    valores.photos.findIndex((foto) => foto.id === valores.mainPhotoId),
+  )
+  return {
+    type: valores.type ?? 'departamento',
+    street: valores.street ?? '',
+    streetNumber: valores.streetNumber ?? 0,
+    floor: valores.floor?.trim() || null,
+    unit: valores.unit?.trim() || null,
+    neighborhoodSlug: valores.neighborhoodSlug ?? '',
+    city: valores.city,
+    province: valores.province,
+    rooms: valores.rooms,
+    bedrooms: valores.bedrooms,
+    bathrooms: valores.bathrooms,
+    ageYears: valores.ageYears ?? null,
+    totalAreaM2: valores.totalAreaM2 ?? 0,
+    coveredAreaM2: valores.coveredAreaM2 ?? 0,
+    characteristics: valores.characteristics,
+    description: valores.description ?? '',
+    status: valores.status ?? 'pausada',
+    availableFrom: valores.availableFrom ?? null,
+    photos: valores.photos,
+    mainPhotoIndex: principal,
+    priceMonthly: valores.priceMonthly ?? 0,
+    expenses: valores.expenses ?? 0,
+    dailyInterestPct: valores.dailyInterestPct || null,
+    graceDays: valores.dailyInterestPct ? (valores.graceDays ?? 0) : null,
+    paymentMethods: valores.paymentMethods,
+    adjustmentIndex: valores.adjustmentIndex ?? null,
+    adjustmentEveryMonths: valores.adjustmentEveryMonths ?? null,
+    depositMonths: valores.depositMonths ?? null,
+    contractMonths: valores.contractMonths ?? null,
+  }
+}
+
+/** Errores de antd → resumen del paso. */
+function aErroresDePaso(errorFields: { name: (string | number)[]; errors: string[] }[]): ErrorDePaso[] {
+  return errorFields
+    .filter((campo) => campo.errors.length > 0)
+    .map((campo) => {
+      const name = campo.name[0] as keyof AltaValues
+      return { name, label: ETIQUETA_CAMPO[name] ?? String(name), message: campo.errors[0] }
+    })
+}
+
+/** `true` si lo que tiró `validateFields` es el error de validación de antd. */
+function esErrorDeValidacion(error: unknown): error is { errorFields: { name: (string | number)[]; errors: string[] }[] } {
+  return typeof error === 'object' && error !== null && 'errorFields' in error
+}
+
+// ─── Pantalla ───────────────────────────────────────────────────────────
+
+/** Alta de una propiedad del locador en sesión. */
+export function AltaPropiedad() {
+  const router = useRouter()
+  const { user } = useAuth()
+  const [form] = Form.useForm<AltaValues>()
+  const valores = (Form.useWatch([], form) as AltaValues | undefined) ?? ALTA_VALORES_INICIALES
+
+  // ─── Estado local ───────────────────────────────────────────────────
+  const [paso, setPaso] = useState(0)
+  const [pasoMaximo, setPasoMaximo] = useState(0)
+  const [pasosConError, setPasosConError] = useState<Set<number>>(new Set())
+  const [errores, setErrores] = useState<ErrorDePaso[]>([])
+  const [fase, setFase] = useState<Fase>('formulario')
+  const [errorPublicacion, setErrorPublicacion] = useState<ServiceError | null>(null)
+  const [registrada, setRegistrada] = useState<(PropiedadRegistrada & { resumen: string }) | null>(null)
+  // Qué eligió la persona ante un borrador guardado; `null` = todavía no eligió.
+  const [decisionBorrador, setDecisionBorrador] = useState<'continuar' | 'nuevo' | null>(null)
+  const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Cuándo se abrió el alta: solo se ofrece un borrador guardado ANTES (no el que se va guardando ahora).
+  const [abiertaEn] = useState(() => new Date().toISOString())
+
+  // ─── Borrador ───────────────────────────────────────────────────────
+  const crudo = useBorradorGuardado()
+  const borradorPendiente = useMemo<BorradorAlta<AltaValues> | null>(() => {
+    if (!crudo || !user) return null
+    try {
+      const borrador = JSON.parse(crudo) as BorradorAlta<AltaValues>
+      return borrador.ownerId === user.id && borrador.savedAt < abiertaEn ? borrador : null
+    } catch {
+      return null
+    }
+  }, [crudo, user, abiertaEn])
+  const preguntarPorBorrador = borradorPendiente !== null && decisionBorrador === null
+
+  /** Guarda el borrador un rato después del último cambio (nunca mientras se pregunta qué hacer con el anterior). */
+  function programarBorrador(pasoActual: number): void {
+    if (!user || preguntarPorBorrador || fase === 'exito') return
+    if (temporizador.current) clearTimeout(temporizador.current)
+    temporizador.current = setTimeout(() => {
+      guardarBorrador<AltaValues>({
+        ownerId: user.id,
+        step: pasoActual,
+        values: form.getFieldsValue(true) as AltaValues,
+        savedAt: new Date().toISOString(),
+      })
+    }, BORRADOR_DEBOUNCE_MS)
+  }
+
+  function continuarBorrador(): void {
+    if (!borradorPendiente) return
+    form.setFieldsValue({ ...ALTA_VALORES_INICIALES, ...borradorPendiente.values })
+    setPaso(borradorPendiente.step)
+    setPasoMaximo(borradorPendiente.step)
+    setDecisionBorrador('continuar')
+  }
+
+  function empezarDeNuevo(): void {
+    borrarBorrador()
+    form.resetFields()
+    setPaso(0)
+    setPasoMaximo(0)
+    setDecisionBorrador('nuevo')
+  }
+
+  // ─── Navegación entre pasos ─────────────────────────────────────────
+
+  /** Muestra el resumen de errores de un paso y lleva el foco al primer campo. */
+  function mostrarErrores(pasoConError: number, lista: ErrorDePaso[]): void {
+    setPaso(pasoConError)
+    setErrores(lista)
+    setPasosConError((actual) => new Set(actual).add(pasoConError))
+    const primero = lista[0]
+    // Después del render (el paso puede haber cambiado de visible).
+    if (primero) setTimeout(() => form.scrollToField(primero.name, { focus: true, block: 'center' }), 0)
+  }
+
+  /** Limpia el error de un paso que ya se completó bien. */
+  function marcarPasoOk(pasoOk: number): void {
+    setErrores([])
+    setPasosConError((actual) => {
+      const siguiente = new Set(actual)
+      siguiente.delete(pasoOk)
+      return siguiente
+    })
+  }
+
+  async function irAPaso(destino: number): Promise<void> {
+    if (destino < 0 || destino >= PASOS.length || fase === 'publicando') return
+    // Hacia atrás no se valida: nunca se pierde lo cargado.
+    if (destino < paso) {
+      setErrores([])
+      setPaso(destino)
+      programarBorrador(pasoMaximo)
+      return
+    }
+    try {
+      await form.validateFields(CAMPOS_POR_PASO[paso])
+      marcarPasoOk(paso)
+      setPaso(destino)
+      const nuevoMaximo = Math.max(pasoMaximo, destino)
+      setPasoMaximo(nuevoMaximo)
+      programarBorrador(nuevoMaximo)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    } catch (error) {
+      if (esErrorDeValidacion(error)) mostrarErrores(paso, aErroresDePaso(error.errorFields))
+    }
+  }
+
+  // ─── Publicar ───────────────────────────────────────────────────────
+
+  async function publicar(): Promise<void> {
+    // Revalida todo: si algo quedó mal en un paso anterior, se vuelve ahí.
+    let validos: AltaValues
+    try {
+      await form.validateFields()
+      validos = form.getFieldsValue(true) as AltaValues
+    } catch (error) {
+      if (!esErrorDeValidacion(error)) return
+      const lista = aErroresDePaso(error.errorFields)
+      const pasoConError = CAMPOS_POR_PASO.findIndex((campos) => campos.some((campo) => lista.some((item) => item.name === campo)))
+      mostrarErrores(pasoConError >= 0 ? pasoConError : 0, lista.filter((item) => CAMPOS_POR_PASO[pasoConError]?.includes(item.name)))
+      return
+    }
+
+    const nueva = aPropiedadNueva(validos)
+    setFase('publicando')
+    setErrorPublicacion(null)
+    try {
+      const resultado = await registrarPropiedad(nueva)
+      if (temporizador.current) clearTimeout(temporizador.current)
+      borrarBorrador()
+      const barrio = neighborhoods.find((item) => item.slug === nueva.neighborhoodSlug)?.name ?? ''
+      setRegistrada({ ...resultado, resumen: `${tituloDePropiedadNueva(nueva)} en ${barrio}` })
+      setFase('exito')
+      window.scrollTo({ top: 0 })
+    } catch (error) {
+      setErrorPublicacion(error instanceof ServiceError ? error : new ServiceError('server', 'Ocurrió un error inesperado.'))
+      setFase('error')
+    }
+  }
+
+  function publicarOtra(): void {
+    form.resetFields()
+    setPaso(0)
+    setPasoMaximo(0)
+    setPasosConError(new Set())
+    setErrores([])
+    setRegistrada(null)
+    setDecisionBorrador('nuevo')
+    setFase('formulario')
+  }
+
+  // ─── Éxito (· 08) ───────────────────────────────────────────────────
+  if (fase === 'exito' && registrada) {
+    const publicada = registrada.status === 'publicada'
+    return (
+      <div className={styles.page}>
+        <Result
+          className={styles.result}
+          icon={
+            <span className={styles.resultIcon} aria-hidden="true">
+              ✓
+            </span>
+          }
+          title={publicada ? 'Tu propiedad ya está publicada' : 'Tu propiedad quedó guardada'}
+          subTitle={
+            publicada
+              ? `${registrada.resumen}. Desde ahora aparece en la búsqueda y puede recibir solicitudes.`
+              : `${registrada.resumen} quedó guardada como ${registrada.status} y no aparece en la búsqueda.`
+          }
+          extra={
+            <div className={styles.resultBody}>
+              <StatusTag domain="propiedad" status={registrada.status} />
+              <div className={styles.resultActions}>
+                {publicada && (
+                  <Button type="primary" size="large" onClick={() => router.push(`/propiedad/${registrada.id}`)} data-testid="alta-exito-ver">
+                    Ver la publicación
+                  </Button>
+                )}
+                <Button type={publicada ? 'default' : 'primary'} size="large" onClick={() => router.push('/panel/propiedades')} data-testid="alta-exito-mis-propiedades">
+                  Ir a mis propiedades
+                </Button>
+                <Button size="large" onClick={publicarOtra} data-testid="alta-exito-otra">
+                  Publicar otra
+                </Button>
+              </div>
+              <div className={styles.nextBox}>
+                <span className={styles.nextTitle}>Lo que sigue</span>
+                <span className={styles.nextText}>
+                  {publicada
+                    ? 'Cuando alguien la solicite, la vas a ver en Solicitudes. Desde ahí se arma el contrato con estos mismos datos.'
+                    : 'La vas a encontrar en Mis propiedades con su estado. Cuando quieras que se vea en la búsqueda, la publicás desde su detalle.'}
+                </span>
+              </div>
+            </div>
+          }
+          data-testid="alta-exito"
+        />
+      </div>
+    )
+  }
+
+  // ─── Contenido de los pasos ─────────────────────────────────────────
+  const publicando = fase === 'publicando'
+  const publicada = valores.status === 'publicada'
+
+  const formulario = (
+    <Form<AltaValues>
+      form={form}
+      layout="vertical"
+      requiredMark={false}
+      initialValues={ALTA_VALORES_INICIALES}
+      onValuesChange={(cambios: Partial<AltaValues>) => {
+        // Monoambiente: 1 ambiente y sin dormitorios aparte (US-01).
+        if (cambios.type === 'monoambiente') form.setFieldsValue({ rooms: 1, bedrooms: 0 })
+        else if (cambios.type && form.getFieldValue('rooms') === 1) form.setFieldsValue({ rooms: 2, bedrooms: 1 })
+        // Un dato corregido sale del resumen de errores (el resto se revalida con "Siguiente").
+        setErrores((actual) => actual.filter((error) => !(error.name in cambios)))
+        programarBorrador(pasoMaximo)
+      }}
+      disabled={publicando}
+      className={styles.form}
+      data-testid="alta-form"
+    >
+      {errores.length > 0 && (
+        <div className={styles.errorSummary} role="alert" data-testid="alta-errores">
+          <span className={styles.errorSummaryIcon} aria-hidden="true">
+            !
+          </span>
+          <div className={styles.errorSummaryBody}>
+            <span className={styles.errorSummaryTitle}>
+              {errores.length === 1 ? 'Falta 1 dato para seguir' : `Faltan ${errores.length} datos para seguir`}
+            </span>
+            <ul className={styles.errorSummaryList}>
+              {errores.map((error) => (
+                <li key={error.name}>
+                  <button type="button" className={styles.errorSummaryLink} onClick={() => form.scrollToField(error.name, { focus: true, block: 'center' })}>
+                    {error.label}
+                  </button>{' '}
+                  — {error.message}
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+      {/* Los 5 pasos quedan montados; se ve solo el actual. */}
+      <div hidden={paso !== 0}>
+        <PasoUbicacion />
+      </div>
+      <div hidden={paso !== 1}>
+        <PasoCaracteristicas />
+      </div>
+      <div hidden={paso !== 2}>
+        <PasoFotos />
+      </div>
+      <div hidden={paso !== 3}>
+        <PasoCondiciones />
+      </div>
+      <div hidden={paso !== 4}>
+        {publicando && (
+          <div className={styles.publishing} role="status" data-testid="alta-publicando">
+            <span className={styles.spinner} aria-hidden="true" />
+            {publicada ? 'Publicando tu propiedad… no cierres esta pantalla.' : 'Guardando tu propiedad… no cierres esta pantalla.'}
+          </div>
+        )}
+        {fase === 'error' && errorPublicacion && (
+          <div className={styles.publishError} role="alert" data-testid="alta-error-publicar">
+            <span className={styles.publishErrorTitle}>{publicada ? 'No pudimos publicarla' : 'No pudimos guardarla'}</span>
+            <span className={styles.publishErrorText}>{errorPublicacion.message} Tus datos siguen acá: no perdiste nada.</span>
+            <div className={styles.publishErrorActions}>
+              {errorPublicacion.code === 'unauthorized' ? (
+                <Button type="primary" onClick={() => router.push('/login?next=/panel/propiedades/nueva')} data-testid="alta-error-login">
+                  Iniciar sesión
+                </Button>
+              ) : (
+                <Button type="primary" onClick={() => void publicar()} data-testid="alta-reintentar">
+                  Intentar de nuevo
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
+        <PasoRevision valores={valores} onEditar={(destino) => void irAPaso(destino)} />
+      </div>
+    </Form>
+  )
+
+  // ─── Render ─────────────────────────────────────────────────────────
+  return (
+    <div className={styles.page}>
+      <div className={styles.pageHeader}>
+        <PageHeader title="Publicar una propiedad" subtitle={`Paso ${paso + 1} de ${PASOS.length} · ${PASOS[paso].title}.`} breadcrumb={MIGA} />
+      </div>
+
+      {preguntarPorBorrador && borradorPendiente && (
+        <div className={styles.draftNotice} role="status" data-testid="alta-borrador-aviso">
+          <span className={styles.draftText}>
+            <strong>Tenés una propiedad a medio cargar.</strong> ¿Seguís donde la dejaste?
+          </span>
+          <span className={styles.draftActions}>
+            <Button type="primary" onClick={continuarBorrador} data-testid="alta-borrador-continuar">
+              Continuar
+            </Button>
+            <Button onClick={empezarDeNuevo} data-testid="alta-borrador-nuevo">
+              Empezar de nuevo
+            </Button>
+          </span>
+        </div>
+      )}
+
+      <div className={styles.wizardCard}>
+        <WizardLayout
+          steps={PASOS.map((item, index) => ({
+            key: item.key,
+            title: item.title,
+            // El mismo formulario en todos los pasos: así no se desmonta al cambiar.
+            content: index === paso ? formulario : null,
+            status: pasosConError.has(index) ? 'error' : undefined,
+          }))}
+          currentStep={paso}
+          onStepChange={(destino) => void irAPaso(destino)}
+          onFinish={() => void publicar()}
+          finishLabel={publicada ? 'Publicar la propiedad' : 'Guardar la propiedad'}
+          navigableSteps
+          loading={publicando}
+          data-testid="alta-wizard"
+        />
+      </div>
+    </div>
+  )
+}

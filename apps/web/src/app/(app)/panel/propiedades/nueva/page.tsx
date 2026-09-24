@@ -1,12 +1,14 @@
 /**
  * /panel/propiedades/nueva — Publicar propiedad (US-01 Registrar mis propiedades).
  *
- * Placeholder temporal: la pantalla real se implementa en la tanda Locador del Sprint 1,
- * con su vista de Claude Design.
- * Entra desde: "Publicar propiedad" del Header, del listado y del panel.
+ * Qué es: el alta en 5 pasos. La pantalla vive en
+ * `components/alta/AltaPropiedad.tsx`; acá solo se monta. El rol lo controla
+ * `propiedades/layout.tsx` (solo locador) y la sesión, `proxy.ts` (US-01:
+ * "se debe haber iniciado sesión").
+ * Entra desde: "Publicar propiedad" del panel, del listado y del Header.
  */
-import { PlaceholderScreen } from '@/components/PlaceholderScreen'
+import { AltaPropiedad } from '@/components/alta/AltaPropiedad'
 
 export default function NuevaPropiedadPage() {
-  return <PlaceholderScreen title="Publicar propiedad" userStory="US-01 Registrar mis propiedades" availableIn='la tanda "Locador" del Sprint 1' />
+  return <AltaPropiedad />
 }
