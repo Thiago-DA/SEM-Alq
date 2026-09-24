@@ -28,9 +28,6 @@ export type PropertyType = 'departamento' | 'casa' | 'ph' | 'monoambiente'
  */
 export type AdjustmentIndex = 'IPC' | 'ICL'
 
-/** Cada cuánto se ajusta el monto del alquiler por índice (US-01, opcional). */
-export type AdjustmentFrequency = 'trimestral' | 'cuatrimestral' | 'semestral' | 'anual'
-
 /**
  * Clave de una característica opcional de la propiedad (los "tags" de US-01).
  * Adaptador: `propiedad.adapter.ts#characteristicFromTagId` ↔ `tag_inmueble.id`.
@@ -44,11 +41,23 @@ export interface CharacteristicOption {
 }
 
 /**
- * Medio de pago que el locador prefiere recibir (US-01, al menos uno).
+ * Medio de pago que el locador acepta para el alquiler (US-01: "métodos de
+ * pago preferidos", al menos uno). MercadoPago se separa en débito (dinero en
+ * cuenta) y crédito porque la comisión de la pasarela es distinta.
  * TODO(db): el back todavía no tiene medios de pago (en curso en
  * `feature/registrar-usuario`, tabla `medio_pago`).
  */
-export type MedioPagoPreferido = 'transferencia' | 'efectivo' | 'mercadopago'
+export type MedioPagoPreferido = 'transferencia' | 'mercadopago_debito' | 'mercadopago_credito' | 'efectivo'
+
+/**
+ * Un medio de pago habilitado, con el recargo que se le traslada al
+ * locatario si lo elige (Alta de propiedad · 04: "Cómo acepta que te paguen").
+ */
+export interface MedioPagoConRecargo {
+  method: MedioPagoPreferido
+  /** Recargo en %, de 0 a 3. `0` = el medio se ofrece sin costo extra. */
+  surchargePct: number
+}
 
 /** Estado del pago del alquiler de una propiedad alquilada (US-02). */
 export type EstadoPago = 'al_dia' | 'pago_pendiente' | 'retrasada'
@@ -118,7 +127,8 @@ export interface ProximoAjuste {
   /** Fecha ISO del ajuste. */
   date: string
   index: AdjustmentIndex
-  frequency: AdjustmentFrequency
+  /** Cada cuántos meses se ajusta (US-01: de 1 a 12), ej. `12` = anual. */
+  everyMonths: number
 }
 
 /**
@@ -131,23 +141,106 @@ export interface ProximoAjuste {
 export interface PropiedadLocador {
   id: string
   title: string
+  /** Dirección EXACTA, ej. "Obispo Trejo 1250, 7° B": la ve solo su dueño. */
   address: string
   neighborhoodSlug: string
   neighborhoodName: string
   type: PropertyType
+  rooms: number
   /** Estado de la publicación (US-02: publicada, pausada, alquilada, alquilada/publicada). */
   status: PropertyStatus
   priceMonthly: number
   expenses: number
   imageSrc: string
+  /** Fecha ISO de alta; ordena "Más recientes". */
+  publishedAt: string
   /** Nombre del locatario; solo para alquiladas (US-02). */
   tenantName: string | null
-  /** Estado del pago; solo para alquiladas (US-02). */
+  /** Estado del pago del período actual; solo para alquiladas (US-02). */
   paymentStatus: EstadoPago | null
-  /** `true` si la propiedad tiene reclamos sin resolver (US-02). */
-  hasOpenClaims: boolean
+  /** Vencimiento (fecha ISO) del período actual; solo para alquiladas. */
+  paymentDueDate: string | null
+  /** Días de atraso; solo si `paymentStatus` es `retrasada`. */
+  daysOverdue: number | null
+  /** Cantidad de reclamos sin resolver (US-02: "si posee reclamos no resueltos"). */
+  openClaims: number
+  /** Índice cargado en el alta (US-01, opcional); en las no alquiladas se aplica "al firmar". */
+  adjustmentIndex: AdjustmentIndex | null
   /** Próximo ajuste; solo para alquiladas con contrato vigente (US-02). */
   nextAdjustment: ProximoAjuste | null
   /** Fecha ISO desde la que vuelve a estar disponible, si se cargó (US-01). */
   availableFrom: string | null
+}
+
+/**
+ * Estado de la publicación que se elige en el alta (US-01: "publicado,
+ * pausado o alquilado"). `alquilada_publicada` no se elige a mano: la
+ * calcula el sistema (ver `PropertyStatus`).
+ */
+export type EstadoPublicacionAlta = Extract<PropertyStatus, 'publicada' | 'pausada' | 'alquilada'>
+
+/**
+ * Una foto cargada en el alta. `src` es una data URL en modo mock.
+ * TODO(backend): con el back real, el archivo se sube aparte y acá viaja la
+ * URL que devuelva el storage.
+ */
+export interface FotoNueva {
+  id: string
+  src: string
+  /** Nombre del archivo original, para el texto alternativo y la revisión. */
+  name: string
+}
+
+/**
+ * Los datos del alta de una propiedad (US-01), tal como los arma el
+ * formulario de `/panel/propiedades/nueva`. El service los traduce al
+ * cuerpo que espera el back (`propiedad.adapter.ts#propiedadNuevaToCreateInmueble`).
+ */
+export interface PropiedadNueva {
+  // Paso 1 · Tipo y ubicación
+  type: PropertyType
+  street: string
+  streetNumber: number
+  /** Piso, ej. "7". Opcional. */
+  floor: string | null
+  /** Departamento, ej. "B". Opcional. */
+  unit: string | null
+  neighborhoodSlug: string
+  city: string
+  province: string
+
+  // Paso 2 · Características
+  rooms: number
+  bedrooms: number
+  bathrooms: number
+  /** Antigüedad en años (opcional). */
+  ageYears: number | null
+  totalAreaM2: number
+  coveredAreaM2: number
+  characteristics: CharacteristicKey[]
+  description: string
+  status: EstadoPublicacionAlta
+  /** Fecha ISO. Obligatoria si `status` es `alquilada`. */
+  availableFrom: string | null
+
+  // Paso 3 · Fotos
+  photos: FotoNueva[]
+  /** Índice de la principal dentro de `photos` (US-01: la primera, cambiable). */
+  mainPhotoIndex: number
+
+  // Paso 4 · Condiciones
+  priceMonthly: number
+  expenses: number
+  /** Interés por día de atraso en %; `null` si no se cobra. */
+  dailyInterestPct: number | null
+  /** Días de gracia; obligatorios si hay interés por día (US-01). */
+  graceDays: number | null
+  paymentMethods: MedioPagoConRecargo[]
+  adjustmentIndex: AdjustmentIndex | null
+  /** Cada cuántos meses se ajusta (1 a 12); `null` si no se cargó. */
+  adjustmentEveryMonths: number | null
+  /** Depósito, en meses de alquiler; `null` si no se pide. */
+  depositMonths: number | null
+  /** Duración del contrato en meses; `null` si no se cargó. */
+  contractMonths: number | null
 }

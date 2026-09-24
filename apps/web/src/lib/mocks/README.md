@@ -53,8 +53,27 @@ Las cuentas creadas en `/registro` y las propiedades creadas en el alta se guard
 botón "Reiniciar datos de prueba" de las herramientas de desarrollo las borra. Ver
 `src/services/shared/mockStore.ts`.
 
-## Huecos documentados (a propósito, no olvidos)
+## Los alquileres (`rental` en `propiedades.mock.ts` + `panel.mock.ts`)
 
-- Laprida 340, Belgrano 1120, Av. Colón 2450 y Mariano Moreno 285 están alquiladas (para que los
-  totales del panel cierren), pero el mapa no nombra a sus inquilinos: los datos del alquiler se
-  completan con el export del listado del locador (tanda "Locador").
+Datos del export del listado del locador, confirmados por producto. El estado del pago y los
+reclamos no se escriben en la propiedad: se calculan a partir de los cobros y reclamos de
+`panel.mock.ts`, así el listado (US-02) y el panel nunca se contradicen.
+
+| Propiedad | Locatario | Contrato | Septiembre | Reclamos abiertos | Próximo ajuste |
+|---|---|---|---|---|---|
+| Obispo Trejo 1250, 7° B | Sofía Ledesma | CT-2026-0148 | $435.800, pagado el 03/09 (al día) | 0 | ICL anual, 01/04/2027 |
+| Laprida 340 | Tomás Bianchi | CT-2026-0102 | $520.000, vencido el 04/09 (retrasada) | 2 | ICL anual, 01/03/2027 |
+| Belgrano 1120 | Julián Ferreyra | CT-2026-0115 | $460.000, vencido el 16/09 (retrasada) | 0 | IPC cada 4 meses, 01/11/2026 |
+| Av. Colón 2450, 3° A | Martín Cabrera | CT-2026-0121 | $440.000, vence el 28/09 (con pago pendiente) | 1 | ICL anual, 01/10/2026 |
+| Mariano Moreno 285 (de Sofía) | Camila Ríos | CT-2026-0133 | $510.000, vencido el 05/09 (retrasada) | 0 | IPC cada 4 meses, 01/12/2026 |
+
+Solicitudes: Julieta Peralta por Rondeau 480 (SOL-2026-0031, pendiente).
+
+Los "vence en N días" y "N días de atraso" se calculan contra la fecha real
+(`lib/utils/fechas.ts`): el 23/09/2026, Laprida lleva 19 días y Belgrano 7. Cómo se calcula cada
+cifra del panel está documentado en el encabezado de `panel.mock.ts`.
+
+Lo que el export mostraba y **no** se usa porque contradice el elenco: Cerro de las Rosas, Villa
+Belgrano, Bv. San Juan, Duarte Quirós, el tipo "Local", Familia Suárez, Tomás Bustos y Rocío
+Medina. Tampoco se usa el banner de suscripción del export ("Locador Plus vence el 30/09"): la
+suscripción no es de este sprint y el elenco no la define.

@@ -20,12 +20,10 @@
  */
 
 /** Prefijo de todas las claves, para no pisar nada más del navegador y poder borrarlas juntas. */
-const KEY_PREFIX = 'rentar:mock:'
+export const MOCK_KEY_PREFIX = 'rentar:mock:'
 
 /** Colecciones que se pueden persistir. Cada una se guarda en `rentar:mock:<nombre>`. */
 export type MockCollection = 'usuarios' | 'propiedades'
-
-const ALL_COLLECTIONS: MockCollection[] = ['usuarios', 'propiedades']
 
 /**
  * `true` solo en el navegador.
@@ -43,7 +41,7 @@ function isBrowser(): boolean {
 function readStored<T>(collection: MockCollection): T[] {
   if (!isBrowser()) return []
   try {
-    const raw = window.localStorage.getItem(KEY_PREFIX + collection)
+    const raw = window.localStorage.getItem(MOCK_KEY_PREFIX + collection)
     if (!raw) return []
     const parsed: unknown = JSON.parse(raw)
     return Array.isArray(parsed) ? (parsed as T[]) : []
@@ -75,7 +73,7 @@ export function saveMockRecord<T extends { id: string }>(collection: MockCollect
   if (!isBrowser()) return false
   try {
     const stored = readStored<T>(collection).filter((item) => item.id !== record.id)
-    window.localStorage.setItem(KEY_PREFIX + collection, JSON.stringify([...stored, record]))
+    window.localStorage.setItem(MOCK_KEY_PREFIX + collection, JSON.stringify([...stored, record]))
     return true
   } catch {
     return false
@@ -83,17 +81,17 @@ export function saveMockRecord<T extends { id: string }>(collection: MockCollect
 }
 
 /**
- * Borra todo lo guardado y deja solo el elenco original. Lo usa el botón
- * "Reiniciar datos de prueba" de las herramientas de desarrollo
- * (`components/dev/DevTools.tsx`).
+ * Borra todo lo guardado con el prefijo `rentar:mock:` (las colecciones y el
+ * borrador del alta, `rentar:mock:alta-borrador`) y deja solo el elenco
+ * original. Lo usa el botón "Reiniciar datos de prueba" de las herramientas
+ * de desarrollo (`components/dev/DevTools.tsx`).
  */
 export function resetMockData(): void {
   if (!isBrowser()) return
-  for (const collection of ALL_COLLECTIONS) {
-    try {
-      window.localStorage.removeItem(KEY_PREFIX + collection)
-    } catch {
-      // Sin acceso a localStorage no hay nada guardado que borrar.
-    }
+  try {
+    const keys = Object.keys(window.localStorage).filter((key) => key.startsWith(MOCK_KEY_PREFIX))
+    keys.forEach((key) => window.localStorage.removeItem(key))
+  } catch {
+    // Sin acceso a localStorage no hay nada guardado que borrar.
   }
 }

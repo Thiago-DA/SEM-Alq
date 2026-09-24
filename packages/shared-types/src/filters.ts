@@ -9,7 +9,6 @@
  * `/panel/propiedades` (US-02).
  */
 import type { AdjustmentIndex, CharacteristicKey, PropertyType } from './propiedad'
-import type { PropertyStatus } from './status'
 
 /** Cantidad de dormitorios filtrable; `3` se interpreta como "3 o más". */
 export type BedroomsFilter = number | 'todos'
@@ -91,13 +90,28 @@ export interface Paginado<T> {
 }
 
 /**
+ * Pestaña de estado de `/panel/propiedades` (US-02: "filtrar por estado de
+ * publicación"). `alquilada` incluye las alquiladas con fecha de
+ * disponibilidad (`alquilada_publicada`): siguen alquiladas.
+ */
+export type EstadoFiltroMisPropiedades = 'todas' | 'publicada' | 'alquilada' | 'pausada'
+
+/** Filtro de reclamos de `/panel/propiedades` (US-02: "si posee reclamos"). */
+export type ReclamosFiltro = 'todas' | 'con_reclamos' | 'sin_reclamos'
+
+/** Orden de `/panel/propiedades` ("Ordenar: Más recientes" del diseño). */
+export type OrdenMisPropiedades = 'recientes' | 'precio_desc' | 'precio_asc' | 'direccion'
+
+/**
  * Filtros de `/panel/propiedades` (US-02): barrio (solo los de las
- * propiedades del locador), tipo, estado de publicación y reclamos.
+ * propiedades del locador), tipo, estado de publicación y reclamos, más la
+ * búsqueda por dirección o locatario del diseño.
  */
 export interface MisPropiedadesFiltros {
+  /** Texto libre: busca en la dirección y en el nombre del locatario. */
+  text: string
   neighborhoodSlug: string | 'todos'
   type: PropertyType | 'todos'
-  status: PropertyStatus | 'todos'
-  /** `true` = solo las que tienen reclamos sin resolver. */
-  onlyWithOpenClaims: boolean
+  status: EstadoFiltroMisPropiedades
+  claims: ReclamosFiltro
 }

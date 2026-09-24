@@ -6,15 +6,9 @@
  * La ubicación (provincia · ciudad) va aparte: se muestra fija, sin ✕.
  * Quién lo usa: `components/buscar/BuscarPropiedades.tsx`.
  */
-import type { BusquedaFiltros, CharacteristicOption, PropertyType } from '@rentar/shared-types'
+import type { BusquedaFiltros, CharacteristicOption } from '@rentar/shared-types'
+import { PROPERTY_TYPE_LABEL } from '@/lib/catalogs/propiedad'
 import { formatARS } from '@rentar/ui/src/utils/formatARS'
-
-const TIPO_LABEL: Record<PropertyType, string> = {
-  departamento: 'Departamento',
-  casa: 'Casa',
-  ph: 'PH',
-  monoambiente: 'Monoambiente',
-}
 
 /** Un chip removible: su texto y los filtros que quedan si se lo saca. */
 export interface ChipFiltro {
@@ -51,7 +45,7 @@ export function chipsFiltros(
     chips.push({ key: 'precio-max', label: `Hasta ${formatARS(filtros.maxPrice)}`, quitar: (f) => ({ ...f, maxPrice: null }) })
   }
   for (const tipo of filtros.types) {
-    chips.push({ key: `tipo-${tipo}`, label: TIPO_LABEL[tipo], quitar: (f) => ({ ...f, types: f.types.filter((t) => t !== tipo) }) })
+    chips.push({ key: `tipo-${tipo}`, label: PROPERTY_TYPE_LABEL[tipo], quitar: (f) => ({ ...f, types: f.types.filter((t) => t !== tipo) }) })
   }
   if (filtros.bedrooms.length > 0) {
     chips.push({ key: 'dorm', label: `${listaCantidades(filtros.bedrooms)} dorm.`, quitar: (f) => ({ ...f, bedrooms: [] }) })

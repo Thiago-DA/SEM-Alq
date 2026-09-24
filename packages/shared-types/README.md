@@ -5,7 +5,7 @@ Tipos TypeScript compartidos del monorepo. Conviven dos familias, que **no se me
 | Familia | Dónde | Qué representa | Quién la escribe |
 |---|---|---|---|
 | **Modelos del back** | `src/index.ts` (la parte de arriba) | Una fila de una tabla de Supabase, o una respuesta de `apps/api`. Nombres en español con `snake_case` (`id_inmueble`, `created_at`). | Backend |
-| **Tipos de vista del front** | `src/propiedad.ts`, `src/usuario-sesion.ts`, `src/status.ts`, `src/filters.ts`, `src/neighborhood.ts` | Lo que una pantalla necesita mostrar, ya armado. Campos en inglés con `camelCase`. | Frontend |
+| **Tipos de vista del front** | `src/propiedad.ts`, `src/usuario-sesion.ts`, `src/status.ts`, `src/filters.ts`, `src/neighborhood.ts`, `src/panel.ts` | Lo que una pantalla necesita mostrar, ya armado. Campos en inglés con `camelCase`. | Frontend |
 
 Las pantallas de `apps/web` **solo** usan tipos de vista. El puente entre las dos familias son los
 adaptadores de `apps/web/src/services/adapters/` (ver `docs/HANDOFF-BACKEND.md`).
@@ -18,9 +18,11 @@ adaptadores de `apps/web/src/services/adapters/` (ver `docs/HANDOFF-BACKEND.md`)
 | `Rol` (`rol`) | `UserRole` | `usuario.adapter.ts#rolDtoToUserRole` (`'administrador'` ↔ `'admin'`) |
 | `Inmueble` (`inmueble`) + `Publicacion` (`publicacion`) | `PropiedadResumen` | `propiedad.adapter.ts#inmuebleToPropiedadResumen` |
 | `MisAlquileresItem` (respuesta de `GET /api/v1/mis-alquileres`) | `PropiedadLocador` | `propiedad.adapter.ts#misAlquileresItemToPropiedadLocador` |
+| — (el cuerpo de `POST /api/v1/inmuebles` sale del formulario del alta) | `PropiedadNueva` | `propiedad.adapter.ts#propiedadNuevaToCreateInmueble` |
+| `Contrato`, cobros, reclamos, solicitudes (tablas de sprints futuros) | `ResumenCobros`, `ResumenReclamos`, `EventoContratoPanel`, `SolicitudPanel` | Ninguno todavía: `/panel` usa solo mocks (ver `apps/web/src/services/panel.service.ts`). |
 | `TipoInmueble` (`tipo_inmueble`) | `PropertyType` | `propiedad.adapter.ts#propertyTypeFromTipoId` |
 | `TagInmueble` (`tag_inmueble`) | `CharacteristicKey` | `propiedad.adapter.ts#characteristicFromTagId` |
-| `Contrato`, `ContratoXUsuario`, `UsuarioXRol`, `Servicio` | — | Todavía no los usa ninguna pantalla del Sprint 1. |
+| `ContratoXUsuario`, `UsuarioXRol`, `Servicio` | — | Todavía no los usa ninguna pantalla del Sprint 1. |
 | `ApiResponse<T>` | — | Lo desarma `apps/web/src/services/shared/apiClient.ts`. |
 
 ## Choques de nombre resueltos

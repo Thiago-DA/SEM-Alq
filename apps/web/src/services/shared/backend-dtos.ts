@@ -77,3 +77,45 @@ export interface RegistrarUsuarioResponse {
   telefono?: string | null
   fecha_nacimiento?: string | null
 }
+
+/**
+ * Cuerpo de `POST /api/v1/inmuebles` (existe). Copia de `CreateInmuebleDTO`
+ * de `apps/api/src/dtos/index.ts`.
+ *
+ * TODO(backend): faltan casi todos los campos de US-01 (ver
+ * `propiedad.adapter.ts#propiedadNuevaToCrearInmueble`): provincia, barrio,
+ * superficie cubierta, antigüedad, estado, disponibilidad, fotos, expensas,
+ * índice, periodicidad, medios de pago, interés, días de gracia, depósito y
+ * duración. `tags` y `servicios` son un solo id, no una lista. `id_locador`
+ * viaja en el body: debería salir de la sesión.
+ */
+export interface CrearInmuebleRequest {
+  tipo: number
+  direccion: string
+  numero: number
+  piso?: string | null
+  ciudad: string
+  ambientes: number
+  dormitorios: number
+  banos: number
+  m2: number
+  descripcion?: string | null
+  tags?: number | null
+  id_locador: number
+  servicios?: number | null
+}
+
+/**
+ * Cuerpo de `POST /api/v1/publicaciones` (existe). Copia de
+ * `CreatePublicacionDTO` de `apps/api/src/dtos/index.ts`.
+ *
+ * TODO(backend): hoy el back exige un contrato asociado para publicar (regla
+ * de negocio de `publicacion.service.ts`), así que una propiedad nueva no se
+ * puede publicar. En US-01 la publicación nace con el alta, sin contrato.
+ */
+export interface CrearPublicacionRequest {
+  id_inmueble: number
+  titulo: string
+  precio: number
+  activa?: boolean
+}

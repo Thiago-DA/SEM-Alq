@@ -131,14 +131,17 @@ export interface ApiResponse<T> {
 export type {
   PropertyType,
   AdjustmentIndex,
-  AdjustmentFrequency,
   CharacteristicKey,
   CharacteristicOption,
   MedioPagoPreferido,
+  MedioPagoConRecargo,
   EstadoPago,
   PropiedadResumen,
   ProximoAjuste,
   PropiedadLocador,
+  EstadoPublicacionAlta,
+  FotoNueva,
+  PropiedadNueva,
 } from './propiedad';
 export type { NeighborhoodTier, Neighborhood } from './neighborhood';
 export type {
@@ -148,6 +151,9 @@ export type {
   OrdenBusqueda,
   Paginado,
   MisPropiedadesFiltros,
+  EstadoFiltroMisPropiedades,
+  ReclamosFiltro,
+  OrdenMisPropiedades,
   UbicacionOpciones,
 } from './filters';
 export type {
@@ -165,3 +171,12 @@ export type {
   StatusDomainMap,
 } from './status';
 export type { UsuarioSesion } from './usuario-sesion';
+export type {
+  CobroPanel,
+  ResumenCobros,
+  ReclamoPanel,
+  ResumenReclamos,
+  EventoContratoPanel,
+  SolicitudPanel,
+  ResumenContextoRol,
+} from './panel';

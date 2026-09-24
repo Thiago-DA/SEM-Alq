@@ -26,14 +26,12 @@
  * `feature/registrar-usuario`).
  */
 import type {
-  AdjustmentFrequency,
   AdjustmentIndex,
   CharacteristicKey,
-  EstadoPago,
-  MedioPagoPreferido,
+  ContractStatus,
+  MedioPagoConRecargo,
   PropertyStatus,
   PropertyType,
-  ProximoAjuste,
 } from '@rentar/shared-types'
 import altaCordoba1 from '@/assets/properties/alta-cordoba-1.jpg'
 import altaCordoba2 from '@/assets/properties/alta-cordoba-2.jpg'
@@ -60,15 +58,26 @@ export interface FotoMock {
 }
 
 /**
- * Datos del alquiler vigente de una propiedad alquilada (US-02).
- * NOTA: son datos de otros módulos (contratos, cobros, reclamos) que el
- * listado del locador necesita mostrar; acá viven resumidos y solo para eso.
+ * El contrato vigente de una propiedad alquilada (US-02: locatario y próximo
+ * ajuste).
+ * NOTA: los contratos son de otro sprint; acá vive solo el resumen que
+ * necesitan el listado del locador y el panel. El estado del pago y los
+ * reclamos NO van acá: salen de los cobros y reclamos de `panel.mock.ts`,
+ * así el listado y el panel nunca se contradicen.
  */
 export interface AlquilerMock {
+  contractId: string
+  contractStatus: ContractStatus
   tenantName: string
-  paymentStatus: EstadoPago | null
-  hasOpenClaims: boolean
-  nextAdjustment: ProximoAjuste | null
+  /** `UsuarioSesion.id` del locatario, si tiene cuenta en el elenco (solo Sofía). */
+  tenantUserId: string | null
+  /** Fechas ISO de inicio y fin del contrato. */
+  startDate: string
+  endDate: string
+  /** Monto mensual vigente del alquiler. */
+  currentAmount: number
+  /** Fecha ISO del próximo ajuste por índice. */
+  nextAdjustmentDate: string
 }
 
 /**
@@ -116,14 +125,17 @@ export interface PropiedadMock {
   priceMonthly: number
   expenses: number
   adjustmentIndex: AdjustmentIndex | null
-  adjustmentFrequency: AdjustmentFrequency | null
-  paymentMethods: MedioPagoPreferido[]
+  /** Cada cuántos meses se ajusta (US-01: 1 a 12); `null` si no se cargó. */
+  adjustmentEveryMonths: number | null
+  /** Medios de pago aceptados, con su recargo (US-01: al menos uno). */
+  paymentMethods: MedioPagoConRecargo[]
   /** Interés por día de atraso, en %; `null` si no se cobra. */
   dailyInterestPct: number | null
   /** Días de gracia; obligatorio si hay interés por día (US-01). */
   graceDays: number | null
   contractMonths: number | null
-  deposit: number | null
+  /** Depósito en meses de alquiler; `null` si no se pide. */
+  depositMonths: number | null
 
   /** Solo para propiedades alquiladas (US-02). */
   rental: AlquilerMock | null
@@ -132,12 +144,17 @@ export interface PropiedadMock {
 // ─── Helpers de armado ──────────────────────────────────────────────────
 
 /**
- * Frecuencia de ajuste habitual para cada índice: el ICL se ajusta una vez
- * por año; el IPC, en los contratos del elenco, cada cuatro meses.
+ * Cada cuántos meses se ajusta, según el índice: el ICL una vez por año; el
+ * IPC, en los contratos del elenco, cada cuatro meses.
  */
-function frequencyFor(index: AdjustmentIndex): AdjustmentFrequency {
-  return index === 'ICL' ? 'anual' : 'cuatrimestral'
+function everyMonthsFor(index: AdjustmentIndex): number {
+  return index === 'ICL' ? 12 : 4
 }
+
+/** Medios de pago del elenco, todos sin recargo. */
+const TRANSFERENCIA: MedioPagoConRecargo = { method: 'transferencia', surchargePct: 0 }
+const MP_DEBITO: MedioPagoConRecargo = { method: 'mercadopago_debito', surchargePct: 0 }
+const EFECTIVO: MedioPagoConRecargo = { method: 'efectivo', surchargePct: 0 }
 
 /** Arma el título "Calle 123, 7° B" a partir de la dirección. */
 function addressTitle(street: string, streetNumber: number, floor: string | null): string {
@@ -170,7 +187,7 @@ interface OtroLocadorInput {
  * Completa una propiedad "de otro locador" con valores razonables en los
  * campos que la landing no tenía: ambientes = dormitorios + 1 (living),
  * superficie cubierta = total, 1 baño, contrato de 36 meses, depósito de un
- * mes, transferencia como medio de pago y sin interés por atraso.
+ * mes, transferencia sin recargo como medio de pago y sin interés por atraso.
  */
 function otroLocador(input: OtroLocadorInput): PropiedadMock {
   const { photo, areaM2, ...rest } = input
@@ -187,12 +204,12 @@ function otroLocador(input: OtroLocadorInput): PropiedadMock {
     ageYears: null,
     photos: [{ src: photo }],
     mainPhotoIndex: 0,
-    adjustmentFrequency: frequencyFor(input.adjustmentIndex),
-    paymentMethods: ['transferencia'],
+    adjustmentEveryMonths: everyMonthsFor(input.adjustmentIndex),
+    paymentMethods: [TRANSFERENCIA],
     dailyInterestPct: null,
     graceDays: null,
     contractMonths: 36,
-    deposit: input.priceMonthly,
+    depositMonths: 1,
     rental: null,
   }
 }
@@ -203,10 +220,9 @@ const elenco: PropiedadMock[] = [
   {
     id: 'prop-laprida-340',
     ownerId: 'usr-nicolas',
-    // NOTA: el mapa la agrega como "séptima propiedad" de Nicolás sin nombrar
-    // a su inquilino. Está alquilada para que los totales (7 cargadas, 4
-    // alquiladas) cierren. Los datos del alquiler se completan con el export
-    // del listado del locador (tanda "Locador").
+    // "Séptima propiedad" de Nicolás en el mapa. Alquilada a Tomás Bianchi
+    // (dato del export del listado, confirmado por producto): septiembre
+    // vencido y 2 reclamos abiertos (ver panel.mock.ts).
     status: 'alquilada',
     publishedAt: '2025-03-01',
     availableFrom: null,
@@ -232,13 +248,23 @@ const elenco: PropiedadMock[] = [
     priceMonthly: 520000,
     expenses: 70000,
     adjustmentIndex: 'ICL',
-    adjustmentFrequency: 'anual',
-    paymentMethods: ['transferencia'],
+    adjustmentEveryMonths: 12,
+    paymentMethods: [TRANSFERENCIA],
     dailyInterestPct: null,
     graceDays: null,
     contractMonths: 36,
-    deposit: 520000,
-    rental: null,
+    depositMonths: 1,
+    rental: {
+      contractId: 'CT-2026-0102',
+      contractStatus: 'vigente',
+      tenantName: 'Tomás Bianchi',
+      tenantUserId: null,
+      startDate: '2025-03-01',
+      endDate: '2028-02-29',
+      currentAmount: 520000,
+      // ICL anual desde marzo de 2025.
+      nextAdjustmentDate: '2027-03-01',
+    },
   },
   {
     id: 'prop-obispo-trejo-1250',
@@ -271,19 +297,21 @@ const elenco: PropiedadMock[] = [
     priceMonthly: 470000,
     expenses: 85000,
     adjustmentIndex: 'ICL',
-    adjustmentFrequency: 'anual',
-    paymentMethods: ['transferencia', 'mercadopago'],
+    adjustmentEveryMonths: 12,
+    paymentMethods: [TRANSFERENCIA, MP_DEBITO],
     dailyInterestPct: null,
     graceDays: null,
     contractMonths: 36,
-    deposit: 470000,
+    depositMonths: 1,
     rental: {
+      contractId: 'CT-2026-0148',
+      contractStatus: 'vigente',
       tenantName: 'Sofía Ledesma',
-      // NOTA: el estado de pago y los reclamos de septiembre se toman del
-      // export del listado del locador (tanda "Locador").
-      paymentStatus: null,
-      hasOpenClaims: false,
-      nextAdjustment: { date: '2027-04-01', index: 'ICL', frequency: 'anual' },
+      tenantUserId: 'usr-sofia',
+      startDate: '2026-04-01',
+      endDate: '2029-03-31',
+      currentAmount: 470000,
+      nextAdjustmentDate: '2027-04-01',
     },
   },
   {
@@ -320,18 +348,19 @@ const elenco: PropiedadMock[] = [
     priceMonthly: 385000,
     expenses: 62000,
     adjustmentIndex: 'IPC',
-    adjustmentFrequency: 'cuatrimestral',
-    paymentMethods: ['transferencia', 'mercadopago'],
+    adjustmentEveryMonths: 4,
+    paymentMethods: [TRANSFERENCIA, MP_DEBITO],
     dailyInterestPct: 0.5,
     graceDays: 5,
     contractMonths: 36,
-    deposit: 385000,
+    depositMonths: 1,
     rental: null,
   },
   {
     id: 'prop-belgrano-1120',
     ownerId: 'usr-nicolas',
-    // Igual que Laprida 340: alquilada; datos del alquiler desde el export.
+    // Alquilada a Julián Ferreyra (dato del export): septiembre vencido, sin
+    // reclamos (ver panel.mock.ts).
     status: 'alquilada',
     publishedAt: '2025-06-15',
     availableFrom: null,
@@ -357,18 +386,29 @@ const elenco: PropiedadMock[] = [
     priceMonthly: 460000,
     expenses: 58000,
     adjustmentIndex: 'IPC',
-    adjustmentFrequency: 'cuatrimestral',
-    paymentMethods: ['transferencia'],
+    adjustmentEveryMonths: 4,
+    paymentMethods: [TRANSFERENCIA],
     dailyInterestPct: null,
     graceDays: null,
     contractMonths: 36,
-    deposit: 460000,
-    rental: null,
+    depositMonths: 1,
+    rental: {
+      contractId: 'CT-2026-0115',
+      contractStatus: 'vigente',
+      tenantName: 'Julián Ferreyra',
+      tenantUserId: null,
+      startDate: '2025-07-01',
+      endDate: '2028-06-30',
+      currentAmount: 460000,
+      // IPC cada 4 meses desde julio de 2025: nov-25, mar-26, jul-26, nov-26.
+      nextAdjustmentDate: '2026-11-01',
+    },
   },
   {
     id: 'prop-colon-2450',
     ownerId: 'usr-nicolas',
-    // Cierra las "4 alquiladas" de Nicolás; datos del alquiler desde el export.
+    // Cierra las "4 alquiladas" de Nicolás. Alquilada a Martín Cabrera (dato del
+    // export): septiembre pendiente (vence este mes) y 1 reclamo abierto.
     status: 'alquilada',
     publishedAt: '2025-09-01',
     availableFrom: null,
@@ -394,13 +434,23 @@ const elenco: PropiedadMock[] = [
     priceMonthly: 440000,
     expenses: 65000,
     adjustmentIndex: 'ICL',
-    adjustmentFrequency: 'anual',
-    paymentMethods: ['transferencia'],
+    adjustmentEveryMonths: 12,
+    paymentMethods: [TRANSFERENCIA],
     dailyInterestPct: null,
     graceDays: null,
     contractMonths: 36,
-    deposit: 440000,
-    rental: null,
+    depositMonths: 1,
+    rental: {
+      contractId: 'CT-2026-0121',
+      contractStatus: 'vigente',
+      tenantName: 'Martín Cabrera',
+      tenantUserId: null,
+      startDate: '2025-10-01',
+      endDate: '2028-09-30',
+      currentAmount: 440000,
+      // ICL anual desde octubre de 2025.
+      nextAdjustmentDate: '2026-10-01',
+    },
   },
   {
     id: 'prop-rivera-785',
@@ -430,12 +480,12 @@ const elenco: PropiedadMock[] = [
     priceMonthly: 450000,
     expenses: 15000,
     adjustmentIndex: 'IPC',
-    adjustmentFrequency: 'cuatrimestral',
-    paymentMethods: ['transferencia', 'efectivo'],
+    adjustmentEveryMonths: 4,
+    paymentMethods: [TRANSFERENCIA, EFECTIVO],
     dailyInterestPct: null,
     graceDays: null,
     contractMonths: 36,
-    deposit: 450000,
+    depositMonths: 1,
     rental: null,
   },
   {
@@ -468,19 +518,20 @@ const elenco: PropiedadMock[] = [
     priceMonthly: 445000,
     expenses: 48000,
     adjustmentIndex: 'ICL',
-    adjustmentFrequency: 'anual',
-    paymentMethods: ['transferencia'],
+    adjustmentEveryMonths: 12,
+    paymentMethods: [TRANSFERENCIA],
     dailyInterestPct: null,
     graceDays: null,
     contractMonths: 36,
-    deposit: 445000,
+    depositMonths: 1,
     rental: null,
   },
   {
     id: 'prop-mariano-moreno-285',
     ownerId: 'usr-sofia',
-    // Sofía Ledesma como locadora (su otro rol). El mapa no nombra un
-    // contrato propio: alquilada, datos del alquiler desde el export.
+    // Sofía Ledesma como locadora (su otro rol). Alquilada a Camila Ríos (dato
+    // del export): el cobro de septiembre venció el 05/09 (ver panel.mock.ts).
+    // No aparece en el listado de Nicolás: es de Sofía.
     status: 'alquilada',
     publishedAt: '2025-11-20',
     availableFrom: null,
@@ -506,13 +557,23 @@ const elenco: PropiedadMock[] = [
     priceMonthly: 510000,
     expenses: 0,
     adjustmentIndex: 'IPC',
-    adjustmentFrequency: 'cuatrimestral',
-    paymentMethods: ['transferencia'],
+    adjustmentEveryMonths: 4,
+    paymentMethods: [TRANSFERENCIA],
     dailyInterestPct: null,
     graceDays: null,
     contractMonths: 36,
-    deposit: 510000,
-    rental: null,
+    depositMonths: 1,
+    rental: {
+      contractId: 'CT-2026-0133',
+      contractStatus: 'vigente',
+      tenantName: 'Camila Ríos',
+      tenantUserId: null,
+      startDate: '2025-12-01',
+      endDate: '2028-11-30',
+      currentAmount: 510000,
+      // IPC cada 4 meses desde diciembre de 2025: abr-26, ago-26, dic-26.
+      nextAdjustmentDate: '2026-12-01',
+    },
   },
 ]
 
