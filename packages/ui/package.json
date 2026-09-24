@@ -11,7 +11,7 @@
   "//": "NOTA: antd va fijado en 6.6.3 (sin ^) en apps/web y en packages/ui, a propósito. Con un rango, npm resolvía la dependencia de @rentar/ui a otra versión (6.6.5) y quedaban dos copias de antd instaladas: el ConfigProvider del layout (una copia) no llega a los componentes de @rentar/ui (la otra copia) y el tema de marca no se aplica. Para actualizar antd, cambiar la versión en los dos package.json a la vez.",
   "scripts": {
     "typecheck": "tsc --noEmit",
-    "build:types": "tsc --emitDeclarationOnly --declaration --declarationDir dist-types --rootDir src --types node --noEmit false"
+    "build:types": "tsc -p tsconfig.types.json"
   },
   "dependencies": {
     "@ant-design/colors": "^7.2.1",

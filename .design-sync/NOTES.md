@@ -72,6 +72,36 @@ Sprint 1. Todas las props son nuevas y opcionales: los usos anteriores no cambia
   amenities fuera del catálogo de 5, el banner de suscripción del panel y las personas y barrios del
   export que no están en el elenco.
 
+## Re-sync del Sprint 1 desde SEM-Alq (2026-09-24)
+
+Primer re-sync desde este repo (camino atómico, anclado en el `_ds_sync.json` del proyecto).
+
+- **`buildCmd` cambió**: ahora es `npm run build --workspace=@rentar/shared-types && npm run build:types --workspace=@rentar/ui`.
+  En SEM-Alq, `packages/ui/tsconfig.json` resuelve `@rentar/shared-types` a su `src/` (así la app no
+  necesita compilarlo), y eso hacía fallar el build de declaraciones con TS6059 (archivos fuera de
+  `rootDir`). `build:types` usa `packages/ui/tsconfig.types.json`, que lee `shared-types` desde
+  `dist/`: por eso hay que compilar `shared-types` antes.
+- **Tres previews faltaban en este repo** (`FileDropzone`, `MoneyInput`, `WizardLayout`): el proyecto
+  las tenía (se subieron desde `feature/design-sync-setup` del repo anterior) pero no se habían
+  copiado. Sin ellas, esas fichas habrían perdido su preview. Se recuperaron de esa rama. **Si otro
+  `_preview/<Name>.js` del proyecto no tiene su `.tsx` en `previews/`, buscarlo ahí antes de subir.**
+- **Previews nuevas**: `PasswordStrengthMeter`, `SearchSidebarFilters` y `SearchFilters`. **Historias nuevas** con las
+  props del sprint: `WizardLayout` (`PasoConError`, `Publicando`), `DataTable` (`FilaClickeable`),
+  `UserMenu` (`ViendoComo`, con `open`) y `PropertyCard` (`Busqueda`, con `referenceDate` fija).
+- **Overrides nuevos** (por `[GRID_OVERFLOW]`): `PasswordStrengthMeter`, `SearchSidebarFilters` y
+  `WizardLayout` en `cardMode: "column"` (`SearchSidebarFilters` con `viewport: 900x1400` para que no
+  se recorte). `UserMenu` en `single` con `primaryStory: "ViendoComo"` y `viewport: 900x480`: con
+  menos de 768px de ancho el `UserMenu` se dibuja como hoja móvil, no como dropdown. En la preview, el
+  botón va arriba a la izquierda para que el dropdown se abra hacia abajo.
+- **Cambios de fin de línea**: los fuentes pasaron de CRLF a LF, y eso cambia el hash del `.prompt.md`
+  de casi todos los componentes aunque el texto sea idéntico (verificado con `DetailList`). Es ruido
+  esperable de una sola vez, no un cambio real.
+- **Known render warns** (triaged): `RoleSwitcher` se ve casi vacía (es una pestaña de 14px al borde,
+  así se ve de verdad). `SearchFilters` mostraba "undefined" en el select de dormitorios: no tenía
+  preview autorada y la floor card lo renderizaba con props vacías. Se autoró su preview (valores
+  reales, sin tocar el componente).
+- Resultado: 34 componentes, 0 floor cards, render check sin `bad`.
+
 ## Contexto de esta corrida (2026-09-22)
 
 Re-sync sobre `feature/fundaciones-app` (rama activa, ramificada de `develop`) contra el proyecto
@@ -150,7 +180,7 @@ autoró una preview para estos tres), muestran solo el nombre del componente. No
 - **20 pantallas ya armadas en `templates/`** (los `.dc.html` del proyecto) dependen de
   `window.RentarUI` con esa capitalización exacta y de que los 32 componentes existan con estos
   nombres — no renombrar componentes ni cambiar `globalName` sin revisar esas plantillas primero.
-- **11 componentes siguen en floor card** (`ActivityTimeline`, `AppShell`, `ConfirmActionModal`,
+- **(Histórico, 2026-09-22; desde el 2026-09-24 hay 0 floor cards)** 11 componentes seguían en floor card (`ActivityTimeline`, `AppShell`, `ConfirmActionModal`,
   `DataTable`, `EmptyState`, `NextBridgeProvider`, `PageHeader`, `PhotoGallery`,
   `RoleContextSwitcher`, `RoleSwitcher`, `ThemeProvider`) + los 3 "thin" de abajo — están para
   autorar cuando alguien tenga tiempo, no arrastran ningún problema urgente. `StatusTag` salió de

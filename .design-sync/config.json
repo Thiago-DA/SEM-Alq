@@ -3,7 +3,7 @@
   "shape": "package",
   "pkg": "@rentar/ui",
   "globalName": "RentarUI",
-  "buildCmd": "npm run build:types --workspace=@rentar/ui",
+  "buildCmd": "npm run build --workspace=@rentar/shared-types && npm run build:types --workspace=@rentar/ui",
   "cssEntry": "src/design-sync-fonts.css",
   "provider": {
     "component": "ThemeProvider",
@@ -37,6 +37,21 @@
     "AppShell": {
       "cardMode": "single",
       "viewport": "1200x640"
+    },
+    "UserMenu": {
+      "cardMode": "single",
+      "primaryStory": "ViendoComo",
+      "viewport": "900x480"
+    },
+    "PasswordStrengthMeter": {
+      "cardMode": "column"
+    },
+    "SearchSidebarFilters": {
+      "cardMode": "column",
+      "viewport": "900x1400"
+    },
+    "WizardLayout": {
+      "cardMode": "column"
     }
   }
 }

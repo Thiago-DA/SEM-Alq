@@ -32,3 +32,16 @@ export function Default() {
 export function SinResultados() {
   return <DataTable columns={columns} data={[]} rowKey={(f: Fila) => f.id} emptyDescription="Todavía no hay propiedades cargadas." />
 }
+
+/** Fila clickeable: toda la fila abre el detalle (mouse, Tab y Enter), sin columna de acciones. */
+export function FilaClickeable() {
+  return (
+    <DataTable
+      columns={columns}
+      data={filas.slice(0, 3)}
+      rowKey={(f) => f.id}
+      onRowClick={() => {}}
+      rowLabel={(f) => `Ver detalle de ${f.propiedad}`}
+    />
+  )
+}

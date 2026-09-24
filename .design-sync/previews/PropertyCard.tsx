@@ -39,3 +39,30 @@ export function Default() {
     </div>
   )
 }
+
+/** Tarjeta de /buscar (layout="busqueda"): dirección aproximada, descripción, disponibilidad y chips. */
+export function Busqueda() {
+  return (
+    <div style={{ width: 300 }}>
+      <PropertyCard
+        layout="busqueda"
+        title="1 dormitorio en planta baja con cochera"
+        neighborhoodName="Güemes"
+        propertyType="departamento"
+        priceMonthly={385000}
+        expenses={62000}
+        bedrooms={1}
+        areaM2={42}
+        adjustmentIndex="IPC"
+        imageSrc={fotoNuevaCordoba as unknown as string}
+        photoSrcs={[fotoNuevaCordoba as unknown as string, fotoAltaCordoba as unknown as string]}
+        address="Rondeau al 400"
+        description="Departamento de un dormitorio en planta baja, con cochera, a una cuadra del Paseo de las Artes."
+        availableFrom="2026-10-01"
+        referenceDate={new Date('2026-09-23T00:00:00-03:00')}
+        characteristicLabel="Cochera"
+        href="#"
+      />
+    </div>
+  )
+}
