@@ -1,0 +1,384 @@
+/* /buscar (Claude Design, "Búsqueda de propiedades" · 01, 03 y 04).
+   Corte escritorio/móvil: 992px. Arriba, barra lateral de filtros de 288px;
+   abajo, botón "Filtros" que abre un Drawer. */
+
+.page {
+  background: var(--rentar-color-bg-page);
+  padding: 1.75rem 1.5rem 2.5rem;
+}
+
+.inner {
+  max-width: 75rem;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+}
+
+/* ─── Encabezado ──────────────────────────────────────────────────── */
+
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--rentar-spacing-sm);
+  align-items: flex-end;
+  justify-content: space-between;
+}
+
+.headingGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.015em;
+  color: var(--rentar-color-text-primary);
+}
+
+.count {
+  margin: 0;
+  font-size: 0.9375rem;
+  color: var(--rentar-color-text-secondary);
+}
+
+.count strong {
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.sortLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--rentar-color-text-tertiary);
+}
+
+.sortSelect {
+  min-width: 11rem;
+}
+
+.sortSelect :global(.ant-select-selector) {
+  border-radius: var(--rentar-radius-pill) !important;
+  font-weight: 600;
+}
+
+.mobileActions {
+  gap: 0.5rem;
+}
+
+.filtersButton {
+  height: 2.75rem;
+  padding: 0 1.125rem;
+  border-radius: var(--rentar-radius-pill);
+  font-size: 0.9375rem;
+  font-weight: 700;
+}
+
+.filtersCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  height: 1.25rem;
+  padding: 0 0.375rem;
+  margin-left: 0.25rem;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-bg-surface);
+  color: var(--rentar-color-blue);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.sortButton {
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: var(--rentar-radius-pill);
+}
+
+/* ─── Filtros activos ─────────────────────────────────────────────── */
+
+.chipsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--rentar-color-border-hairline);
+  border-radius: var(--rentar-radius-lg);
+  background: var(--rentar-color-bg-surface);
+}
+
+.chipsTitle {
+  margin-right: 0.125rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--rentar-color-text-tertiary);
+}
+
+.chipLocation,
+.chip,
+.chipMore {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4375rem;
+  height: 1.875rem;
+  padding: 0 0.75rem;
+  border: none;
+  border-radius: var(--rentar-radius-pill);
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.chipLocation {
+  background: var(--rentar-color-blue);
+  color: var(--rentar-color-bg-surface);
+}
+
+.chip {
+  background: var(--rentar-color-sky-light);
+  color: var(--rentar-color-blue);
+  cursor: pointer;
+}
+
+.chipClose {
+  font-size: 0.6875rem;
+  opacity: 0.7;
+}
+
+.chipMore {
+  background: rgba(var(--rentar-color-ink-rgb), 0.06);
+  color: var(--rentar-color-text-primary);
+  cursor: pointer;
+}
+
+.clearAll {
+  margin-left: auto;
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--rentar-color-blue);
+  cursor: pointer;
+}
+
+/* ─── Layout: barra lateral + resultados ──────────────────────────── */
+
+.layout {
+  display: grid;
+  grid-template-columns: 18rem minmax(0, 1fr);
+  gap: 1.25rem;
+  align-items: start;
+}
+
+/* Pegada arriba al hacer scroll, debajo del Header fijo. */
+.sidebar {
+  position: sticky;
+  top: 5.25rem;
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--rentar-spacing-sm);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15.625rem, 1fr));
+  gap: var(--rentar-spacing-sm);
+}
+
+.paginationRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-top: 0.375rem;
+}
+
+.paginationText {
+  font-size: 0.8125rem;
+  color: var(--rentar-color-text-tertiary);
+}
+
+/* Botones de página redondos, como en el diseño. */
+.pagination :global(.ant-pagination-item),
+.pagination :global(.ant-pagination-prev .ant-pagination-item-link),
+.pagination :global(.ant-pagination-next .ant-pagination-item-link) {
+  width: 2.125rem;
+  min-width: 2.125rem;
+  height: 2.125rem;
+  line-height: 2rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.12);
+  border-radius: var(--rentar-radius-pill);
+  font-weight: 600;
+}
+
+.pagination :global(.ant-pagination-item-active) {
+  border-color: var(--rentar-color-blue);
+  background: var(--rentar-color-blue);
+}
+
+.pagination :global(.ant-pagination-item-active a) {
+  color: var(--rentar-color-bg-surface);
+}
+
+/* ─── Estados: cargando, error y sin resultados ───────────────────── */
+
+.skeletonCard {
+  overflow: hidden;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.08);
+  border-radius: var(--rentar-radius-md);
+  background: var(--rentar-color-bg-surface);
+}
+
+.skeletonImage,
+.skeletonImage :global(.ant-skeleton-node) {
+  width: 100% !important;
+  height: auto !important;
+  aspect-ratio: 4 / 3;
+}
+
+.skeletonBody {
+  padding: 0.875rem 1rem 1rem;
+}
+
+.errorBlock,
+.emptyBlock {
+  border: 1px solid var(--rentar-color-border-hairline);
+  border-radius: var(--rentar-radius-md);
+  background: var(--rentar-color-bg-surface);
+}
+
+.errorBlock {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5625rem;
+  padding: 1.75rem 1.25rem;
+  text-align: center;
+}
+
+.errorIcon {
+  width: 3rem;
+  height: 3rem;
+  display: grid;
+  place-items: center;
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-status-error-bg);
+  color: var(--rentar-color-error);
+  font-size: 1.375rem;
+  font-weight: 700;
+}
+
+.errorTitle {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.errorText {
+  max-width: 22rem;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--rentar-color-text-secondary);
+}
+
+.stateActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  padding-top: 0.25rem;
+}
+
+.stateActions :global(.ant-btn) {
+  border-radius: var(--rentar-radius-pill);
+}
+
+/* ─── Drawer de filtros (móvil) ───────────────────────────────────── */
+
+.drawer :global(.ant-drawer-content) {
+  border-radius: 1.25rem 1.25rem 0 0;
+}
+
+.drawerFooter {
+  display: flex;
+  gap: 0.625rem;
+}
+
+.drawerFooter :global(.ant-btn) {
+  flex: 1;
+  height: 2.875rem;
+  border-radius: var(--rentar-radius-pill);
+  font-weight: 700;
+}
+
+.drawerFooter :global(.ant-btn:first-child) {
+  flex: 0 0 auto;
+}
+
+/* ─── Escritorio / móvil ──────────────────────────────────────────── */
+
+.mobileOnly {
+  display: none;
+}
+
+@media (max-width: 991px) {
+  .page {
+    padding: 1.25rem 1rem 2rem;
+  }
+
+  .desktopOnly {
+    display: none;
+  }
+
+  .mobileOnly {
+    display: inline;
+  }
+
+  .mobileActions.mobileOnly {
+    display: flex;
+  }
+
+  .chipMore.mobileOnly {
+    display: inline-flex;
+  }
+
+  .hideOnMobile {
+    display: none;
+  }
+
+  .heading {
+    font-size: 1.375rem;
+  }
+
+  .count {
+    font-size: 0.875rem;
+  }
+
+  .layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* En móvil la fila de chips va sin tarjeta ni título, como en el diseño. */
+  .chipsRow {
+    border: none;
+    background: none;
+    padding: 0;
+  }
+
+  .chipsTitle,
+  .chipLocation {
+    display: none;
+  }
+}

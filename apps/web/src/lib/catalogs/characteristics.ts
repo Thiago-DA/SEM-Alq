@@ -8,7 +8,7 @@
  *
  * Quién lo usa: el `SearchBar` de la landing, `/buscar` y el alta.
  */
-import type { CharacteristicOption } from '@rentar/shared-types'
+import type { CharacteristicKey, CharacteristicOption } from '@rentar/shared-types'
 
 export const characteristicOptions: CharacteristicOption[] = [
   { key: 'amoblado', label: 'Amoblado' },
@@ -17,3 +17,15 @@ export const characteristicOptions: CharacteristicOption[] = [
   { key: 'balcon', label: 'Balcón' },
   { key: 'apto-profesional', label: 'Apto profesional' },
 ]
+
+/**
+ * Texto corto de cada característica, para los chips de la tarjeta de
+ * `/buscar` (el diseño muestra "Mascotas", no "Acepta mascotas").
+ */
+export const characteristicShortLabel: Record<CharacteristicKey, string> = {
+  amoblado: 'Amoblado',
+  mascotas: 'Mascotas',
+  cochera: 'Cochera',
+  balcon: 'Balcón',
+  'apto-profesional': 'Apto profesional',
+}

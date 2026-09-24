@@ -9,6 +9,7 @@
  * Quién lo usa: la rama real de `services/propiedades.service.ts`.
  */
 import type { CharacteristicKey, Inmueble, PropertyType, PropiedadResumen, Publicacion } from '@rentar/shared-types'
+import { formatApproxAddress } from './direccion'
 
 /**
  * Foto que se muestra mientras el back no tenga fotos.
@@ -61,6 +62,16 @@ export function characteristicFromTagId(tagId: number): CharacteristicKey | null
 
 // ─── Inmueble + Publicación → PropiedadResumen ──────────────────────────
 
+/**
+ * NOTA: el back guarda la capital como "Córdoba" (`inmueble.ciudad`) y el
+ * front usa "Córdoba Capital" (el nombre del diseño y del filtro
+ * preseleccionado). Sin esto, la búsqueda contra el back real saldría vacía.
+ * TODO(db): acordar un catálogo de ciudades (id + nombre) en vez de texto libre.
+ */
+function normalizarCiudad(ciudad: string): string {
+  return ciudad.trim().toLowerCase() === 'córdoba' ? 'Córdoba Capital' : ciudad
+}
+
 /** Los datos de la publicación que usa el resumen (vienen en `Publicacion` o en `InmuebleDetalleResponse.publicacion`). */
 export type PublicacionResumen = Pick<Publicacion, 'titulo' | 'precio'> & { created_at?: string | Date }
 
@@ -72,18 +83,19 @@ export type PublicacionResumen = Pick<Publicacion, 'titulo' | 'precio'> & { crea
  * - `title`, `priceMonthly`: vienen de la publicación. `GET /inmuebles/disponibles`
  *   no la incluye; el service la busca aparte. Sin publicación: título =
  *   dirección y precio 0.
+ * - `address`: aproximada ("calle al 400"), ver la NOTA de privacidad en direccion.ts.
+ * - `province`: no existe en el back; se asume Córdoba (el piloto).
+ *   TODO(db): columna `provincia` (en curso en `feature/registrar-usuario`).
  * - `neighborhoodSlug`/`neighborhoodName`: no hay barrio; se usa la ciudad.
- * - `expenses`: no existe; 0.
+ * - `expenses`: no existe; `null` (no se muestra "Sin expensas", que sería falso).
  * - `adjustmentIndex`: no existe; `null`.
  * - `availableFrom`: no existe; `null` (= disponible ya).
- * - `imageSrc`: no hay fotos; {@link PLACEHOLDER_PHOTO_SRC}.
+ * - `imageSrc` / `photoSrcs`: no hay fotos; {@link PLACEHOLDER_PHOTO_SRC}.
  * - `characteristics`: el back guarda UN tag (`tags: number`), no una lista.
  * - `status`: `/disponibles` solo devuelve publicadas; `'publicada'`.
  */
 export function inmuebleToPropiedadResumen(inmueble: Inmueble, publicacion: PublicacionResumen | null): PropiedadResumen {
-  const address = inmueble.piso
-    ? `${inmueble.direccion} ${inmueble.numero}, ${inmueble.piso}`
-    : `${inmueble.direccion} ${inmueble.numero}`
+  const address = formatApproxAddress(inmueble.direccion, inmueble.numero)
   const characteristic = inmueble.tags ? characteristicFromTagId(inmueble.tags) : null
   const publishedAt = publicacion?.created_at ?? inmueble.created_at
 
@@ -91,11 +103,13 @@ export function inmuebleToPropiedadResumen(inmueble: Inmueble, publicacion: Publ
     id: String(inmueble.id),
     title: publicacion?.titulo ?? address,
     address,
+    province: 'Córdoba',
+    city: normalizarCiudad(inmueble.ciudad),
     neighborhoodSlug: '',
     neighborhoodName: inmueble.ciudad,
     type: propertyTypeFromTipoId(inmueble.tipo),
     priceMonthly: publicacion?.precio ?? 0,
-    expenses: 0,
+    expenses: null,
     bedrooms: inmueble.dormitorios,
     rooms: inmueble.ambientes,
     areaM2: inmueble.m2,
@@ -104,6 +118,7 @@ export function inmuebleToPropiedadResumen(inmueble: Inmueble, publicacion: Publ
     description: inmueble.descripcion ?? '',
     availableFrom: null,
     imageSrc: PLACEHOLDER_PHOTO_SRC,
+    photoSrcs: [PLACEHOLDER_PHOTO_SRC],
     publishedAt: publishedAt ? new Date(publishedAt).toISOString() : '',
     status: 'publicada',
   }

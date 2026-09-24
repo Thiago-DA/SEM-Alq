@@ -24,6 +24,7 @@ import {
   MoneyAmount,
   MoneyInput,
   PasswordStrengthMeter,
+  SearchSidebarFilters,
   NotificationBell,
   OnboardingChecklist,
   PhotoGallery,
@@ -55,6 +56,7 @@ import { neighborhoods } from '@/lib/catalogs/neighborhoods'
 // producto. Toma datos del elenco para que las demos se vean reales.
 import { propiedades } from '@/lib/mocks'
 import { fuerzaPassword, requisitosPassword } from '@/lib/validation/usuario.rules'
+import { FILTROS_INICIALES, ubicacionesDe } from '@/lib/search/busqueda'
 import { isSearchable, propiedadMockToResumen } from '@/services/adapters/propiedad-mock.adapter'
 import { defaultFilters, MAX_PRICE_CEILING } from '@/lib/types/filters'
 import { formatMonthlyPrice } from '@/lib/utils/format'
@@ -381,6 +383,9 @@ function StatusGroup<D extends StatusDomain>({
 /** Propiedades buscables del elenco, ya como tipo de vista, para las demos. */
 const properties: PropiedadResumen[] = propiedades.filter(isSearchable).map(propiedadMockToResumen)
 
+/** Ubicaciones de esas propiedades, para la demo de SearchSidebarFilters. */
+const ubicacionesDemo = ubicacionesDe(properties)
+
 const demoTableColumns: DataTableColumn<PropiedadResumen>[] = [
   { key: 'title', title: 'Propiedad', render: (p) => p.title },
   { key: 'neighborhood', title: 'Barrio', render: (p) => p.neighborhoodName },
@@ -437,6 +442,7 @@ export default function DesignSystem() {
   const [filterBarStatus, setFilterBarStatus] = useState('todos')
   const [moneyValue, setMoneyValue] = useState(450000)
   const [demoPassword, setDemoPassword] = useState('Rentar2026')
+  const [sidebarFilters, setSidebarFilters] = useState(FILTROS_INICIALES)
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   return (
@@ -806,8 +812,37 @@ export default function DesignSystem() {
                     priceMonthly={demoProperty.priceMonthly}
                     bedrooms={demoProperty.bedrooms}
                     areaM2={demoProperty.areaM2}
-                    adjustmentIndex={demoProperty.adjustmentIndex ?? 'IPC' /* el elenco siempre tiene índice */}
+                    adjustmentIndex={demoProperty.adjustmentIndex}
                     imageSrc={demoProperty.imageSrc}
+                    href="#tarjetas"
+                  />
+                </div>
+              </div>
+
+              <p className={styles.subheading}>PropertyCard · layout=&quot;busqueda&quot;</p>
+              <p className={styles.sectionLead} style={{ marginBottom: '0.75rem' }}>
+                La tarjeta de <code>/buscar</code> (US-34): precio en dorado, expensas, dirección aproximada
+                (calle al centenar, por privacidad), descripción en 2 líneas, disponibilidad y chips. El
+                carrusel aparece solo con más de una foto.
+              </p>
+              <div className={styles.liveFramePadded}>
+                <div className={styles.cardDemoWrap}>
+                  <PropertyCardUI
+                    layout="busqueda"
+                    title={demoProperty.title}
+                    neighborhoodName={demoProperty.neighborhoodName}
+                    propertyType={demoProperty.type}
+                    priceMonthly={demoProperty.priceMonthly}
+                    expenses={demoProperty.expenses ?? undefined}
+                    bedrooms={demoProperty.bedrooms}
+                    areaM2={demoProperty.areaM2}
+                    adjustmentIndex={demoProperty.adjustmentIndex}
+                    imageSrc={demoProperty.imageSrc}
+                    photoSrcs={properties.slice(0, 3).map((p) => p.imageSrc)}
+                    address={demoProperty.address}
+                    description={demoProperty.description}
+                    availableFrom={demoProperty.availableFrom}
+                    characteristicLabel="Cochera"
                     href="#tarjetas"
                   />
                 </div>
@@ -1165,6 +1200,24 @@ export default function DesignSystem() {
                 <div className={styles.liveFramePadded}>
                   <WizardLayout steps={wizardSteps} currentStep={wizardStep} onStepChange={setWizardStep} onFinish={() => setWizardStep(0)} />
                 </div>
+              </div>
+
+              <p className={styles.subheading}>SearchSidebarFilters</p>
+              <p className={styles.sectionLead} style={{ marginBottom: '0.75rem' }}>
+                Filtros de <code>/buscar</code> (US-34) como barra lateral. Trabaja sobre un borrador: la
+                búsqueda se hace con &quot;Aplicar filtros&quot;. En móvil se usa con{' '}
+                <code>variant=&quot;drawer&quot;</code> dentro de un Drawer.
+              </p>
+              <div className={styles.liveFramePadded} style={{ maxWidth: '20rem' }}>
+                <SearchSidebarFilters
+                  value={sidebarFilters}
+                  onChange={setSidebarFilters}
+                  onClear={() => setSidebarFilters(FILTROS_INICIALES)}
+                  onApply={() => {}}
+                  locations={ubicacionesDemo}
+                  characteristics={characteristicOptions}
+                  data-testid="design-system-sidebar-filters"
+                />
               </div>
 
               <p className={styles.subheading}>SearchFilters</p>

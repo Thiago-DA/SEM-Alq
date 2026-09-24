@@ -1,12 +1,29 @@
 /**
- * /buscar — Buscar propiedades (US-34 Consultar propiedades a alquilar).
+ * /buscar — Buscar propiedades (US-34 Consultar propiedades a alquilar). Arquetipo A1.
  *
- * Placeholder temporal: la pantalla real se implementa en la tanda Pública del Sprint 1,
- * con su vista de Claude Design.
- * Entra desde: "Buscar propiedades" del Header y del Footer, y "Buscar más propiedades" de la landing.
+ * Diseño: Claude Design, "Búsqueda de propiedades" · 01, 03 y 04.
+ * Entra desde: "Buscar propiedades" del Header y del Footer, y "Buscar más
+ * propiedades" de la landing. Accesible con y sin sesión.
+ *
+ * La pantalla entera es un Client Component (`BuscarPropiedades`): lee la
+ * búsqueda de la URL y llama al service desde el navegador. `Suspense` es
+ * obligatorio en Next.js 16 para usar `useSearchParams` en una página que se
+ * pre-renderiza; mientras tanto se ven las tarjetas "esqueleto".
  */
-import { PlaceholderScreen } from '@/components/PlaceholderScreen'
+import { Suspense } from 'react'
+import type { Metadata } from 'next'
+import { BuscarPropiedades } from '@/components/buscar/BuscarPropiedades'
+import { ResultadosCargando } from '@/components/buscar/ResultadosBusqueda'
+
+export const metadata: Metadata = {
+  title: 'Buscar propiedades — RentAR',
+  description: 'Alquileres de larga duración en Córdoba, directo con el dueño: filtrá por barrio, precio, tipología y más.',
+}
 
 export default function BuscarPage() {
-  return <PlaceholderScreen title="Buscar propiedades" subtitle="Propiedades disponibles en Córdoba." userStory="US-34 Consultar propiedades a alquilar" availableIn='la tanda "Pública" del Sprint 1' />
+  return (
+    <Suspense fallback={<ResultadosCargando />}>
+      <BuscarPropiedades />
+    </Suspense>
+  )
 }

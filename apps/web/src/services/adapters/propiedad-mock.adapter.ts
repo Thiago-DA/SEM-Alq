@@ -11,8 +11,9 @@
  */
 import type { PropiedadLocador, PropiedadResumen } from '@rentar/shared-types'
 import type { PropiedadMock } from '@/lib/mocks'
+import { formatApproxAddress } from './direccion'
 
-/** Dirección para mostrar: "Calle 123, 7° B". */
+/** Dirección exacta: "Calle 123, 7° B". Solo para el locador (US-02), nunca en la zona pública. */
 export function formatAddress(propiedad: Pick<PropiedadMock, 'street' | 'streetNumber' | 'floor'>): string {
   const base = `${propiedad.street} ${propiedad.streetNumber}`
   return propiedad.floor ? `${base}, ${propiedad.floor}` : base
@@ -21,6 +22,12 @@ export function formatAddress(propiedad: Pick<PropiedadMock, 'street' | 'streetN
 /** URL de la foto principal (US-01: la elegida como principal; si falta, la primera). */
 export function mainPhotoSrc(propiedad: Pick<PropiedadMock, 'photos' | 'mainPhotoIndex'>): string {
   return propiedad.photos[propiedad.mainPhotoIndex]?.src ?? propiedad.photos[0]?.src ?? ''
+}
+
+/** Todas las fotos, con la principal primero (para el carrusel de la tarjeta). */
+export function photosMainFirst(propiedad: Pick<PropiedadMock, 'photos' | 'mainPhotoIndex'>): string[] {
+  const principal = mainPhotoSrc(propiedad)
+  return [principal, ...propiedad.photos.map((foto) => foto.src).filter((src, index) => index !== propiedad.mainPhotoIndex)]
 }
 
 /**
@@ -39,7 +46,10 @@ export function propiedadMockToResumen(propiedad: PropiedadMock & { status: Prop
   return {
     id: propiedad.id,
     title: propiedad.title,
-    address: formatAddress(propiedad),
+    // Zona pública: dirección aproximada (ver la NOTA de privacidad en direccion.ts).
+    address: formatApproxAddress(propiedad.street, propiedad.streetNumber),
+    province: propiedad.province,
+    city: propiedad.city,
     neighborhoodSlug: propiedad.neighborhoodSlug,
     neighborhoodName: propiedad.neighborhoodName,
     type: propiedad.type,
@@ -53,6 +63,7 @@ export function propiedadMockToResumen(propiedad: PropiedadMock & { status: Prop
     description: propiedad.description,
     availableFrom: propiedad.availableFrom,
     imageSrc: mainPhotoSrc(propiedad),
+    photoSrcs: photosMainFirst(propiedad),
     publishedAt: propiedad.publishedAt,
     status: propiedad.status,
   }
