@@ -31,8 +31,12 @@ interface AuthContextValue {
   activeRole: UserRole | null
   /** `true` mientras se resuelve la sesión desde la cookie al montar. */
   isLoading: boolean
-  /** Valida credenciales y guarda la sesión. Devuelve el usuario para que la pantalla decida adónde ir. */
-  login: (credentials: LoginCredentials) => Promise<UsuarioSesion>
+  /**
+   * Valida credenciales y guarda la sesión. `remember` = "Recordarme en este
+   * dispositivo" (30 días). Devuelve el usuario para que la pantalla decida
+   * adónde ir.
+   */
+  login: (credentials: LoginCredentials, options?: { remember?: boolean }) => Promise<UsuarioSesion>
   logout: () => void
   switchRole: (role: UserRole) => void
 }
@@ -55,6 +59,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UsuarioSesion | null>(null)
   const [activeRole, setActiveRole] = useState<UserRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  // Si la sesión actual se creó con "Recordarme"; se conserva al cambiar de rol.
+  const [persistent, setPersistent] = useState(false)
 
   // ─── Carga de datos: hidratar la sesión desde la cookie al montar ────
   // Todos los setState corren dentro de .then()/.finally() (también el caso
@@ -71,6 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (session && usuario && usuario.roles.includes(session.activeRole)) {
           setUser(usuario)
           setActiveRole(session.activeRole)
+          setPersistent(session.persistent === true)
         } else if (session) {
           // Cookie corrupta, o usuario que ya no existe o perdió ese rol: se
           // descarta en vez de dejar la app en un estado inconsistente.
@@ -92,12 +99,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ─── Handlers ───────────────────────────────────────────────────────
 
-  async function login(credentials: LoginCredentials): Promise<UsuarioSesion> {
+  async function login(credentials: LoginCredentials, options?: { remember?: boolean }): Promise<UsuarioSesion> {
     const usuario = await loginRequest(credentials)
     const role = initialRole(usuario)
-    writeSessionToDocument({ userId: usuario.id, activeRole: role })
+    const remember = options?.remember === true
+    writeSessionToDocument({ userId: usuario.id, activeRole: role, persistent: remember })
     setUser(usuario)
     setActiveRole(role)
+    setPersistent(remember)
     return usuario
   }
 
@@ -115,7 +124,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   /** Cambio de contexto (cuentas con dos roles). Ignora un rol que el usuario no tiene. */
   function switchRole(role: UserRole): void {
     if (!user || !user.roles.includes(role)) return
-    writeSessionToDocument({ userId: user.id, activeRole: role })
+    writeSessionToDocument({ userId: user.id, activeRole: role, persistent })
     setActiveRole(role)
   }
 

@@ -1,18 +1,21 @@
 /**
- * auth.service.ts — frontera con el backend para iniciar y cerrar sesión.
+ * auth.service.ts — frontera con el backend para la cuenta: registro, login y logout.
  *
- * Qué es: login y logout. La sesión en sí (cookie, rol activo) la maneja
- * `lib/auth/AuthProvider.tsx`; este service solo valida credenciales.
- * Cubre: US-39 Iniciar y cerrar sesión. (El registro, US-19, se suma en la
- * tanda "Autenticación".)
- * Quién lo usa: `lib/auth/AuthProvider.tsx`.
+ * Qué es: crear la cuenta, validar credenciales y cerrar sesión. La sesión en
+ * sí (cookie, rol activo) la maneja `lib/auth/AuthProvider.tsx`.
+ * Cubre: US-19 Registrar usuario y US-39 Iniciar y cerrar sesión.
+ * Quién lo usa: `lib/auth/AuthProvider.tsx` (login y logout) y
+ * `components/auth/RegistroForm.tsx` (registro).
  */
 import type { Rol, Usuario, UsuarioSesion } from '@rentar/shared-types'
+import { registroInputToRequest, registroResponseToSesion } from './adapters/registro.adapter'
 import { usuarioDtoToSesion } from './adapters/usuario.adapter'
 import { apiRequest } from './shared/apiClient'
 import { USE_MOCKS } from './shared/config'
 import { delay } from './shared/delay'
+import type { RegistrarUsuarioResponse } from './shared/backend-dtos'
 import { ServiceError } from './shared/errors'
+import { saveMockRecord } from './shared/mockStore'
 import { readUsuariosMock, toUsuarioSesion } from './usuarios.service'
 
 export interface LoginCredentials {
@@ -32,7 +35,7 @@ interface LoginResponse {
  * NOTA: es genérico a propósito (US-39): no dice si el mail existe o si lo
  * que falló fue la contraseña, para no revelar qué mails están registrados.
  */
-export const INVALID_CREDENTIALS_MESSAGE = 'El email o la contraseña no son correctos.'
+export const INVALID_CREDENTIALS_MESSAGE = 'El email o la contraseña no coinciden.'
 
 /**
  * US-39 Iniciar y cerrar sesión — iniciar sesión.
@@ -84,4 +87,77 @@ export async function logout(): Promise<void> {
     return
   }
   await apiRequest<void>('/auth/logout', { method: 'POST' })
+}
+
+/** Datos del registro (US-19): el rol del paso 1 y los datos del paso 2. */
+export interface RegistroInput {
+  rol: 'locador' | 'locatario'
+  nombre: string
+  apellido: string
+  email: string
+  password: string
+  /** Solo dígitos, con característica y sin 0 ni 15 (ej. "3515123456"). */
+  telefono: string
+  /** Solo dígitos, 7 u 8. */
+  dni: string
+  /** Formato ISO `YYYY-MM-DD`. */
+  fechaNacimiento: string
+  aceptaTerminos: boolean
+}
+
+/** Mensaje de mail duplicado (diseño, "Validaciones del paso 2"). */
+export const EMAIL_TAKEN_MESSAGE = 'Ya existe una cuenta con ese email.'
+
+/**
+ * US-19 Registrar usuario — crear la cuenta.
+ * @backend POST /api/v1/registrar-usuario   (en curso en feature/registrar-usuario · todavía no está en develop)
+ * @body    RegistrarUsuarioRequest (lo arma `registroInputToRequest`)
+ * @returns UsuarioSesion (la respuesta la traduce `registroResponseToSesion`)
+ * TODO(backend): feature/registrar-usuario hoy registra a todos como
+ * locatario; hay que aceptar el rol en el body (`rol`).
+ * @throws {ServiceError} `conflict` con {@link EMAIL_TAKEN_MESSAGE} si el mail ya existe.
+ *
+ * NOTA: no inicia sesión. Después de registrarse, el usuario entra por
+ * `/login` (flujo registro → login → panel).
+ */
+export async function registrarUsuario(input: RegistroInput): Promise<UsuarioSesion> {
+  if (USE_MOCKS) {
+    await delay()
+    const email = input.email.trim().toLowerCase()
+    if (readUsuariosMock().some((usuario) => usuario.email.toLowerCase() === email)) {
+      throw new ServiceError('conflict', EMAIL_TAKEN_MESSAGE)
+    }
+    const nuevo = {
+      id: `usr-${Date.now()}`,
+      nombre: input.nombre.trim(),
+      apellido: input.apellido.trim(),
+      email,
+      // NOTA: solo en modo mock, y solo en este navegador: el back real guarda
+      // un hash, nunca la contraseña.
+      password: input.password,
+      roles: [input.rol],
+      status: 'activo' as const,
+      telefono: input.telefono,
+      dni: input.dni,
+      fechaNacimiento: input.fechaNacimiento,
+    }
+    if (!saveMockRecord('usuarios', nuevo)) {
+      throw new ServiceError('server', 'No pudimos guardar tu cuenta en este navegador. Probá de nuevo.')
+    }
+    return toUsuarioSesion(nuevo)
+  }
+
+  try {
+    const response = await apiRequest<RegistrarUsuarioResponse>('/registrar-usuario', {
+      method: 'POST',
+      body: registroInputToRequest(input),
+    })
+    return registroResponseToSesion(response, input.rol)
+  } catch (error) {
+    // El back responde 409 con "Email o documento ya registrado".
+    if (error instanceof ServiceError && error.code === 'conflict') {
+      throw new ServiceError('conflict', error.message || EMAIL_TAKEN_MESSAGE)
+    }
+    throw error
+  }
 }

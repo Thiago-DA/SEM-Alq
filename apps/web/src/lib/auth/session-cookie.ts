@@ -16,13 +16,19 @@ import type { UserRole } from '@rentar/shared-types'
 
 export const SESSION_COOKIE_NAME = 'rentar_session'
 
-/** Duración de la sesión simulada: 7 días. */
-export const SESSION_COOKIE_MAX_AGE_SECONDS = 60 * 60 * 24 * 7
+/**
+ * Duración de la sesión con "Recordarme en este dispositivo" marcado: 30
+ * días. Sin marcar, la cookie no lleva `max-age` y el navegador la borra al
+ * cerrarse (cookie de sesión).
+ */
+export const REMEMBER_ME_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
 
 export interface SessionCookiePayload {
   /** `UsuarioSesion.id` del usuario en sesión (texto, ver `usuario-sesion.ts`). */
   userId: string
   activeRole: UserRole
+  /** `true` si se marcó "Recordarme": la cookie dura 30 días en vez de lo que dure el navegador abierto. */
+  persistent?: boolean
 }
 
 /** Arma el valor (ya URI-encodeado) que se guarda en la cookie. */
@@ -64,9 +70,14 @@ export function readSessionFromDocument(): SessionCookiePayload | null {
   return parseSessionCookie(row?.slice(SESSION_COOKIE_NAME.length + 1))
 }
 
-/** Guarda la sesión en `document.cookie` (visible para `proxy.ts` en el próximo request). */
+/**
+ * Guarda la sesión en `document.cookie` (visible para `proxy.ts` en el
+ * próximo request). Con `persistent` dura {@link REMEMBER_ME_MAX_AGE_SECONDS};
+ * sin él, hasta que se cierre el navegador.
+ */
 export function writeSessionToDocument(payload: SessionCookiePayload): void {
-  document.cookie = `${SESSION_COOKIE_NAME}=${serializeSessionCookie(payload)}; path=/; max-age=${SESSION_COOKIE_MAX_AGE_SECONDS}; samesite=lax`
+  const maxAge = payload.persistent ? `; max-age=${REMEMBER_ME_MAX_AGE_SECONDS}` : ''
+  document.cookie = `${SESSION_COOKIE_NAME}=${serializeSessionCookie(payload)}; path=/${maxAge}; samesite=lax`
 }
 
 /** Borra la sesión de `document.cookie` (US-39: "desvincular la sesión del navegador"). */

@@ -39,3 +39,41 @@ export interface InmuebleDetalleResponse {
     created_at?: string
   } | null
 }
+
+/**
+ * Cuerpo de `POST /api/v1/registrar-usuario` (en curso en
+ * `feature/registrar-usuario`). Copia de `CreateUsuarioPayload` de esa rama
+ * (`packages/shared-types/src/index.ts`). Las claves con tilde y ñ
+ * (`contraseña`) son las que espera el back, tal cual.
+ *
+ * TODO(backend): la rama registra a todos como locatario. Hay que aceptar el
+ * rol elegido en el paso 1 (`rol`) en el body.
+ */
+export interface RegistrarUsuarioRequest {
+  nombre: string
+  apellido: string
+  email: string
+  contraseña: string
+  confirmar_contraseña: string
+  telefono: string
+  numero_documento: string
+  /** Formato ISO `YYYY-MM-DD`. */
+  fecha_nacimiento: string
+  acepta_terminos: boolean
+  /** Propuesto, todavía no existe en el back (ver el TODO de arriba). */
+  rol: 'locador' | 'locatario'
+}
+
+/**
+ * Respuesta de `POST /api/v1/registrar-usuario` en `feature/registrar-usuario`:
+ * el `Usuario` creado, con los campos nuevos de esa rama.
+ */
+export interface RegistrarUsuarioResponse {
+  id: number
+  nombre: string
+  apellido?: string | null
+  email: string
+  numero_documento: string
+  telefono?: string | null
+  fecha_nacimiento?: string | null
+}
