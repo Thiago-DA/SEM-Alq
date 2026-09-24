@@ -6,26 +6,38 @@
  * Qué es: una sola raíz autenticada para locador y locatario; el rol activo
  * de `useAuth()` decide el menú (`lib/navigation/navConfig.tsx`), no la ruta.
  * También arma los ítems del UserMenu (Claude Design, "Mi perfil y legajo" ·
- * 02): "Mi perfil y legajo", "Mis notificaciones" y, solo para cuentas con dos
- * roles, "Cambiar a mi panel de locador/locatario". El último ítem, "Cerrar
+ * 02): "Mi perfil y legajo" y "Mis notificaciones". El último ítem, "Cerrar
  * sesión", lo agrega el propio UserMenu (US-39: desvincula la sesión y vuelve
  * a la landing). "Administración" no va: el panel de admin no es del Sprint 1.
  *
- * De dónde saca los datos: `useAuth()` (`lib/auth/AuthProvider.tsx`).
+ * Cuentas con dos roles (Sofía): la sección "Viendo como" del UserMenu y, en
+ * móvil, el chip del rol activo en la barra (Claude Design, "Cambio de rol" ·
+ * 04). Reemplazan al viejo ítem "Cambiar a mi panel de…" de la tanda 2. En
+ * escritorio sigue además el selector del header (`RoleContextSwitcher`).
+ *
+ * Barra móvil: el título sale del ítem activo del menú; el alta
+ * (`/panel/propiedades/nueva`) tiene su propia barra, "‹ Publicar propiedad ·
+ * Salir" (Alta de propiedad · 09).
+ *
+ * De dónde saca los datos: `useAuth()` (`lib/auth/AuthProvider.tsx`) y, para
+ * "Viendo como", `services/panel.service.ts#getResumenRoles`.
  *
  * `'use client'` porque necesita hooks (`useAuth`, `usePathname`). La
  * pregunta "¿hay sesión?" ya la respondió `proxy.ts` antes de llegar acá.
  *
  * Quién lo usa: Next.js, para todas las páginas de `(app)/panel/*`.
  */
-import { useEffect, useMemo, type ReactNode } from 'react'
-import { BellOutlined, SwapOutlined, UserOutlined } from '@ant-design/icons'
+import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { BellOutlined, LeftOutlined, UserOutlined } from '@ant-design/icons'
+import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
-import type { UserRole } from '@rentar/shared-types'
-import { AppShell, RoleContextSwitcher, type UserMenuItem } from '@rentar/ui'
+import type { ResumenContextoRol, UserRole } from '@rentar/shared-types'
+import { AppShell, RoleContextSwitcher, type UserMenuItem, type UserMenuRoleOption } from '@rentar/ui'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { readSessionFromDocument } from '@/lib/auth/session-cookie'
 import { navItemsByRole, type PanelRole } from '@/lib/navigation/navConfig'
+import { getResumenRoles } from '@/services/panel.service'
+import styles from './PanelLayout.module.css'
 
 const ROLE_LABEL: Record<PanelRole, string> = {
   locador: 'Locador',
@@ -37,11 +49,36 @@ function isPanelRole(role: UserRole): role is PanelRole {
   return role === 'locador' || role === 'locatario'
 }
 
+/** Ruta del alta: en móvil tiene su propia barra (Alta de propiedad · 09). */
+const ALTA_PATH = '/panel/propiedades/nueva'
+
+/** Títulos de la barra móvil para las rutas que no están en el menú lateral. */
+const MOBILE_TITLE_BY_PATH: Record<string, string> = {
+  '/panel/perfil': 'Mi perfil y legajo',
+  '/panel/notificaciones': 'Mis notificaciones',
+}
+
+/** Barra móvil del alta: "‹ Publicar propiedad · Salir". */
+function AltaMobileBar({ onBack }: { onBack: () => void }) {
+  return (
+    <div className={styles.altaBar}>
+      <button type="button" className={styles.altaBack} onClick={onBack} aria-label="Volver" data-testid="alta-mobile-volver">
+        <LeftOutlined />
+      </button>
+      <span className={styles.altaTitle}>Publicar propiedad</span>
+      <Link href="/panel/propiedades" className={styles.altaExit} data-testid="alta-mobile-salir">
+        Salir
+      </Link>
+    </div>
+  )
+}
+
 /** AppShell del panel: menú por rol, UserMenu y cambio de contexto. */
 export default function PanelLayout({ children }: { children: ReactNode }) {
   const { user, roles, activeRole, isLoading, logout, switchRole } = useAuth()
   const pathname = usePathname()
   const router = useRouter()
+  const [resumenRoles, setResumenRoles] = useState<ResumenContextoRol[]>([])
 
   // ─── Sesión inválida ────────────────────────────────────────────────
   // Hay cookie (el proxy dejó pasar) pero AuthProvider no pudo resolver el
@@ -69,27 +106,53 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 
   const userMenuItems = useMemo<UserMenuItem[]>(() => {
     if (!user || !activeRole) return []
-    const items: UserMenuItem[] = [
+    return [
       { key: 'perfil', label: 'Mi perfil y legajo', href: '/panel/perfil', icon: <UserOutlined /> },
       // NOTA: sin contador de no leídas: las notificaciones no son del Sprint 1
       // (el UserMenu lo soporta con `badgeCount`).
       { key: 'notificaciones', label: 'Mis notificaciones', href: '/panel/notificaciones', icon: <BellOutlined /> },
     ]
-    const otherRole = panelRoles.find((role) => role !== activeRole)
-    if (otherRole) {
-      items.push({
-        key: 'switch-role',
-        // Genérico, sin género: no hay un dato para elegir "locadora"/"locador".
-        label: `Cambiar a mi panel de ${ROLE_LABEL[otherRole].toLowerCase()}`,
-        icon: <SwapOutlined />,
-        onClick: () => {
-          switchRole(otherRole)
-          router.push('/panel')
-        },
+  }, [user, activeRole])
+
+  // ─── "Viendo como" (solo cuentas con dos roles) ─────────────────────
+  const hasTwoRoles = panelRoles.length > 1
+  useEffect(() => {
+    if (!hasTwoRoles) return
+    let cancelled = false
+    getResumenRoles(panelRoles)
+      .then((resumen) => {
+        if (!cancelled) setResumenRoles(resumen)
       })
+      .catch(() => {
+        // Sin el resumen, las filas se muestran igual, sin segunda línea ni contador.
+        if (!cancelled) setResumenRoles([])
+      })
+    return () => {
+      cancelled = true
     }
-    return items
-  }, [user, activeRole, panelRoles, switchRole, router])
+  }, [hasTwoRoles, panelRoles, activeRole])
+
+  const roleOptions = useMemo<UserMenuRoleOption[]>(
+    () =>
+      hasTwoRoles
+        ? panelRoles.map((role) => {
+            const resumen = resumenRoles.find((item) => item.role === role)
+            // Genérico, sin género: no hay un dato para elegir "locadora"/"locador".
+            return { role, label: ROLE_LABEL[role], description: resumen?.description, badgeCount: resumen?.pendingCount }
+          })
+        : [],
+    [hasTwoRoles, panelRoles, resumenRoles],
+  )
+
+  /** Cambia el rol activo y vuelve al inicio del panel de ese rol. */
+  function handleRoleChange(role: UserRole): void {
+    if (!isPanelRole(role)) return
+    switchRole(role)
+    router.push('/panel')
+  }
+
+  // ─── Barra móvil ────────────────────────────────────────────────────
+  const mobileTitle = MOBILE_TITLE_BY_PATH[pathname] ?? navItems.find((item) => item.key === activeKey)?.label
 
   // ─── Render ─────────────────────────────────────────────────────────
   // Hueco breve mientras se lee la cookie y se resuelve el usuario (o
@@ -105,15 +168,17 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
       user={{ name: `${user.nombre} ${user.apellido}`, role: activeRole, avatarUrl: user.avatarUrl, subtitle: isPanelRole(activeRole) ? ROLE_LABEL[activeRole] : undefined }}
       userMenuItems={userMenuItems}
       onLogout={logout}
+      mobileTitle={mobileTitle}
+      activeRoleLabel={hasTwoRoles && isPanelRole(activeRole) ? ROLE_LABEL[activeRole] : undefined}
+      roleOptions={roleOptions}
+      onRoleChange={handleRoleChange}
+      mobileHeader={pathname === ALTA_PATH ? <AltaMobileBar onBack={() => router.back()} /> : undefined}
       contextSwitcher={
-        panelRoles.length > 1 ? (
+        hasTwoRoles ? (
           <RoleContextSwitcher
             roles={panelRoles.map((role) => ({ role, label: ROLE_LABEL[role] }))}
             activeRole={activeRole}
-            onChange={(role) => {
-              switchRole(role)
-              router.push('/panel')
-            }}
+            onChange={handleRoleChange}
             data-testid="role-context-switcher"
           />
         ) : undefined

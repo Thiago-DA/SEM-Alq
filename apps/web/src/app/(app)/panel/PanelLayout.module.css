@@ -1,0 +1,38 @@
+/* Barra móvil del alta (Alta de propiedad · 09): "‹ Publicar propiedad · Salir". */
+
+.altaBar {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  line-height: 1.3;
+}
+
+.altaBack {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border: none;
+  background: none;
+  color: var(--rentar-color-text-secondary);
+  font-size: 1rem;
+  cursor: pointer;
+}
+
+.altaTitle {
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.altaExit {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  padding: 0 0.25rem;
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--rentar-color-blue);
+}
