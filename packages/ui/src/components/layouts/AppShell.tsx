@@ -23,6 +23,8 @@ interface AppShellUser {
   name: string
   role: UserRole
   avatarUrl?: string
+  /** Segunda línea de la cabecera del `UserMenu` desplegado (opcional, ver `UserMenu`). */
+  subtitle?: string
 }
 
 /** Props de {@link AppShell}. */
@@ -131,7 +133,7 @@ export function AppShell({
           {contextSwitcher && <div className={styles.contextSwitcherSlot}>{contextSwitcher}</div>}
           <div className={styles.headerActions}>
             <NotificationBell notifications={notifications} />
-            <UserMenu name={user.name} role={user.role} avatarUrl={user.avatarUrl} items={userMenuItems} onLogout={onLogout} />
+            <UserMenu name={user.name} role={user.role} avatarUrl={user.avatarUrl} subtitle={user.subtitle} items={userMenuItems} onLogout={onLogout} />
           </div>
         </LayoutHeader>
         <Content className={styles.content}>{children}</Content>

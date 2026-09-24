@@ -15,8 +15,12 @@
   cursor: pointer;
   display: grid;
   place-items: center;
-  width: var(--rentar-spacing-lg);
+  /* Pestaña finita: entra en el margen lateral de las pantallas en móvil
+     (18px en los formularios de autenticación) sin tapar campos ni botones. */
+  width: 0.875rem;
   height: var(--rentar-spacing-lg);
+  font-size: 0.625rem;
+  opacity: 0.7;
   border-radius: 0 var(--rentar-radius-pill) var(--rentar-radius-pill) 0;
   background: var(--rentar-color-bg-surface);
   box-shadow: var(--rentar-shadow-lifted);

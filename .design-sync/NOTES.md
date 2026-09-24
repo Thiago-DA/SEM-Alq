@@ -16,6 +16,19 @@ Cambios de `@rentar/ui` hechos en la migración, a tener en cuenta en el próxim
 - `PropertyCard`: etiqueta para el tipo nuevo `monoambiente`.
 - `.ds-sync/` se copió sin `node_modules` y sigue en el `.gitignore` (se regenera en cada sync).
 
+Cambios de la tanda 2 (autenticación), **pendientes de subir** con `/design-sync` al final del
+Sprint 1 (con aprobación del PO), para que Claude Design quede alineado:
+- **Nuevo: `PasswordStrengthMeter`** (`components/forms/`): barra de 4 segmentos, etiqueta
+  "Fuerza: …" y checklist. Lo pedía "Autenticación" · 03 como componente nuevo. Solo muestra: el nivel
+  y los requisitos los calcula `apps/web`. Sin "Un símbolo": el back no acepta símbolos.
+- `UserMenu` ("Mi perfil y legajo" · 02): cabecera del menú desplegado (avatar con iniciales, nombre
+  y `subtitle`), contador opcional por ítem (`badgeCount`), separador antes de "Cerrar sesión" y,
+  debajo de 768px, hoja desde abajo en vez de dropdown. Props nuevas opcionales: la API anterior
+  sigue funcionando.
+- `AppShell`: `user.subtitle` opcional, que pasa al `UserMenu`.
+- `AuthLayout` ("Autenticación" · 02): debajo de 640px la tarjeta ocupa todo el ancho, sin sombra
+  ni borde. Solo CSS; la API no cambia.
+
 ## Contexto de esta corrida (2026-09-22)
 
 Re-sync sobre `feature/fundaciones-app` (rama activa, ramificada de `develop`) contra el proyecto
