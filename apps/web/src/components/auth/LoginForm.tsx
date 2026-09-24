@@ -40,6 +40,8 @@ interface LoginFormValues {
 interface LoginFormProps {
   /** Ruta interna a la que volver después del login (ya pasada por `safeNextPath`), o `null`. */
   next: string | null
+  /** Email precargado (viene del registro, para que solo falte la contraseña). */
+  initialEmail?: string
 }
 
 /**
@@ -51,7 +53,7 @@ function defaultDestination(usuario: UsuarioSesion): string {
 }
 
 /** Formulario de inicio de sesión. */
-export function LoginForm({ next }: LoginFormProps) {
+export function LoginForm({ next, initialEmail }: LoginFormProps) {
   const router = useRouter()
   const { login, user, isLoading } = useAuth()
   const [form] = Form.useForm<LoginFormValues>()
@@ -127,7 +129,7 @@ export function LoginForm({ next }: LoginFormProps) {
       scrollToFirstError={{ focus: true, block: 'center' }}
       disabled={submitting}
       onFinish={handleSubmit}
-      initialValues={{ remember: false }}
+      initialValues={{ remember: false, email: initialEmail }}
       className={styles.form}
       data-testid="login-form"
     >

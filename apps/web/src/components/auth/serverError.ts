@@ -16,9 +16,13 @@ export interface ServerErrorCopy {
 /**
  * `true` si el error es "del servidor o de la conexión" (se muestra el
  * bloque con Reintentar) y no un error de los datos (que va en el formulario).
+ * `not_found` entra acá: en login y registro significa que la ruta del back
+ * todavía no existe, no que la persona escribió algo mal.
  */
 export function isServerError(error: unknown): boolean {
-  return !(error instanceof ServiceError) || error.code === 'server' || error.code === 'network'
+  return (
+    !(error instanceof ServiceError) || error.code === 'server' || error.code === 'network' || error.code === 'not_found'
+  )
 }
 
 /** Título y texto del bloque, con las palabras del diseño. */

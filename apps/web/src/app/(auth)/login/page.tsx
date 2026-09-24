@@ -6,7 +6,8 @@
  * sin sesión, con `?next=`) y "Salir" del UserMenu (vuelve a la landing).
  *
  * `next` llega por la URL y se valida con `safeNextPath` (solo rutas
- * internas) antes de pasárselo al formulario.
+ * internas) antes de pasárselo al formulario. `email` (opcional) precarga
+ * el campo: lo usa la pantalla de cuenta creada del registro.
  */
 // Import directo (no del barrel @rentar/ui): ese barrel también re-exporta
 // statusMeta, que rompe el build en cualquier Server Component que lo
@@ -20,10 +21,10 @@ interface LoginPageProps {
 }
 
 export default async function LoginPage({ searchParams }: LoginPageProps) {
-  const { next } = await searchParams
+  const { next, email } = await searchParams
   return (
     <AuthLayout title="Iniciar sesión" subtitle="Entrá a tu cuenta de RentAR" data-testid="login-page">
-      <LoginForm next={safeNextPath(next)} />
+      <LoginForm next={safeNextPath(next)} initialEmail={typeof email === 'string' ? email : undefined} />
     </AuthLayout>
   )
 }

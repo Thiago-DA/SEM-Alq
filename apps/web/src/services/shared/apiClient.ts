@@ -12,6 +12,19 @@
  *
  * Quién lo usa: solo `services/*.service.ts` (rama real). Las pantallas
  * nunca lo importan.
+ *
+ * Status HTTP que espera el front (para backend):
+ * - 400 / 422 → `validation`: un dato vino mal. El `error` del sobre se
+ *   muestra tal cual arriba del formulario, así que tiene que estar en
+ *   español y decir qué hacer.
+ * - 401 → `unauthorized`: credenciales inválidas o sesión vencida. En el
+ *   login se muestra el mensaje genérico de credenciales (US-39).
+ * - 403 → `forbidden`: hay sesión pero no el rol necesario.
+ * - 404 → `not_found`: el recurso (o la RUTA) no existe. NOTA: nunca se
+ *   interpreta como "credenciales incorrectas": un endpoint que todavía no
+ *   existe se ve como error del servidor, con "Reintentar".
+ * - 409 → `conflict`: ya existe (ej. mail registrado, US-19).
+ * - 5xx → `server`; sin respuesta → `network`.
  */
 import type { ApiResponse } from '@rentar/shared-types'
 import { readSessionFromDocument } from '@/lib/auth/session-cookie'

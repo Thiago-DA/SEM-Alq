@@ -27,7 +27,7 @@ import Link from 'next/link'
 import { Button, Checkbox, DatePicker, Form, Input } from 'antd'
 import type { Dayjs } from 'dayjs'
 import dayjs from 'dayjs'
-import { AuthLayout, PasswordStrengthMeter } from '@rentar/ui'
+import { AuthLayout, PasswordStrengthMeter, SimulatedFeatureNotice } from '@rentar/ui'
 import {
   fuerzaPassword,
   reglasApellido,
@@ -95,6 +95,7 @@ export function RegistroForm({ initialRol, next }: RegistroFormProps) {
   const [formError, setFormError] = useState<string | null>(null)
   const [serverError, setServerError] = useState<ServerErrorCopy | null>(null)
   const [nombreCreado, setNombreCreado] = useState('')
+  const [emailCreado, setEmailCreado] = useState('')
   const [documentoAbierto, setDocumentoAbierto] = useState<DocumentoLegal | null>(null)
 
   const password = Form.useWatch('password', form) ?? ''
@@ -120,6 +121,7 @@ export function RegistroForm({ initialRol, next }: RegistroFormProps) {
         aceptaTerminos: values.aceptaTerminos,
       })
       setNombreCreado(usuario.nombre)
+      setEmailCreado(usuario.email)
       setStep('listo')
     } catch (error) {
       if (error instanceof ServiceError && error.code === 'conflict') {
@@ -169,10 +171,15 @@ export function RegistroForm({ initialRol, next }: RegistroFormProps) {
   function renderListo() {
     const esLocador = rol === 'locador'
     // El siguiente paso depende del rol (diseño: "Locador: el CTA pasa a
-    // Publicar mi primera propiedad"). Todavía no hay sesión: estos links
-    // pasan por /login y vuelven acá.
+    // Publicar mi primera propiedad").
+    // NOTA: el registro no inicia sesión, así que los destinos del panel pasan
+    // por /login con el email ya cargado (solo falta la contraseña) y vuelven
+    // al destino con ?next=. Si el back devuelve una sesión al registrar,
+    // esto se reemplaza por un login automático.
+    const viaLogin = (destino: string) =>
+      `/login?next=${encodeURIComponent(destino)}&email=${encodeURIComponent(emailCreado)}`
     const cta = esLocador
-      ? { label: 'Publicar mi primera propiedad', href: '/panel/propiedades/nueva' }
+      ? { label: 'Publicar mi primera propiedad', href: viaLogin('/panel/propiedades/nueva') }
       : { label: 'Buscar propiedades en Córdoba', href: '/buscar' }
     return (
       <StatusBlock
@@ -184,9 +191,12 @@ export function RegistroForm({ initialRol, next }: RegistroFormProps) {
             <Button type="primary" size="large" href={cta.href} className={styles.submit} data-testid="registro-success-cta">
               {cta.label}
             </Button>
-            <Link href="/panel" className={styles.link} data-testid="registro-success-panel-link">
+            <Link href={viaLogin('/panel')} className={styles.link} data-testid="registro-success-panel-link">
               Ir a mi panel
             </Link>
+            {/* El texto de arriba es el del diseño; este aviso aclara que en el
+                mock el email no sale (docs/PRODUCT.md: nunca simular sin decirlo). */}
+            <SimulatedFeatureNotice feature="el email de confirmación" data-testid="registro-email-simulado" />
           </>
         }
         data-testid="registro-success"

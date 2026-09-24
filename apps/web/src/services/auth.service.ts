@@ -42,8 +42,8 @@ export const INVALID_CREDENTIALS_MESSAGE = 'El email o la contraseña no coincid
  * @backend POST /api/v1/auth/login   (no existe — propuesto)
  * @body    { email: string, contraseña: string }
  * @returns UsuarioSesion (el back responde `{ usuario, roles }`; lo traduce `usuarioDtoToSesion`)
- * TODO(backend): crear la ruta. Ante credenciales inválidas, responder 401
- * con un mensaje genérico (sin distinguir "no existe el mail" de
+ * TODO(backend): crear la ruta (hoy responde 404, y el login muestra el error
+ * del servidor). Ante credenciales inválidas, responder 401 con un mensaje genérico (sin distinguir "no existe el mail" de
  * "contraseña incorrecta").
  * @throws {ServiceError} `unauthorized` con {@link INVALID_CREDENTIALS_MESSAGE}.
  */
@@ -65,8 +65,10 @@ export async function login(credentials: LoginCredentials): Promise<UsuarioSesio
     })
     return usuarioDtoToSesion(response.usuario, response.roles)
   } catch (error) {
-    // Cualquier 401/404 del back se muestra con el mismo mensaje genérico.
-    if (error instanceof ServiceError && (error.code === 'unauthorized' || error.code === 'not_found')) {
+    // 401 (credenciales inválidas) y 400 (email o contraseña mal formados)
+    // se muestran con el mismo mensaje genérico. Un 404 NO: es que la ruta no
+    // existe, y sigue como error del servidor (ver apiClient).
+    if (error instanceof ServiceError && (error.code === 'unauthorized' || error.code === 'validation')) {
       throw new ServiceError('unauthorized', INVALID_CREDENTIALS_MESSAGE)
     }
     throw error
