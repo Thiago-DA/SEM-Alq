@@ -24,15 +24,17 @@ interface RequireRoleProps {
 
 /** Renderiza `children` solo con el rol activo pedido; si no, redirige a `/panel`. */
 export function RequireRole({ role, children }: RequireRoleProps) {
-  const { activeRole, isLoading } = useAuth()
+  const { user, activeRole, isLoading } = useAuth()
   const router = useRouter()
   const allowed = activeRole === role
 
+  // Solo redirige si HAY sesión con otro rol. Sin sesión (por ejemplo, justo
+  // después de "Cerrar sesión") no hace nada: de eso se ocupa el layout del panel.
   useEffect(() => {
-    if (!isLoading && !allowed) {
+    if (!isLoading && user && !allowed) {
       router.replace('/panel')
     }
-  }, [isLoading, allowed, router])
+  }, [isLoading, user, allowed, router])
 
   if (isLoading || !allowed) return null
   return <>{children}</>

@@ -5,9 +5,11 @@
  *
  * Qué es: una sola raíz autenticada para locador y locatario; el rol activo
  * de `useAuth()` decide el menú (`lib/navigation/navConfig.tsx`), no la ruta.
- * También arma los ítems del UserMenu: Mi perfil, Notificaciones y, solo
- * para cuentas con dos roles, el cambio de contexto ("Cambiar a ..."). El
- * último ítem, "Cerrar sesión", lo agrega el propio UserMenu (US-39).
+ * También arma los ítems del UserMenu (Claude Design, "Mi perfil y legajo" ·
+ * 02): "Mi perfil y legajo", "Mis notificaciones" y, solo para cuentas con dos
+ * roles, "Cambiar a mi panel de locador/locatario". El último ítem, "Cerrar
+ * sesión", lo agrega el propio UserMenu (US-39: desvincula la sesión y vuelve
+ * a la landing). "Administración" no va: el panel de admin no es del Sprint 1.
  *
  * De dónde saca los datos: `useAuth()` (`lib/auth/AuthProvider.tsx`).
  *
@@ -17,10 +19,12 @@
  * Quién lo usa: Next.js, para todas las páginas de `(app)/panel/*`.
  */
 import { useEffect, useMemo, type ReactNode } from 'react'
+import { BellOutlined, SwapOutlined, UserOutlined } from '@ant-design/icons'
 import { usePathname, useRouter } from 'next/navigation'
 import type { UserRole } from '@rentar/shared-types'
 import { AppShell, RoleContextSwitcher, type UserMenuItem } from '@rentar/ui'
 import { useAuth } from '@/lib/auth/AuthProvider'
+import { readSessionFromDocument } from '@/lib/auth/session-cookie'
 import { navItemsByRole, type PanelRole } from '@/lib/navigation/navConfig'
 
 const ROLE_LABEL: Record<PanelRole, string> = {
@@ -42,8 +46,11 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   // ─── Sesión inválida ────────────────────────────────────────────────
   // Hay cookie (el proxy dejó pasar) pero AuthProvider no pudo resolver el
   // usuario: la sesión no sirve, se vuelve al login.
+  // NOTA: si NO hay cookie es porque la persona tocó "Cerrar sesión": ahí no
+  // se redirige al login, porque el logout ya está llevando a la landing
+  // (US-39) y las dos navegaciones competirían.
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (!isLoading && !user && readSessionFromDocument()) {
       router.replace(`/login?next=${encodeURIComponent(pathname)}`)
     }
   }, [isLoading, user, router, pathname])
@@ -63,14 +70,18 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   const userMenuItems = useMemo<UserMenuItem[]>(() => {
     if (!user || !activeRole) return []
     const items: UserMenuItem[] = [
-      { key: 'perfil', label: 'Mi perfil', href: '/panel/perfil' },
-      { key: 'notificaciones', label: 'Notificaciones', href: '/panel/notificaciones' },
+      { key: 'perfil', label: 'Mi perfil y legajo', href: '/panel/perfil', icon: <UserOutlined /> },
+      // NOTA: sin contador de no leídas: las notificaciones no son del Sprint 1
+      // (el UserMenu lo soporta con `badgeCount`).
+      { key: 'notificaciones', label: 'Mis notificaciones', href: '/panel/notificaciones', icon: <BellOutlined /> },
     ]
     const otherRole = panelRoles.find((role) => role !== activeRole)
     if (otherRole) {
       items.push({
         key: 'switch-role',
-        label: `Cambiar a ${ROLE_LABEL[otherRole]}`,
+        // Genérico, sin género: no hay un dato para elegir "locadora"/"locador".
+        label: `Cambiar a mi panel de ${ROLE_LABEL[otherRole].toLowerCase()}`,
+        icon: <SwapOutlined />,
         onClick: () => {
           switchRole(otherRole)
           router.push('/panel')
@@ -91,7 +102,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
     <AppShell
       navItems={navItems}
       activeKey={activeKey}
-      user={{ name: `${user.nombre} ${user.apellido}`, role: activeRole, avatarUrl: user.avatarUrl }}
+      user={{ name: `${user.nombre} ${user.apellido}`, role: activeRole, avatarUrl: user.avatarUrl, subtitle: isPanelRole(activeRole) ? ROLE_LABEL[activeRole] : undefined }}
       userMenuItems={userMenuItems}
       onLogout={logout}
       contextSwitcher={

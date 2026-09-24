@@ -23,6 +23,7 @@ import {
   IndexBadge,
   MoneyAmount,
   MoneyInput,
+  PasswordStrengthMeter,
   NotificationBell,
   OnboardingChecklist,
   PhotoGallery,
@@ -53,6 +54,7 @@ import { neighborhoods } from '@/lib/catalogs/neighborhoods'
 // catálogo del design system (solo desarrollo), no una pantalla del
 // producto. Toma datos del elenco para que las demos se vean reales.
 import { propiedades } from '@/lib/mocks'
+import { fuerzaPassword, requisitosPassword } from '@/lib/validation/usuario.rules'
 import { isSearchable, propiedadMockToResumen } from '@/services/adapters/propiedad-mock.adapter'
 import { defaultFilters, MAX_PRICE_CEILING } from '@/lib/types/filters'
 import { formatMonthlyPrice } from '@/lib/utils/format'
@@ -434,6 +436,7 @@ export default function DesignSystem() {
   const [filterBarSearch, setFilterBarSearch] = useState('')
   const [filterBarStatus, setFilterBarStatus] = useState('todos')
   const [moneyValue, setMoneyValue] = useState(450000)
+  const [demoPassword, setDemoPassword] = useState('Rentar2026')
   const [confirmOpen, setConfirmOpen] = useState(false)
 
   return (
@@ -1133,6 +1136,28 @@ export default function DesignSystem() {
                     <FileDropzone hint="JPG o PNG, hasta 5 fotos." />
                   </div>
                 </FormSection>
+              </div>
+
+              <p className={styles.subheading}>PasswordStrengthMeter</p>
+              <p className={styles.sectionLead} style={{ marginBottom: '0.75rem' }}>
+                Fuerza de la contraseña del registro (US-19): barra de 4 segmentos, etiqueta y checklist.
+                El componente solo muestra; el nivel y los requisitos los calcula la app con las reglas de{' '}
+                <code>lib/validation/usuario.rules.ts</code>. Escribí para probarlo.
+              </p>
+              <div className={styles.chipDemoCard}>
+                <div className={styles.componentStack}>
+                  <Input.Password
+                    value={demoPassword}
+                    onChange={(event) => setDemoPassword(event.target.value)}
+                    aria-label="Contraseña de ejemplo"
+                    data-testid="design-system-password-input"
+                  />
+                  <PasswordStrengthMeter
+                    strength={fuerzaPassword(demoPassword)}
+                    requirements={requisitosPassword(demoPassword)}
+                    data-testid="design-system-password-strength"
+                  />
+                </div>
               </div>
 
               <p className={styles.subheading}>WizardLayout</p>
