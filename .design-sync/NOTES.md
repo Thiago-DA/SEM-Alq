@@ -29,6 +29,20 @@ Sprint 1 (con aprobación del PO), para que Claude Design quede alineado:
 - `AuthLayout` ("Autenticación" · 02): debajo de 640px la tarjeta ocupa todo el ancho, sin sombra
   ni borde. Solo CSS; la API no cambia.
 
+Cambios de la tanda 3 (búsqueda, US-34), también **pendientes de subir** al final del Sprint 1:
+- **Nuevo: `SearchSidebarFilters`** (`components/forms/`): la barra lateral de filtros de
+  "Búsqueda de propiedades" · 01 (ubicación con provincia, ciudad y barrios múltiples, precio,
+  tipología, dormitorios y ambientes de selección múltiple, superficie, características e índice) y,
+  con `variant="drawer"`, el contenido del Drawer móvil (· 03: tipología en pastillas y precio con
+  slider). Trabaja sobre un borrador y aplica con `onApply`. `data-testid` con prefijo
+  `search-sidebar-` o `search-drawer-` según la variante. Sin "Dúplex" (no existe en el sistema).
+  `SearchFilters` (la barra horizontal) no cambió.
+- `PropertyCard`: prop `layout="busqueda"` (componente interno `PropertyCardBusqueda`) con la
+  tarjeta de /buscar: precio en dorado "por mes", expensas, dirección aproximada, "barrio · título",
+  descripción en 2 líneas y disponibilidad (estas dos las pide US-34, no el diseño), chips y carrusel
+  si hay más de una foto. Link "estirado" para que las flechas del carrusel sean botones válidos.
+  `adjustmentIndex` acepta `null` (sin badge). La API anterior no cambió.
+
 ## Contexto de esta corrida (2026-09-22)
 
 Re-sync sobre `feature/fundaciones-app` (rama activa, ramificada de `develop`) contra el proyecto

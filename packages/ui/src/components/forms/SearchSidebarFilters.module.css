@@ -1,0 +1,243 @@
+/* Filtros de /buscar (Claude Design, "Búsqueda de propiedades" · 01 y 03). */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.125rem;
+}
+
+/* Escritorio: tarjeta blanca pegada al costado de los resultados. */
+.sidebar {
+  border: 1px solid var(--rentar-color-border-hairline);
+  border-radius: var(--rentar-radius-lg);
+  background: var(--rentar-color-bg-surface);
+  padding: 1.125rem;
+  box-shadow: 0 1px 2px rgba(var(--rentar-color-ink-rgb), 0.05);
+}
+
+/* Móvil: vive dentro del Drawer, que ya pone el fondo y el padding. */
+.drawer {
+  padding: 0;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.headerTitle {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  color: var(--rentar-color-text-primary);
+}
+
+.drawer .headerTitle {
+  font-size: 1.125rem;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.linkButton {
+  border: none;
+  background: none;
+  padding: 0;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--rentar-color-blue);
+  cursor: pointer;
+}
+
+.closeButton {
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: -0.75rem -0.75rem -0.75rem 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  background: none;
+  color: var(--rentar-color-text-primary);
+  cursor: pointer;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  padding-top: 1.125rem;
+  border-top: 1px solid rgba(var(--rentar-color-ink-rgb), 0.08);
+}
+
+.sectionTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--rentar-color-text-tertiary);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3125rem;
+}
+
+.fieldLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--rentar-color-text-secondary);
+}
+
+.field :global(.ant-select) {
+  width: 100%;
+  min-height: 2.5rem;
+}
+
+.drawer .field :global(.ant-select) {
+  min-height: 2.625rem;
+}
+
+.pair {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.pairField {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.pairLabel {
+  font-size: 0.6875rem;
+  color: var(--rentar-color-text-tertiary);
+}
+
+/* El dinero va en dorado (regla de la marca: los montos llevan el acento dorado).
+   Clase doble: para ganarle al ancho por defecto que antd le pone a InputNumber. */
+.moneyInput.moneyInput {
+  width: 100%;
+}
+
+.moneyInput :global(.ant-input-number-input) {
+  font-weight: 600;
+  color: var(--rentar-color-money-ink);
+}
+
+.priceValues {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--rentar-color-money-ink);
+}
+
+.pairInline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.pairSeparator {
+  font-size: 0.8125rem;
+  color: var(--rentar-color-text-tertiary);
+}
+
+.areaInput.areaInput {
+  flex: 1;
+  width: 100%;
+  min-width: 0;
+}
+
+/* Clase doble: los grupos de antd traen su propio display (en fila). */
+.checkList.checkList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5625rem;
+}
+
+.checkList :global(.ant-checkbox-wrapper),
+.checkList :global(.ant-radio-wrapper) {
+  font-size: 0.875rem;
+  min-height: 1.5rem;
+}
+
+.toggleGroup {
+  display: flex;
+  padding: 0.1875rem;
+  border-radius: var(--rentar-radius-pill);
+  background: rgba(var(--rentar-color-ink-rgb), 0.06);
+}
+
+.toggle {
+  flex: 1;
+  min-height: 1.875rem;
+  border: none;
+  border-radius: var(--rentar-radius-pill);
+  background: transparent;
+  font: inherit;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--rentar-color-text-secondary);
+  cursor: pointer;
+}
+
+.drawer .toggle {
+  min-height: 2.125rem;
+  font-size: 0.875rem;
+}
+
+.toggleOn {
+  background: var(--rentar-color-bg-surface);
+  color: var(--rentar-color-blue);
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(var(--rentar-color-ink-rgb), 0.12);
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.pill {
+  min-height: 2.125rem;
+  padding: 0 0.875rem;
+  border: 1px solid rgba(var(--rentar-color-ink-rgb), 0.15);
+  border-radius: var(--rentar-radius-pill);
+  background: var(--rentar-color-bg-surface);
+  font: inherit;
+  font-size: 0.875rem;
+  color: var(--rentar-color-text-primary);
+  cursor: pointer;
+}
+
+.pillOn {
+  border-color: var(--rentar-color-blue);
+  background: var(--rentar-color-blue);
+  color: var(--rentar-color-bg-surface);
+  font-weight: 600;
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.apply {
+  height: 2.375rem;
+  border-radius: var(--rentar-radius-pill);
+  font-weight: 700;
+}
+
+.unit {
+  text-transform: none;
+}

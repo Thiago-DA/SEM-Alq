@@ -3,6 +3,7 @@ import type { AdjustmentIndex, PropertyType } from '@rentar/shared-types'
 import { useNextBridge } from '../../providers/NextBridge'
 import { IndexBadge } from './IndexBadge'
 import { MoneyAmount } from './MoneyAmount'
+import { PropertyCardBusqueda, type PropertyCardBusquedaProps } from './PropertyCardBusqueda'
 import styles from './PropertyCard.module.css'
 
 const TYPE_LABEL: Record<PropertyType, string> = {
@@ -12,15 +13,26 @@ const TYPE_LABEL: Record<PropertyType, string> = {
   monoambiente: 'Monoambiente',
 }
 
-/** Props de {@link PropertyCard}. */
-interface PropertyCardProps {
+/**
+ * Props de {@link PropertyCard}. Las que hereda de `PropertyCardBusquedaProps`
+ * (`expenses`, `address`, `description`, `availableFrom`, `photoSrcs`,
+ * `characteristicLabel`) solo se usan con `layout="busqueda"`.
+ */
+interface PropertyCardProps extends Omit<PropertyCardBusquedaProps, 'adjustmentIndex'> {
+  /**
+   * `'default'` (tarjeta original: título, barrio · tipo, dormitorios/m²/índice
+   * y precio con "Ver detalle") o `'busqueda'` (la de `/buscar`, Claude
+   * Design "Búsqueda de propiedades"). Por defecto, `'default'`.
+   */
+  layout?: 'default' | 'busqueda'
   title: string
   neighborhoodName: string
   propertyType: PropertyType
   priceMonthly: number
   bedrooms: number
   areaM2: number
-  adjustmentIndex: AdjustmentIndex
+  /** `null` si la propiedad no tiene índice cargado: no se muestra el badge. */
+  adjustmentIndex: AdjustmentIndex | null
   /**
    * URL de la imagen principal, ya resuelta por quien use el componente
    * (`apps/web` resuelve el `.src` de una imagen importada estáticamente,
@@ -46,7 +58,18 @@ interface PropertyCardProps {
  * mismo markup, props desacopladas del tipo de dato para poder usarlo
  * también fuera de `apps/web`.
  */
-export function PropertyCard({
+export function PropertyCard(props: PropertyCardProps) {
+  if (props.layout === 'busqueda') {
+    const { layout, badgeLabel, ...busqueda } = props
+    void layout
+    void badgeLabel // la tarjeta de búsqueda no lleva el chip sobre la foto
+    return <PropertyCardBusqueda {...busqueda} />
+  }
+  return <PropertyCardDefault {...props} />
+}
+
+/** La tarjeta original (`layout="default"`). */
+function PropertyCardDefault({
   title,
   neighborhoodName,
   propertyType,
@@ -58,12 +81,12 @@ export function PropertyCard({
   imageAlt,
   badgeLabel = 'Trato directo con el dueño',
   href,
-  ...rest
+  'data-testid': dataTestId,
 }: PropertyCardProps) {
   const { ImageComponent, LinkComponent } = useNextBridge()
 
   return (
-    <LinkComponent href={href} className={styles.link} {...rest}>
+    <LinkComponent href={href} className={styles.link} data-testid={dataTestId}>
       <Card
         hoverable
         cover={
@@ -89,7 +112,7 @@ export function PropertyCard({
             {bedrooms} {bedrooms === 1 ? 'dormitorio' : 'dormitorios'}
           </span>
           <span>{areaM2} m²</span>
-          <IndexBadge index={adjustmentIndex} />
+          {adjustmentIndex && <IndexBadge index={adjustmentIndex} />}
         </div>
 
         <div className={styles.footerRow}>
