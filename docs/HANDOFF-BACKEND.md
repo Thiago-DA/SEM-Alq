@@ -201,12 +201,22 @@ Lo que cada pantalla necesita y la API de `develop` todavía no tiene. No se mod
   símbolos** (`PASSWORD_REGEX` en `apps/web/src/lib/validation/usuario.rules.ts`). El back tiene
   que validar lo mismo.
 
-### US-39 Iniciar y cerrar sesión — no existe
+### US-39 Iniciar y cerrar sesión — `POST /auth/login` (en curso en `feature/iniciar_cerrar_sesion`)
 
-- Propuesto: `POST /auth/login` (`{ email, contraseña }` → `{ usuario, roles }`),
-  `POST /auth/logout` y `GET /usuarios/:id` para recuperar la sesión al recargar.
-- Hoy la "sesión" del back es el header `x-user-id`. Hay que definir JWT o sesión de servidor; en el
-  front el cambio se concentra en `lib/auth/session-cookie.ts` y `services/shared/apiClient.ts`.
+- **Novedad:** la rama agregó `POST /auth/login` (`apps/api/src/{controllers,services,routes/v1}/auth.*`).
+  Valida `{ email, contraseña }`, llama `getSupabaseAuth().auth.signInWithPassword(...)` (nuevo
+  `getSupabaseAuth()` en `config/supabase.ts`, con `SUPABASE_PUBLISHABLE_KEY`) y devuelve
+  `{ usuario, roles, access_token, refresh_token, expires_in }`. 401 genérico si falla.
+- El front (`auth.service#login`) solo lee `{ usuario, roles }` del sobre, así que la forma actual
+  es compatible; `access_token`/`refresh_token`/`expires_in` quedan sin usar por ahora.
+- **Blocker real para conectar el resto de la API:** el resto de las rutas (`/mis-alquileres`,
+  `/inmuebles`, etc.) pasan por `authenticateGateway`, que **ya no lee `x-user-id`**: exige
+  `Authorization: Bearer <token>` y lo valida contra el JWKS de Supabase (ver "Observaciones para
+  backend" más abajo). El front (`apiClient.ts`) todavía manda `x-user-id`, no ese header. Falta
+  decidir y documentar: el front guarda `access_token`/`refresh_token` de la respuesta de login (por
+  ejemplo en la cookie de sesión) y `apiClient` lo manda como `Authorization: Bearer`, en vez de
+  `x-user-id`. Sin eso, un login real no deja usar el resto de las pantallas contra la API real.
+- Todavía falta: `POST /auth/logout` y `GET /usuarios/:id` para recuperar la sesión al recargar.
 - Falta el resumen de cada rol para "Viendo como" (`GET /usuarios/me/contextos`, propuesto).
 
 ### `/panel` (inicio del locador) — no existe nada
@@ -266,8 +276,14 @@ Encontradas al integrar. No se tocó `apps/api`: quedan para el equipo.
 1. **`npm test` falla en `develop`**: el script de `apps/api` corre
    `tsx tests/api/mis-alquileres.test.ts` con el directorio de trabajo en `apps/api`, pero el test vive
    en `tests/api/` de la raíz. Desde la raíz, `npx tsx tests/api/mis-alquileres.test.ts` pasa (6/6).
-2. **`x-user-id` por defecto es `'1'`** (`auth.middleware.ts`): un pedido sin el header entra como el
-   locador de prueba. Sin sesión, el front no manda el header; conviene responder 401.
+2. **`auth.middleware.ts` ya no usa `x-user-id`.** `authenticateGateway`
+   (`apps/api/src/gateway/middlewares/auth.middleware.ts`) valida un JWT real de Supabase: exige
+   `Authorization: Bearer <token>`, lo verifica con `jose` contra el JWKS de Supabase
+   (`config/supabase-jwt.ts`, `SUPABASE_JWKS_URL`) y recién ahí busca el perfil de `usuario` por
+   `auth_user_id`. Sin ese header (o con uno inválido) responde 401. Este documento decía antes que
+   la "sesión" era `x-user-id` con default `'1'`: eso quedó desactualizado por este cambio. El
+   `x-user-id` que sigue mandando `apiClient.ts` del front no lo lee nada en el back — ver la nota de
+   US-39 en la sección 5.
 3. **Rutas duplicadas**: en `inmuebles.routes.ts`, `GET /disponibles` y `GET /:id` se registran dos
    veces; en `publicaciones.routes.ts`, `GET /activas` también.
 4. **Mensajes de error**: el manejador de errores responde 400 por defecto con el texto interno del
