@@ -201,22 +201,24 @@ Lo que cada pantalla necesita y la API de `develop` todavía no tiene. No se mod
   símbolos** (`PASSWORD_REGEX` en `apps/web/src/lib/validation/usuario.rules.ts`). El back tiene
   que validar lo mismo.
 
-### US-39 Iniciar y cerrar sesión — `POST /auth/login` (en curso en `feature/iniciar_cerrar_sesion`)
+### US-39 Iniciar y cerrar sesión — sin endpoint propio, login directo contra Supabase Auth
 
-- **Novedad:** la rama agregó `POST /auth/login` (`apps/api/src/{controllers,services,routes/v1}/auth.*`).
-  Valida `{ email, contraseña }`, llama `getSupabaseAuth().auth.signInWithPassword(...)` (nuevo
-  `getSupabaseAuth()` en `config/supabase.ts`, con `SUPABASE_PUBLISHABLE_KEY`) y devuelve
-  `{ usuario, roles, access_token, refresh_token, expires_in }`. 401 genérico si falla.
-- El front (`auth.service#login`) solo lee `{ usuario, roles }` del sobre, así que la forma actual
-  es compatible; `access_token`/`refresh_token`/`expires_in` quedan sin usar por ahora.
-- **Blocker real para conectar el resto de la API:** el resto de las rutas (`/mis-alquileres`,
-  `/inmuebles`, etc.) pasan por `authenticateGateway`, que **ya no lee `x-user-id`**: exige
-  `Authorization: Bearer <token>` y lo valida contra el JWKS de Supabase (ver "Observaciones para
-  backend" más abajo). El front (`apiClient.ts`) todavía manda `x-user-id`, no ese header. Falta
-  decidir y documentar: el front guarda `access_token`/`refresh_token` de la respuesta de login (por
-  ejemplo en la cookie de sesión) y `apiClient` lo manda como `Authorization: Bearer`, en vez de
-  `x-user-id`. Sin eso, un login real no deja usar el resto de las pantallas contra la API real.
-- Todavía falta: `POST /auth/logout` y `GET /usuarios/:id` para recuperar la sesión al recargar.
+- **Decisión (rama `feature/iniciar_cerrar_sesion`):** no hay `POST /auth/login` en `apps/api`. El
+  login lo hace el front llamando directo al SDK de Supabase Auth (`signInWithPassword`) para
+  obtener el JWT; `apps/api` no participa del login en sí, solo valida el token resultante. Se
+  probó una versión con `POST /auth/login` propio (`auth.controller`/`auth.service`/`auth.routes`,
+  `getSupabaseAuth()` en `config/supabase.ts`) y se sacó: ya no existe en `apps/api/src`.
+- Con esto, **todas** las rutas del back (incluidas `/mis-alquileres`, `/inmuebles`, etc.) siguen
+  pasando por `authenticateGateway`, que exige `Authorization: Bearer <token>` y lo valida contra el
+  JWKS de Supabase (ver "Observaciones para backend" más abajo) — nada cambia ahí, solo que el token
+  se consigue del lado del front, no de una ruta de `apps/api`.
+- **Pendiente de definir en el front:** cómo se guarda el `access_token`/`refresh_token` que devuelve
+  Supabase (hoy la cookie de sesión, `lib/auth/session-cookie.ts`, no es un JWT) y cómo `apiClient.ts`
+  pasa a mandar `Authorization: Bearer <token>` en vez de `x-user-id` (ver la nota en "Observaciones
+  para backend", punto 2). Mientras no se resuelva, un login real sigue sin poder usar el resto de
+  las pantallas contra la API real.
+- Sigue faltando: logout (invalidar/limpiar la sesión de Supabase del lado del front) y
+  `GET /usuarios/:id` para recuperar la sesión al recargar.
 - Falta el resumen de cada rol para "Viendo como" (`GET /usuarios/me/contextos`, propuesto).
 
 ### `/panel` (inicio del locador) — no existe nada
