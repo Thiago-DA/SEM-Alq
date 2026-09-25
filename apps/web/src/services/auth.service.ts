@@ -2,21 +2,27 @@
  * auth.service.ts — frontera con el backend para la cuenta: registro, login y logout.
  *
  * Qué es: crear la cuenta, validar credenciales y cerrar sesión. La sesión en
- * sí (cookie, rol activo) la maneja `lib/auth/AuthProvider.tsx`.
+ * sí (quién está logueado, rol activo) la maneja `lib/auth/AuthProvider.tsx`.
  * Cubre: US-19 Registrar usuario y US-39 Iniciar y cerrar sesión.
+ *
+ * NOTA: login y logout NO pasan por `apps/api`: el back no tiene esas rutas
+ * (lo definió backend). Con el back real, el front usa Supabase Auth
+ * directamente (`signInWithPassword` / `signOut`) y después le pide el
+ * perfil a la API (`GET /usuarios/me`). El registro sí va por la API.
+ *
  * Quién lo usa: `lib/auth/AuthProvider.tsx` (login y logout) y
  * `components/auth/RegistroForm.tsx` (registro).
  */
-import type { Rol, Usuario, UsuarioSesion } from '@rentar/shared-types'
+import { isAuthApiError, isAuthRetryableFetchError } from '@supabase/supabase-js'
+import type { Usuario, UsuarioSesion } from '@rentar/shared-types'
+import { getSupabaseBrowserClient } from '@/lib/auth/supabase/client'
 import { registroInputToRequest, registroResponseToSesion } from './adapters/registro.adapter'
-import { usuarioDtoToSesion } from './adapters/usuario.adapter'
 import { apiRequest } from './shared/apiClient'
 import { USE_MOCKS } from './shared/config'
 import { delay } from './shared/delay'
-import type { RegistrarUsuarioResponse } from './shared/backend-dtos'
 import { ServiceError } from './shared/errors'
 import { saveMockRecord } from './shared/mockStore'
-import { readUsuariosMock, toUsuarioSesion } from './usuarios.service'
+import { getUsuarioActual, readUsuariosMock, toUsuarioSesion } from './usuarios.service'
 
 // ─── Login y logout (US-39) ────────────────────────────────────────────────
 
@@ -24,12 +30,6 @@ import { readUsuariosMock, toUsuarioSesion } from './usuarios.service'
 export interface LoginCredentials {
   email: string
   password: string
-}
-
-/** Respuesta propuesta para `POST /api/v1/auth/login`. */
-interface LoginResponse {
-  usuario: Usuario
-  roles: Rol[]
 }
 
 /**
@@ -40,15 +40,64 @@ interface LoginResponse {
  */
 export const INVALID_CREDENTIALS_MESSAGE = 'El email o la contraseña no coinciden.'
 
+/** Mensaje si Supabase Auth no responde (sin red, o el servicio caído). */
+const AUTH_NETWORK_MESSAGE = 'No pudimos conectarnos con el servidor. Probá de nuevo en unos minutos.'
+
+/**
+ * Mensaje si las credenciales son válidas pero la cuenta no tiene perfil en
+ * la tabla `usuario` (`/usuarios/me` responde 401). No debería pasar con
+ * cuentas creadas desde `/registro`.
+ */
+const PERFIL_INEXISTENTE_MESSAGE = 'Tu cuenta no tiene un perfil cargado en RentAR. Escribinos para revisarla.'
+
+/**
+ * Traduce un error de Supabase Auth al `ServiceError` del front.
+ * - 400 / 401 / 422 (credenciales inválidas, email mal formado, etc.) →
+ *   `unauthorized` con el mensaje genérico (US-39).
+ * - Sin respuesta → `network`.
+ * - Cualquier otro (429 por demasiados intentos, 5xx) → `server`, con el
+ *   mensaje de Supabase.
+ */
+function authErrorToServiceError(error: unknown): ServiceError {
+  if (isAuthRetryableFetchError(error)) return new ServiceError('network', AUTH_NETWORK_MESSAGE)
+  if (isAuthApiError(error) && (error.status === 400 || error.status === 401 || error.status === 422)) {
+    return new ServiceError('unauthorized', INVALID_CREDENTIALS_MESSAGE)
+  }
+  const message = error instanceof Error && error.message ? error.message : 'Ocurrió un error inesperado. Probá de nuevo.'
+  return new ServiceError('server', message)
+}
+
+/**
+ * Cierra la sesión de Supabase. Primero intenta revocarla en el servidor
+ * (alcance `global`: invalida el refresh token); si eso falla (por ejemplo,
+ * sin red), igual la borra de este navegador (alcance `local`, sin red).
+ *
+ * NOTA: `signOut()` con alcance `global` NO borra la sesión local si el
+ * pedido al servidor falla por red; por eso el segundo intento.
+ */
+async function cerrarSesionSupabase(): Promise<void> {
+  const supabase = getSupabaseBrowserClient()
+  try {
+    const { error } = await supabase.auth.signOut()
+    if (!error) return
+  } catch {
+    // sigue con el cierre local
+  }
+  await supabase.auth.signOut({ scope: 'local' })
+}
+
 /**
  * US-39 Iniciar y cerrar sesión — iniciar sesión.
- * @backend POST /api/v1/auth/login   (no existe — propuesto)
- * @body    { email: string, contraseña: string }
- * @returns UsuarioSesion (el back responde `{ usuario, roles }`; lo traduce `usuarioDtoToSesion`)
- * TODO(backend): crear la ruta (hoy responde 404, y el login muestra el error
- * del servidor). Ante credenciales inválidas, responder 401 con un mensaje genérico (sin distinguir "no existe el mail" de
- * "contraseña incorrecta").
- * @throws {ServiceError} `unauthorized` con {@link INVALID_CREDENTIALS_MESSAGE}.
+ * @backend Supabase Auth `signInWithPassword` (no pasa por `apps/api`), y
+ *          después GET /api/v1/usuarios/me (existe) para el nombre y los roles.
+ * @returns UsuarioSesion
+ * @throws {ServiceError} `unauthorized` con {@link INVALID_CREDENTIALS_MESSAGE}
+ *   si las credenciales no coinciden; `network` / `server` si falla Auth o
+ *   `/usuarios/me`.
+ *
+ * NOTA: si el login de Auth funciona pero `/usuarios/me` falla, se cierra la
+ * sesión de Supabase antes de tirar el error: no queda una sesión a medias
+ * (con token pero sin perfil ni roles).
  */
 export async function login(credentials: LoginCredentials): Promise<UsuarioSesion> {
   if (USE_MOCKS) {
@@ -61,37 +110,44 @@ export async function login(credentials: LoginCredentials): Promise<UsuarioSesio
     return toUsuarioSesion(usuario)
   }
 
+  let signInError: unknown = null
   try {
-    const response = await apiRequest<LoginResponse>('/auth/login', {
-      method: 'POST',
-      body: { email: credentials.email.trim(), contraseña: credentials.password },
+    const { error } = await getSupabaseBrowserClient().auth.signInWithPassword({
+      email: credentials.email.trim(),
+      password: credentials.password,
     })
-    return usuarioDtoToSesion(response.usuario, response.roles)
+    signInError = error
   } catch (error) {
-    // 401 (credenciales inválidas) y 400 (email o contraseña mal formados)
-    // se muestran con el mismo mensaje genérico. Un 404 NO: es que la ruta no
-    // existe, y sigue como error del servidor (ver apiClient).
-    if (error instanceof ServiceError && (error.code === 'unauthorized' || error.code === 'validation')) {
-      throw new ServiceError('unauthorized', INVALID_CREDENTIALS_MESSAGE)
-    }
+    signInError = error
+  }
+  if (signInError) throw authErrorToServiceError(signInError)
+
+  let usuario: UsuarioSesion | null
+  try {
+    usuario = await getUsuarioActual()
+  } catch (error) {
+    await cerrarSesionSupabase()
     throw error
   }
+  if (!usuario) {
+    await cerrarSesionSupabase()
+    throw new ServiceError('server', PERFIL_INEXISTENTE_MESSAGE)
+  }
+  return usuario
 }
 
 /**
  * US-39 Iniciar y cerrar sesión — cerrar sesión.
- * @backend POST /api/v1/auth/logout   (no existe — propuesto)
- * @returns nada
- * TODO(backend): crear la ruta para invalidar la sesión del lado del
- * servidor. Hoy no hay nada que invalidar (la "sesión" es el header
- * `x-user-id`): quien borra la cookie es `AuthProvider`.
+ * @backend Supabase Auth `signOut` (no pasa por `apps/api`: no hay ruta de logout)
+ * @returns nada. No tira error por la red: la sesión de este navegador se
+ *   cierra siempre (ver `cerrarSesionSupabase`).
  */
 export async function logout(): Promise<void> {
   if (USE_MOCKS) {
     await delay(150)
     return
   }
-  await apiRequest<void>('/auth/logout', { method: 'POST' })
+  await cerrarSesionSupabase()
 }
 
 // ─── Registro (US-19) ──────────────────────────────────────────────────────
@@ -117,11 +173,11 @@ export const EMAIL_TAKEN_MESSAGE = 'Ya existe una cuenta con ese email.'
 
 /**
  * US-19 Registrar usuario — crear la cuenta.
- * @backend POST /api/v1/registrar-usuario   (en curso en feature/registrar-usuario · todavía no está en develop)
+ * @backend POST /api/v1/registrar-usuario   (existe · sin token)
  * @body    RegistrarUsuarioRequest (lo arma `registroInputToRequest`)
  * @returns UsuarioSesion (la respuesta la traduce `registroResponseToSesion`)
- * TODO(backend): feature/registrar-usuario hoy registra a todos como
- * locatario; hay que aceptar el rol en el body (`rol`).
+ * TODO(backend): el back hoy ignora `rol` y registra a todos como locatario
+ * (aceptarlo está en revisión en `feature/registro-con-rol`).
  * @throws {ServiceError} `conflict` con {@link EMAIL_TAKEN_MESSAGE} si el mail ya existe.
  *
  * NOTA: no inicia sesión. Después de registrarse, el usuario entra por
@@ -155,9 +211,12 @@ export async function registrarUsuario(input: RegistroInput): Promise<UsuarioSes
   }
 
   try {
-    const response = await apiRequest<RegistrarUsuarioResponse>('/registrar-usuario', {
+    // `auth: false`: el registro es público; aunque haya una sesión abierta
+    // en este navegador, su token no tiene nada que ver con la cuenta nueva.
+    const response = await apiRequest<Usuario>('/registrar-usuario', {
       method: 'POST',
       body: registroInputToRequest(input),
+      auth: false,
     })
     return registroResponseToSesion(response, input.rol)
   } catch (error) {

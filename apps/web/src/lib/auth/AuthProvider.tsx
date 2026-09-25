@@ -8,11 +8,18 @@
  * cambio de contexto del UserMenu para cuentas con dos roles (hoy, solo
  * Sofía Ledesma: locadora de Mariano Moreno 285 y locataria de Obispo Trejo
  * 1250).
- * Cubre: US-39 Iniciar y cerrar sesión ("vincular la sesión al navegador" =
- * cookie `rentar_session`; "desvincularla" = borrarla).
+ * Cubre: US-39 Iniciar y cerrar sesión ("vincular la sesión al navegador";
+ * "desvincularla" al cerrar sesión).
+ *
+ * Dos ramas, según `NEXT_PUBLIC_USE_MOCKS`:
+ * - Modo mock: la sesión ES la cookie `rentar_session` (`session-cookie.ts`).
+ * - Modo real: la sesión es la de Supabase Auth (cookies `sb-…`, que maneja
+ *   `@supabase/ssr`). La cookie `rentar_session` se sigue escribiendo, pero
+ *   solo para recordar el rol activo y para que el layout del panel sepa que
+ *   había una sesión (ver `app/(app)/panel/layout.tsx`); no autentica nada.
  *
  * De dónde saca los datos: `services/auth.service.ts` (login/logout) y
- * `services/usuarios.service.ts` (recuperar el perfil al recargar).
+ * `services/usuarios.service.ts#getUsuarioActual` (el perfil al recargar).
  *
  * Quién lo usa: `useAuth()` desde cualquier Client Component (layout del
  * panel, pantallas de login y registro). Se monta una sola vez, en
@@ -22,14 +29,16 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { useRouter } from 'next/navigation'
 import type { UserRole, UsuarioSesion } from '@rentar/shared-types'
 import { login as loginRequest, logout as logoutRequest, type LoginCredentials } from '@/services/auth.service'
-import { getUsuarioSesion } from '@/services/usuarios.service'
+import { USE_MOCKS } from '@/services/shared/config'
+import { getUsuarioActual } from '@/services/usuarios.service'
 import { clearSessionFromDocument, readSessionFromDocument, writeSessionToDocument } from './session-cookie'
+import { getSupabaseBrowserClient } from './supabase/client'
 
 interface AuthContextValue {
   user: UsuarioSesion | null
   roles: UserRole[]
   activeRole: UserRole | null
-  /** `true` mientras se resuelve la sesión desde la cookie al montar. */
+  /** `true` mientras se resuelve la sesión al montar. */
   isLoading: boolean
   /**
    * Valida credenciales y guarda la sesión. `remember` = "Recordarme en este
@@ -51,6 +60,26 @@ function initialRole(user: UsuarioSesion): UserRole {
   return user.roles.includes('locador') ? 'locador' : user.roles[0]
 }
 
+/**
+ * Rol activo al recargar: el guardado en la cookie si sigue siendo de este
+ * usuario y todavía tiene ese rol; si no, el inicial.
+ */
+function restoredRole(user: UsuarioSesion): UserRole {
+  const saved = readSessionFromDocument()
+  return saved && saved.userId === user.id && user.roles.includes(saved.activeRole) ? saved.activeRole : initialRole(user)
+}
+
+/**
+ * Resuelve el usuario en sesión al montar, en modo real.
+ * Sin sesión de Supabase, ni siquiera se llama a la API.
+ * @throws {ServiceError} si hay sesión pero `/usuarios/me` falla.
+ */
+async function resolveRealUser(): Promise<UsuarioSesion | null> {
+  const { data } = await getSupabaseBrowserClient().auth.getSession()
+  if (!data.session) return null
+  return getUsuarioActual()
+}
+
 /** Provider de sesión. Envuelve toda la app (ver `lib/AppProviders.tsx`). */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const router = useRouter()
@@ -62,31 +91,41 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // Si la sesión actual se creó con "Recordarme"; se conserva al cambiar de rol.
   const [persistent, setPersistent] = useState(false)
 
-  // ─── Carga de datos: hidratar la sesión desde la cookie al montar ────
-  // Todos los setState corren dentro de .then()/.finally() (también el caso
-  // "sin cookie", vía Promise.resolve(null)) para que ninguno se ejecute de
-  // forma síncrona en el cuerpo del efecto.
+  // ─── Carga de datos: hidratar la sesión al montar ────────────────────
+  // Todos los setState corren dentro de .then()/.finally() para que ninguno
+  // se ejecute de forma síncrona en el cuerpo del efecto.
   useEffect(() => {
     let cancelled = false
-    const session = readSessionFromDocument()
-    const resolveUser = session ? getUsuarioSesion(session.userId) : Promise.resolve(null)
+    const saved = readSessionFromDocument()
+    // En modo mock, sin cookie no hay nada que resolver (igual que antes de
+    // conectar el back: sin espera simulada).
+    const resolveUser = USE_MOCKS ? (saved ? getUsuarioActual() : Promise.resolve(null)) : resolveRealUser()
 
     resolveUser
       .then((usuario) => {
         if (cancelled) return
-        if (session && usuario && usuario.roles.includes(session.activeRole)) {
+        if (usuario && USE_MOCKS && saved && usuario.roles.includes(saved.activeRole)) {
           setUser(usuario)
-          setActiveRole(session.activeRole)
-          setPersistent(session.persistent === true)
-        } else if (session) {
-          // Cookie corrupta, o usuario que ya no existe o perdió ese rol: se
-          // descarta en vez de dejar la app en un estado inconsistente.
+          setActiveRole(saved.activeRole)
+          setPersistent(saved.persistent === true)
+        } else if (usuario && !USE_MOCKS) {
+          const role = restoredRole(usuario)
+          writeSessionToDocument({ userId: usuario.id, activeRole: role, persistent: saved?.persistent === true })
+          setUser(usuario)
+          setActiveRole(role)
+          setPersistent(saved?.persistent === true)
+        } else if (saved) {
+          // Cookie corrupta, sesión vencida, o usuario que ya no existe o
+          // perdió ese rol: se descarta en vez de dejar la app en un estado
+          // inconsistente.
           clearSessionFromDocument()
         }
       })
       .catch(() => {
-        // Si el backend no responde al recargar, se sigue como "sin sesión";
-        // la cookie queda para el próximo intento.
+        // Si el backend no responde al recargar, se sigue como "sin sesión"
+        // y la cookie queda: el layout del panel manda a /login, y ahí el
+        // login vuelve a pedir el perfil y muestra el error del servidor.
+        // NOTA: nunca se inventan roles cuando `/usuarios/me` falla.
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false)
@@ -95,6 +134,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       cancelled = true
     }
+  }, [])
+
+  // ─── Modo real: la sesión de Supabase se cerró por fuera ────────────
+  // Por ejemplo, el refresh token venció o se cerró sesión en otra pestaña.
+  // NOTA: dentro del callback de onAuthStateChange no se llama a Supabase
+  // (lo desaconseja supabase-js: puede trabar el cliente); solo se limpia el
+  // estado local.
+  useEffect(() => {
+    if (USE_MOCKS) return
+    const { data } = getSupabaseBrowserClient().auth.onAuthStateChange((event) => {
+      if (event !== 'SIGNED_OUT') return
+      setUser(null)
+      setActiveRole(null)
+      setPersistent(false)
+    })
+    return () => data.subscription.unsubscribe()
   }, [])
 
   // ─── Handlers ───────────────────────────────────────────────────────
@@ -110,15 +165,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return usuario
   }
 
-  /** US-39: cerrar sesión desvincula la sesión del navegador y vuelve a la landing. */
-  function logout(): void {
-    void logoutRequest().catch(() => {
-      // Aunque el back no responda, la sesión del navegador se cierra igual.
-    })
+  /** Borra la sesión del navegador y vuelve a la landing. */
+  function endSession(): void {
     clearSessionFromDocument()
     setUser(null)
     setActiveRole(null)
     router.push('/')
+  }
+
+  /** US-39: cerrar sesión desvincula la sesión del navegador y vuelve a la landing. */
+  function logout(): void {
+    if (USE_MOCKS) {
+      void logoutRequest().catch(() => {
+        // Aunque el back no responda, la sesión del navegador se cierra igual.
+      })
+      endSession()
+      return
+    }
+    // NOTA: en modo real se espera a Supabase antes de salir, para que el
+    // proxy no vea todavía las cookies de sesión si la persona vuelve al
+    // panel enseguida. `logout` no tira errores de red (ver auth.service).
+    // La cookie del rol se borra ANTES: `signOut` dispara SIGNED_OUT, y con
+    // la cookie todavía puesta el layout del panel mandaría a /login en vez
+    // de dejar que se vaya a la landing.
+    clearSessionFromDocument()
+    void logoutRequest()
+      .catch(() => {
+        // Igual se cierra la sesión de este navegador.
+      })
+      .finally(endSession)
   }
 
   /** Cambio de contexto (cuentas con dos roles). Ignora un rol que el usuario no tiene. */

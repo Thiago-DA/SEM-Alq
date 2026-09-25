@@ -1,16 +1,20 @@
 /**
- * session-cookie.ts — forma única de la cookie de sesión simulada (US-39).
+ * session-cookie.ts — forma única de la cookie `rentar_session` (US-39).
  *
  * Qué es: el shape que comparten `AuthProvider` (cliente), `proxy.ts`
- * (servidor, protege `/panel/*`) y los services (cliente, para saber quién
- * está en sesión y armar el header `x-user-id`). Se define acá una sola vez
- * para que todos lean y escriban exactamente lo mismo.
+ * (servidor, protege `/panel/*`), el layout del panel y la rama mock de los
+ * services. Se define acá una sola vez para que todos lean y escriban
+ * exactamente lo mismo.
+ *
+ * Qué significa según el modo:
+ * - Modo mock: ES la sesión (simulada). `proxy.ts` deja pasar si existe.
+ * - Modo real: la sesión es la de Supabase Auth (cookies `sb-…`, ver
+ *   `lib/auth/supabase/`). Esta cookie solo recuerda el rol activo y le
+ *   avisa al layout del panel que había una sesión; no autentica nada.
  *
  * NOTA: no es httpOnly a propósito — `AuthProvider` necesita leerla desde el
  * cliente al hidratar la sesión. Solo guarda `{ userId, activeRole }`; el
- * perfil completo se resuelve con `services/usuarios.service.ts#getUsuarioSesion`.
- * Es una sesión simulada: con el backend real se reemplaza por un JWT o una
- * sesión de servidor (ver `docs/HANDOFF-BACKEND.md`, US-39).
+ * perfil completo se resuelve con `services/usuarios.service.ts#getUsuarioActual`.
  */
 import type { UserRole } from '@rentar/shared-types'
 

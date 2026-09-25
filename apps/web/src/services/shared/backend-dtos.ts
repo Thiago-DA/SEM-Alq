@@ -3,8 +3,10 @@
  * todavía no exporta.
  *
  * Qué es: la forma exacta de algunas respuestas y cuerpos de `apps/api` que
- * viven solo en `apps/api/src/dtos/index.ts`. El frontend no puede importar
- * de `apps/api`, así que se copian acá, campo por campo.
+ * viven solo en `apps/api/src/` (controllers o `dtos/`). El frontend no puede
+ * importar de `apps/api`, así que se copian acá, campo por campo. Lo que sí
+ * exporta `@rentar/shared-types` (`Inmueble`, `MisAlquileresItem`,
+ * `CreateInmuebleCompletoPayload`, `Usuario`) se importa de ahí, no se copia.
  * TODO(backend): mover estos DTOs a `@rentar/shared-types` y reemplazar esta
  * copia por un import.
  *
@@ -12,8 +14,24 @@
  */
 
 /**
- * Respuesta de `GET /api/v1/inmuebles/:id` (existe).
- * Copia de `InmuebleDetalleDTO` de `apps/api/src/dtos/index.ts`.
+ * Respuesta de `GET /api/v1/usuarios/me` (existe): el usuario del token con
+ * sus roles. Copia del `data` que arma `usuarioController.obtenerMiPerfil`
+ * (`apps/api/src/controllers/usuario.controller.ts`).
+ */
+export interface UsuarioMeResponse {
+  id: number
+  nombre: string
+  apellido?: string | null
+  email: string
+  /** Descripciones de la tabla `rol`: `'locatario'`, `'locador'` o `'administrador'`. */
+  roles: string[]
+}
+
+/**
+ * Respuesta de `GET /api/v1/inmuebles/:id` (existe). Copia de
+ * `InmuebleDetalleDTO` de `apps/api/src/dtos/inmueble.dto.ts`.
+ * NOTA: no trae precio, fotos ni contrato; `/buscar` lo usa solo para los
+ * tags (ver `propiedades.service.ts`).
  */
 export interface InmuebleDetalleResponse {
   id: number
@@ -22,32 +40,30 @@ export interface InmuebleDetalleResponse {
   numero: number
   piso?: string | null
   ciudad: string
+  barrio?: string
+  provincia?: string
   ambientes: number
   dormitorios: number
   banos: number
-  m2: number
+  m2_totales?: number
+  m2_cubiertos?: number
   descripcion?: string | null
+  /** El primer tag (se mantiene por compatibilidad); usar `tags`. */
   tag?: string | null
+  /** Descripciones de `tags_inmueble` (ej. "Acepta mascotas"). */
+  tags?: string[]
   servicio?: string | null
   id_locador: number
-  created_at?: string
-  publicacion?: {
-    id: number
-    titulo: string
-    precio: number
-    activa: boolean
-    created_at?: string
-  } | null
 }
 
 /**
- * Cuerpo de `POST /api/v1/registrar-usuario` (en curso en
- * `feature/registrar-usuario`). Copia de `CreateUsuarioPayload` de esa rama
- * (`packages/shared-types/src/index.ts`). Las claves con tilde y ñ
- * (`contraseña`) son las que espera el back, tal cual.
+ * Cuerpo de `POST /api/v1/registrar-usuario` (existe). Es
+ * `CreateUsuarioPayload` de `@rentar/shared-types` más el rol. Las claves con
+ * ñ (`contraseña`) son las que espera el back, tal cual.
  *
- * TODO(backend): la rama registra a todos como locatario. Hay que aceptar el
- * rol elegido en el paso 1 (`rol`) en el body.
+ * TODO(backend): hoy el back ignora `rol` y registra a todos como locatario.
+ * Aceptarlo está en revisión en `feature/registro-con-rol`; cuando se mergee,
+ * empieza a funcionar sin cambios en el front.
  */
 export interface RegistrarUsuarioRequest {
   nombre: string
@@ -60,62 +76,5 @@ export interface RegistrarUsuarioRequest {
   /** Formato ISO `YYYY-MM-DD`. */
   fecha_nacimiento: string
   acepta_terminos: boolean
-  /** Propuesto, todavía no existe en el back (ver el TODO(backend) de arriba). */
   rol: 'locador' | 'locatario'
-}
-
-/**
- * Respuesta de `POST /api/v1/registrar-usuario` en `feature/registrar-usuario`:
- * el `Usuario` creado, con los campos nuevos de esa rama.
- */
-export interface RegistrarUsuarioResponse {
-  id: number
-  nombre: string
-  apellido?: string | null
-  email: string
-  numero_documento: string
-  telefono?: string | null
-  fecha_nacimiento?: string | null
-}
-
-/**
- * Cuerpo de `POST /api/v1/inmuebles` (existe). Copia de `CreateInmuebleDTO`
- * de `apps/api/src/dtos/index.ts`.
- *
- * TODO(backend): faltan casi todos los campos de US-01 (ver
- * `propiedad.adapter.ts#propiedadNuevaToCrearInmueble`): provincia, barrio,
- * superficie cubierta, antigüedad, estado, disponibilidad, fotos, expensas,
- * índice, periodicidad, medios de pago, interés, días de gracia, depósito y
- * duración. `tags` y `servicios` son un solo id, no una lista. `id_locador`
- * viaja en el body: debería salir de la sesión.
- */
-export interface CrearInmuebleRequest {
-  tipo: number
-  direccion: string
-  numero: number
-  piso?: string | null
-  ciudad: string
-  ambientes: number
-  dormitorios: number
-  banos: number
-  m2: number
-  descripcion?: string | null
-  tags?: number | null
-  id_locador: number
-  servicios?: number | null
-}
-
-/**
- * Cuerpo de `POST /api/v1/publicaciones` (existe). Copia de
- * `CreatePublicacionDTO` de `apps/api/src/dtos/index.ts`.
- *
- * TODO(backend): hoy el back exige un contrato asociado para publicar (regla
- * de negocio de `publicacion.service.ts`), así que una propiedad nueva no se
- * puede publicar. En US-01 la publicación nace con el alta, sin contrato.
- */
-export interface CrearPublicacionRequest {
-  id_inmueble: number
-  titulo: string
-  precio: number
-  activa?: boolean
 }
