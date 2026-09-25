@@ -66,8 +66,10 @@ export default function PropertyCard({ property }: PropertyCardProps) {
           {property.bedrooms} {property.bedrooms === 1 ? 'dormitorio' : 'dormitorios'}
         </span>
         <span>{property.areaM2} m²</span>
-        {/* NOTA: sin índice solo pasa con el back real (el elenco siempre lo tiene). */}
-        <span>{property.adjustmentIndex ? `Ajuste por ${property.adjustmentIndex}` : 'Sin índice de ajuste'}</span>
+        {/* NOTA: `null` = el índice no vino (con el back real, `/disponibles` no
+            trae el contrato), no "no tiene índice": no se muestra nada, igual
+            que en la tarjeta de /buscar. El elenco del modo mock siempre lo tiene. */}
+        {property.adjustmentIndex && <span>Ajuste por {property.adjustmentIndex}</span>}
       </div>
 
       <div className={styles.footerRow}>
