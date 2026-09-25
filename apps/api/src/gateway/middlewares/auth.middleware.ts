@@ -5,6 +5,7 @@ import { usuarioRepository } from '../../repositories/usuario.repository';
 export interface AuthenticatedUser {
   id: number;
   nombre: string;
+  apellido: string;
   email: string;
   roles: string[];
   authUserId: string;
@@ -56,6 +57,7 @@ export const authenticateGateway = async (
     (req as any).user = {
       id: usuario.id,
       nombre: usuario.nombre,
+      apellido: usuario.apellido,
       email: usuario.email,
       roles: roles.map(role => role.descripcion),
       authUserId: payload.sub
