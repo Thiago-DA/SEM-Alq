@@ -25,8 +25,8 @@
  * panel, pantallas de login y registro). Se monta una sola vez, en
  * `lib/AppProviders.tsx`.
  */
-import { createContext, useContext, useEffect, useState, type ReactNode } from 'react'
-import { useRouter } from 'next/navigation'
+import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
+import { usePathname, useRouter } from 'next/navigation'
 import type { UserRole, UsuarioSesion } from '@rentar/shared-types'
 import { login as loginRequest, logout as logoutRequest, type LoginCredentials } from '@/services/auth.service'
 import { USE_MOCKS } from '@/services/shared/config'
@@ -41,11 +41,10 @@ interface AuthContextValue {
   /** `true` mientras se resuelve la sesión al montar. */
   isLoading: boolean
   /**
-   * Valida credenciales y guarda la sesión. `remember` = "Recordarme en este
-   * dispositivo" (30 días). Devuelve el usuario para que la pantalla decida
-   * adónde ir.
+   * Valida credenciales y guarda la sesión (dura hasta cerrarla: no hay
+   * "Recordarme"). Devuelve el usuario para que la pantalla decida adónde ir.
    */
-  login: (credentials: LoginCredentials, options?: { remember?: boolean }) => Promise<UsuarioSesion>
+  login: (credentials: LoginCredentials) => Promise<UsuarioSesion>
   logout: () => void
   switchRole: (role: UserRole) => void
 }
@@ -88,8 +87,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<UsuarioSesion | null>(null)
   const [activeRole, setActiveRole] = useState<UserRole | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  // Si la sesión actual se creó con "Recordarme"; se conserva al cambiar de rol.
-  const [persistent, setPersistent] = useState(false)
 
   // ─── Carga de datos: hidratar la sesión al montar ────────────────────
   // Todos los setState corren dentro de .then()/.finally() para que ninguno
@@ -107,13 +104,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (usuario && USE_MOCKS && saved && usuario.roles.includes(saved.activeRole)) {
           setUser(usuario)
           setActiveRole(saved.activeRole)
-          setPersistent(saved.persistent === true)
         } else if (usuario && !USE_MOCKS) {
           const role = restoredRole(usuario)
-          writeSessionToDocument({ userId: usuario.id, activeRole: role, persistent: saved?.persistent === true })
+          writeSessionToDocument({ userId: usuario.id, activeRole: role })
           setUser(usuario)
           setActiveRole(role)
-          setPersistent(saved?.persistent === true)
         } else if (saved) {
           // Cookie corrupta, sesión vencida, o usuario que ya no existe o
           // perdió ese rol: se descarta en vez de dejar la app en un estado
@@ -122,10 +117,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         }
       })
       .catch(() => {
-        // Si el backend no responde al recargar, se sigue como "sin sesión"
-        // y la cookie queda: el layout del panel manda a /login, y ahí el
-        // login vuelve a pedir el perfil y muestra el error del servidor.
-        // NOTA: nunca se inventan roles cuando `/usuarios/me` falla.
+        // NOTA: si `/usuarios/me` falla al recargar (back caído o error 5xx),
+        // se sigue como "sin sesión" y la cookie queda: el layout del panel
+        // manda a /login, y ahí el login vuelve a pedir el perfil y muestra
+        // el error del servidor con "Reintentar". Es a propósito: mostrar el
+        // error sin pasar por el login obligaría a tocar el layout del panel.
+        // Nunca se inventan roles cuando `/usuarios/me` falla.
       })
       .finally(() => {
         if (!cancelled) setIsLoading(false)
@@ -136,6 +133,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  // ─── Modo real: el caché de rutas de Next ───────────────────────────
+  // NOTA: Next guarda en el navegador las respuestas de las rutas ya
+  // visitadas, INCLUIDOS los redirects del proxy. Si la sesión venció, el
+  // proxy respondió "/panel → /login" y eso quedó guardado: después del
+  // login, ir a /panel reusaba ese redirect y la persona quedaba en /login.
+  // Cuando la sesión cambia (login o sesión perdida) se vacía ese caché con
+  // `router.refresh()`, como recomienda la guía de @supabase/ssr. El logout
+  // hace algo más fuerte: recarga la página entera (ver `logout`).
+  const refreshRoutes = useCallback(() => router.refresh(), [router])
+
+  // `true` mientras corre un logout propio: su SIGNED_OUT no tiene que hacer
+  // refresh (pediría de nuevo la ruta del panel, el proxy la mandaría a
+  // /login y eso le ganaría a la salida hacia la landing).
+  const loggingOutRef = useRef(false)
+
   // ─── Modo real: la sesión de Supabase se cerró por fuera ────────────
   // Por ejemplo, el refresh token venció o se cerró sesión en otra pestaña.
   // NOTA: dentro del callback de onAuthStateChange no se llama a Supabase
@@ -144,28 +156,68 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (USE_MOCKS) return
     const { data } = getSupabaseBrowserClient().auth.onAuthStateChange((event) => {
-      if (event !== 'SIGNED_OUT') return
+      if (event !== 'SIGNED_OUT' || loggingOutRef.current) return
       setUser(null)
       setActiveRole(null)
-      setPersistent(false)
+      refreshRoutes()
     })
     return () => data.subscription.unsubscribe()
+  }, [refreshRoutes])
+
+  // ─── Modo real: "atrás" después de cerrar sesión ────────────────────
+  // NOTA: el navegador puede restaurar la página anterior desde su caché de
+  // historial (bfcache) sin pedirle nada al servidor: después del logout,
+  // "atrás" mostraba /panel en blanco sin pasar por el proxy. Si la página
+  // vuelve de ese caché, se recarga: así el proxy decide (panel o /login).
+  useEffect(() => {
+    if (USE_MOCKS) return
+    function onPageShow(event: PageTransitionEvent): void {
+      if (event.persisted) window.location.reload()
+    }
+    window.addEventListener('pageshow', onPageShow)
+    return () => window.removeEventListener('pageshow', onPageShow)
   }, [])
+
+  // ─── Modo real: revisar la sesión en cada cambio de ruta ────────────
+  // Si el proxy encontró la sesión vencida, borró las cookies de Supabase y
+  // mandó a /login; pero este provider vive en el layout raíz y seguiría
+  // "creyendo" que hay usuario (y el login lo mandaría de vuelta al panel).
+  // `getSession()` lee la cookie (sin red, salvo que haya que renovar el
+  // token): si ya no hay sesión, se limpia el estado.
+  const pathname = usePathname()
+  useEffect(() => {
+    if (USE_MOCKS || !user) return
+    let cancelled = false
+    getSupabaseBrowserClient()
+      .auth.getSession()
+      .then(({ data }) => {
+        if (cancelled || data.session) return
+        setUser(null)
+        setActiveRole(null)
+        refreshRoutes()
+      })
+      .catch(() => {
+        // Si no se puede leer la sesión, se deja como está: la próxima
+        // llamada a la API responde 401 y la pantalla lo muestra.
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [pathname, user, refreshRoutes])
 
   // ─── Handlers ───────────────────────────────────────────────────────
 
-  async function login(credentials: LoginCredentials, options?: { remember?: boolean }): Promise<UsuarioSesion> {
+  async function login(credentials: LoginCredentials): Promise<UsuarioSesion> {
     const usuario = await loginRequest(credentials)
     const role = initialRole(usuario)
-    const remember = options?.remember === true
-    writeSessionToDocument({ userId: usuario.id, activeRole: role, persistent: remember })
+    writeSessionToDocument({ userId: usuario.id, activeRole: role })
     setUser(usuario)
     setActiveRole(role)
-    setPersistent(remember)
+    if (!USE_MOCKS) refreshRoutes()
     return usuario
   }
 
-  /** Borra la sesión del navegador y vuelve a la landing. */
+  /** Borra la sesión del navegador y vuelve a la landing (modo mock). */
   function endSession(): void {
     clearSessionFromDocument()
     setUser(null)
@@ -188,18 +240,27 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // La cookie del rol se borra ANTES: `signOut` dispara SIGNED_OUT, y con
     // la cookie todavía puesta el layout del panel mandaría a /login en vez
     // de dejar que se vaya a la landing.
+    // NOTA: al final se recarga la página entera en la landing (no
+    // `router.push`): así se descarta todo lo que Next guardó de las rutas
+    // del panel (son estáticas y quedan 5 minutos en el caché del
+    // navegador). Si no, volver al panel sin recargar podía mostrarlo sin
+    // pasar por el proxy.
+    loggingOutRef.current = true
     clearSessionFromDocument()
     void logoutRequest()
       .catch(() => {
         // Igual se cierra la sesión de este navegador.
       })
-      .finally(endSession)
+      .finally(() => {
+        // eslint-disable-next-line @next/next/no-location-assign-relative-destination -- recarga completa a propósito (ver la NOTA de arriba)
+        window.location.assign('/')
+      })
   }
 
   /** Cambio de contexto (cuentas con dos roles). Ignora un rol que el usuario no tiene. */
   function switchRole(role: UserRole): void {
     if (!user || !user.roles.includes(role)) return
-    writeSessionToDocument({ userId: user.id, activeRole: role, persistent })
+    writeSessionToDocument({ userId: user.id, activeRole: role })
     setActiveRole(role)
   }
 
