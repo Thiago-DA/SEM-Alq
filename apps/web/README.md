@@ -69,7 +69,6 @@ ningún botón del Sprint 1 quede roto. Se reemplazan ruta por ruta cuando llega
 | `lib/validation/` | Reglas de los formularios (`usuario.rules.ts`, `propiedad.rules.ts`), comentadas con el criterio de US que cubren. |
 | `lib/search/`, `lib/mis-propiedades/` | Filtros, orden y paginación (funciones puras) de `/buscar` y de Mis propiedades. |
 | `lib/catalogs/` | Textos fijos: barrios, características, tipos, índices, medios de pago. |
-| `lib/alta/borrador.ts` | Borrador local del alta (`rentar:mock:alta-borrador`). |
 | `lib/hooks/useServiceCall.ts` | Carga de un bloque de datos con sus estados (cargando, error, listo). |
 | `lib/utils/fechas.ts` | "Hoy" (fijo en 23/09/2026 en modo mock) y textos de días. |
 | `lib/navigation/navConfig.tsx` | Menú lateral del panel por rol. |

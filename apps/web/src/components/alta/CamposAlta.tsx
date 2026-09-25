@@ -6,7 +6,7 @@
  * como chips, los medios de pago con recargo y las tarjetas de índice.
  *
  * Todos siguen el contrato de antd `Form.Item` (`value` + `onChange`), así
- * se validan y se guardan en el borrador como cualquier otro campo.
+ * se validan como cualquier otro campo.
  * NOTA: se componen acá (apps/web) y no en `@rentar/ui`: aprobado por
  * producto para esta tanda.
  * Quién lo usa: `PasosAlta.tsx`.

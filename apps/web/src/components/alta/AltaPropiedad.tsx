@@ -12,22 +12,19 @@
  * Después: publicando (· 07), error con "Intentar de nuevo" (· 07) o éxito
  * con el próximo paso (· 08).
  *
- * Borrador LOCAL (no es un estado de la propiedad, ver `lib/alta/borrador.ts`):
- * lo cargado se guarda en el navegador mientras se escribe. Si al entrar hay
- * uno, se pregunta "Continuar / Empezar de nuevo" (nunca se restaura en
- * silencio) y no se pisa hasta que la persona elige. Se borra al terminar.
+ * NOTA: no hay borradores. RentAR no tiene estado "Borrador" y el alta
+ * tampoco guarda lo cargado en el navegador: los datos viven mientras la
+ * pantalla está abierta (moverse entre pasos no pierde nada).
  *
  * De dónde saca los datos: `propiedades.service#registrarPropiedad`.
  * Quién lo usa: `app/(app)/panel/propiedades/nueva/page.tsx`.
  */
-import { useMemo, useRef, useState, useSyncExternalStore } from 'react'
+import { useState } from 'react'
 import { Button, Form, Result } from 'antd'
 import { useRouter } from 'next/navigation'
 import type { PropiedadNueva } from '@rentar/shared-types'
 import { PageHeader, StatusTag, WizardLayout } from '@rentar/ui'
 import { neighborhoods } from '@/lib/catalogs/neighborhoods'
-import { useAuth } from '@/lib/auth/AuthProvider'
-import { ALTA_BORRADOR_KEY, borrarBorrador, guardarBorrador, type BorradorAlta } from '@/lib/alta/borrador'
 import { ALTA_VALORES_INICIALES, CAMPOS_POR_PASO, ETIQUETA_CAMPO, type AltaValues } from '@/lib/validation/propiedad.rules'
 import { seVeEnBusqueda, tituloDePropiedadNueva } from '@/services/adapters/propiedad.adapter'
 import { registrarPropiedad, type PropiedadRegistrada } from '@/services/propiedades.service'
@@ -50,9 +47,6 @@ const MIGA = [
   { label: 'Nueva' },
 ]
 
-/** Espera entre una tecla y el guardado del borrador. */
-const BORRADOR_DEBOUNCE_MS = 600
-
 /** Un error del paso para el resumen de arriba ("Faltan N datos para seguir"). */
 interface ErrorDePaso {
   name: keyof AltaValues
@@ -64,21 +58,6 @@ interface ErrorDePaso {
 type Fase = 'formulario' | 'publicando' | 'error' | 'exito'
 
 // ─── Helpers ────────────────────────────────────────────────────────────
-
-/** Borrador guardado, leído sin efectos (el texto crudo; se parsea abajo). */
-function useBorradorGuardado(): string | null {
-  return useSyncExternalStore(
-    () => () => {},
-    () => {
-      try {
-        return window.localStorage.getItem(ALTA_BORRADOR_KEY)
-      } catch {
-        return null
-      }
-    },
-    () => null,
-  )
-}
 
 /** Valores ya validados del formulario → `PropiedadNueva` (lo que recibe el service). */
 function aPropiedadNueva(valores: AltaValues): PropiedadNueva {
@@ -139,67 +118,16 @@ function esErrorDeValidacion(error: unknown): error is { errorFields: { name: (s
 /** Alta de una propiedad del locador en sesión. */
 export function AltaPropiedad() {
   const router = useRouter()
-  const { user } = useAuth()
   const [form] = Form.useForm<AltaValues>()
   const valores = (Form.useWatch([], form) as AltaValues | undefined) ?? ALTA_VALORES_INICIALES
 
   // ─── Estado local ───────────────────────────────────────────────────
   const [paso, setPaso] = useState(0)
-  const [pasoMaximo, setPasoMaximo] = useState(0)
   const [pasosConError, setPasosConError] = useState<Set<number>>(new Set())
   const [errores, setErrores] = useState<ErrorDePaso[]>([])
   const [fase, setFase] = useState<Fase>('formulario')
   const [errorPublicacion, setErrorPublicacion] = useState<ServiceError | null>(null)
   const [registrada, setRegistrada] = useState<(PropiedadRegistrada & { resumen: string }) | null>(null)
-  // Qué eligió la persona ante un borrador guardado; `null` = todavía no eligió.
-  const [decisionBorrador, setDecisionBorrador] = useState<'continuar' | 'nuevo' | null>(null)
-  const temporizador = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // Cuándo se abrió el alta: solo se ofrece un borrador guardado ANTES (no el que se va guardando ahora).
-  // NOTA: hora real a propósito (como `savedAt`): compara momentos, no se muestra.
-  const [abiertaEn] = useState(() => new Date().toISOString())
-
-  // ─── Borrador ───────────────────────────────────────────────────────
-  const crudo = useBorradorGuardado()
-  const borradorPendiente = useMemo<BorradorAlta<AltaValues> | null>(() => {
-    if (!crudo || !user) return null
-    try {
-      const borrador = JSON.parse(crudo) as BorradorAlta<AltaValues>
-      return borrador.ownerId === user.id && borrador.savedAt < abiertaEn ? borrador : null
-    } catch {
-      return null
-    }
-  }, [crudo, user, abiertaEn])
-  const preguntarPorBorrador = borradorPendiente !== null && decisionBorrador === null
-
-  /** Guarda el borrador un rato después del último cambio (nunca mientras se pregunta qué hacer con el anterior). */
-  function programarBorrador(pasoActual: number): void {
-    if (!user || preguntarPorBorrador || fase === 'exito') return
-    if (temporizador.current) clearTimeout(temporizador.current)
-    temporizador.current = setTimeout(() => {
-      guardarBorrador<AltaValues>({
-        ownerId: user.id,
-        step: pasoActual,
-        values: form.getFieldsValue(true) as AltaValues,
-        savedAt: new Date().toISOString(),
-      })
-    }, BORRADOR_DEBOUNCE_MS)
-  }
-
-  function continuarBorrador(): void {
-    if (!borradorPendiente) return
-    form.setFieldsValue({ ...ALTA_VALORES_INICIALES, ...borradorPendiente.values })
-    setPaso(borradorPendiente.step)
-    setPasoMaximo(borradorPendiente.step)
-    setDecisionBorrador('continuar')
-  }
-
-  function empezarDeNuevo(): void {
-    borrarBorrador()
-    form.resetFields()
-    setPaso(0)
-    setPasoMaximo(0)
-    setDecisionBorrador('nuevo')
-  }
 
   // ─── Navegación entre pasos ─────────────────────────────────────────
 
@@ -229,16 +157,12 @@ export function AltaPropiedad() {
     if (destino < paso) {
       setErrores([])
       setPaso(destino)
-      programarBorrador(pasoMaximo)
       return
     }
     try {
       await form.validateFields(CAMPOS_POR_PASO[paso])
       marcarPasoOk(paso)
       setPaso(destino)
-      const nuevoMaximo = Math.max(pasoMaximo, destino)
-      setPasoMaximo(nuevoMaximo)
-      programarBorrador(nuevoMaximo)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (error) {
       if (esErrorDeValidacion(error)) mostrarErrores(paso, aErroresDePaso(error.errorFields))
@@ -266,8 +190,6 @@ export function AltaPropiedad() {
     setErrorPublicacion(null)
     try {
       const resultado = await registrarPropiedad(nueva)
-      if (temporizador.current) clearTimeout(temporizador.current)
-      borrarBorrador()
       const barrio = neighborhoods.find((item) => item.slug === nueva.neighborhoodSlug)?.name ?? ''
       setRegistrada({ ...resultado, resumen: `${tituloDePropiedadNueva(nueva)} en ${barrio}` })
       setFase('exito')
@@ -281,11 +203,9 @@ export function AltaPropiedad() {
   function publicarOtra(): void {
     form.resetFields()
     setPaso(0)
-    setPasoMaximo(0)
     setPasosConError(new Set())
     setErrores([])
     setRegistrada(null)
-    setDecisionBorrador('nuevo')
     setFase('formulario')
   }
 
@@ -360,7 +280,6 @@ export function AltaPropiedad() {
         else if (cambios.type && form.getFieldValue('rooms') === 1) form.setFieldsValue({ rooms: 2, bedrooms: 1 })
         // Un dato corregido sale del resumen de errores (el resto se revalida con "Siguiente").
         setErrores((actual) => actual.filter((error) => !(error.name in cambios)))
-        programarBorrador(pasoMaximo)
       }}
       disabled={publicando}
       className={styles.form}
@@ -436,22 +355,6 @@ export function AltaPropiedad() {
       <div className={styles.pageHeader}>
         <PageHeader title="Publicar una propiedad" subtitle={`Paso ${paso + 1} de ${PASOS.length} · ${PASOS[paso].title}.`} breadcrumb={MIGA} />
       </div>
-
-      {preguntarPorBorrador && borradorPendiente && (
-        <div className={styles.draftNotice} role="status" data-testid="alta-borrador-aviso">
-          <span className={styles.draftText}>
-            <strong>Tenés una propiedad a medio cargar.</strong> ¿Seguís donde la dejaste?
-          </span>
-          <span className={styles.draftActions}>
-            <Button type="primary" onClick={continuarBorrador} data-testid="alta-borrador-continuar">
-              Continuar
-            </Button>
-            <Button onClick={empezarDeNuevo} data-testid="alta-borrador-nuevo">
-              Empezar de nuevo
-            </Button>
-          </span>
-        </div>
-      )}
 
       <div className={styles.wizardCard}>
         <WizardLayout
