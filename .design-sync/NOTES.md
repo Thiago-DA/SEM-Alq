@@ -72,6 +72,15 @@ Sprint 1. Todas las props son nuevas y opcionales: los usos anteriores no cambia
   amenities fuera del catálogo de 5, el banner de suscripción del panel y las personas y barrios del
   export que no están en el elenco.
 
+Cambios de la conexión con el back (`feature/conexion-back`, 2026-09-25):
+- **Se sacó "Recordarme"** del login (`apps/web/src/components/auth/LoginForm.tsx`, decisión del PO).
+  Con Supabase Auth la sesión dura hasta que la persona la cierra, así que la opción no hacía nada.
+  No es un cambio de `@rentar/ui` (el formulario vive en `apps/web`), pero **el template de Claude
+  Design "Autenticación" · 01 y 02 todavía lo muestra**: actualizarlo ahí, y no volver a agregarlo
+  si se implementa desde un export. "¿Olvidaste tu contraseña?" queda solo, alineado a la derecha
+  arriba del botón en escritorio y debajo del botón en móvil (como ya estaba). Se borró el
+  `data-testid` `login-remember-checkbox` (avisado a QA).
+
 ## Re-sync del Sprint 1 desde SEM-Alq (2026-09-24)
 
 Primer re-sync desde este repo (camino atómico, anclado en el `_ds_sync.json` del proyecto).

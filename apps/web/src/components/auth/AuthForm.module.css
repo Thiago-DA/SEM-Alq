@@ -43,13 +43,15 @@
   font-weight: 600;
 }
 
-.rowBetween {
+/* Fila de "¿Olvidaste tu contraseña?" arriba del botón (escritorio).
+   NOTA: antes compartía la fila con "Recordarme", que se sacó al pasar a
+   Supabase Auth (la sesión dura hasta cerrarla). En móvil el link va debajo
+   del botón, así que la fila entera se oculta (`.desktopOnly`). */
+.forgotRow {
   min-height: 2.75rem;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  flex-wrap: wrap;
+  justify-content: flex-end;
   margin-bottom: var(--rentar-spacing-sm);
 }
 

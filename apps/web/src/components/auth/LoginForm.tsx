@@ -3,7 +3,7 @@
 /**
  * LoginForm.tsx — formulario de `/login` (US-39 Iniciar y cerrar sesión).
  *
- * Qué es: email, contraseña (oculta, con botón para verla), "Recordarme",
+ * Qué es: email, contraseña (oculta, con botón para verla),
  * "¿Olvidaste tu contraseña?" y el link al registro. Diseño: Claude Design,
  * "Autenticación" · 01 (escritorio), 02 (móvil y errores) y 05 (estados).
  *
@@ -16,12 +16,17 @@
  * - Error de credenciales genérico: nunca dice si el mail existe.
  * - Vuelve a la página anterior (`next`, ya validado como ruta interna).
  *
+ * NOTA: no hay "Recordarme". Con Supabase Auth la sesión dura hasta que la
+ * persona la cierra (el token se renueva solo), así que la opción no tenía
+ * efecto. Se sacó del template de Claude Design también (ver
+ * `.design-sync/NOTES.md`).
+ *
  * Quién lo usa: `app/(auth)/login/page.tsx`.
  */
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { Button, Checkbox, Form, Input } from 'antd'
+import { Button, Form, Input } from 'antd'
 import type { UsuarioSesion } from '@rentar/shared-types'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { reglasEmail, reglasPasswordLogin } from '@/lib/validation/usuario.rules'
@@ -34,7 +39,6 @@ import styles from './AuthForm.module.css'
 interface LoginFormValues {
   email: string
   password: string
-  remember: boolean
 }
 
 interface LoginFormProps {
@@ -78,7 +82,7 @@ export function LoginForm({ next, initialEmail }: LoginFormProps) {
     setCredentialsError(false)
     setServerError(null)
     try {
-      const usuario = await login({ email: values.email, password: values.password }, { remember: values.remember })
+      const usuario = await login({ email: values.email, password: values.password })
       router.replace(next ?? defaultDestination(usuario))
     } catch (error) {
       if (error instanceof ServiceError && error.code === 'unauthorized') {
@@ -129,7 +133,7 @@ export function LoginForm({ next, initialEmail }: LoginFormProps) {
       scrollToFirstError={{ focus: true, block: 'center' }}
       disabled={submitting}
       onFinish={handleSubmit}
-      initialValues={{ remember: false, email: initialEmail }}
+      initialValues={{ email: initialEmail }}
       className={styles.form}
       data-testid="login-form"
     >
@@ -154,14 +158,8 @@ export function LoginForm({ next, initialEmail }: LoginFormProps) {
         <Input.Password autoComplete="current-password" data-testid="login-password-input" />
       </Form.Item>
 
-      <div className={styles.rowBetween}>
-        <Form.Item name="remember" valuePropName="checked" noStyle>
-          <Checkbox className={styles.checkbox} data-testid="login-remember-checkbox">
-            <span className={styles.desktopOnly}>Recordarme en este dispositivo</span>
-            <span className={styles.mobileOnly}>Recordarme</span>
-          </Checkbox>
-        </Form.Item>
-        <Link href="/recuperar" className={`${styles.link} ${styles.desktopOnly}`} data-testid="login-forgot-link">
+      <div className={`${styles.forgotRow} ${styles.desktopOnly}`}>
+        <Link href="/recuperar" className={styles.link} data-testid="login-forgot-link">
           ¿Olvidaste tu contraseña?
         </Link>
       </div>
