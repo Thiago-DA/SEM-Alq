@@ -85,6 +85,13 @@ Cambios de la conexión con el back (`feature/conexion-back`, 2026-09-25):
   antes ("… — no hay backend conectado en esta etapa."). El registro la usa en modo real: "El
   servidor todavía no envía emails de confirmación." Ejemplo sumado en `/design-system`; al subir,
   agregar una historia `ConMotivo` en `previews/SimulatedFeatureNotice.tsx`.
+- **Fotos que no cargan → placeholder** (aprobado por el PO). El `ImageComponent` que `apps/web`
+  inyecta en el `NextBridgeProvider` de `@rentar/ui` (`AppImage`, en `apps/web/src/lib/next-bridge.tsx`)
+  ahora pasa a `/placeholder-propiedad.svg` si la imagen falla, en vez del ícono de imagen rota
+  (`lib/imagenes/fotoConRespaldo.ts`). Afecta a todo lo que dibuja imágenes por el puente
+  (`PropertyCard`, `PropertyCardBusqueda`, logos). **El `DefaultImage` de `@rentar/ui` (el `<img>` de
+  las previews de Claude Design) no cambió**: en el proyecto de Claude Design una foto rota se sigue
+  viendo rota. Si se quiere lo mismo ahí, sumar el respaldo al `DefaultImage` en el próximo sync.
 
 ## Re-sync del Sprint 1 desde SEM-Alq (2026-09-24)
 

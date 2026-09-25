@@ -20,6 +20,7 @@ import { IndexBadge, MoneyAmount, StatusTag, type DataTableColumn } from '@renta
 import { formatARS } from '@rentar/ui/src/utils/formatARS'
 import { formatDate } from '@rentar/ui/src/utils/formatDate'
 import { tipoCorto } from '@/lib/catalogs/propiedad'
+import { useFotoConRespaldo } from '@/lib/imagenes/fotoConRespaldo'
 import { diasHasta, nombreMes } from '@/lib/utils/fechas'
 import styles from './MisPropiedades.module.css'
 
@@ -38,9 +39,12 @@ function cortarClick(event: MouseEvent) {
 /** Miniatura de la foto principal (64×48, US-02: "imagen principal"). */
 export function FotoPropiedad({ propiedad, size = 'table' }: { propiedad: PropiedadLocador; size?: 'table' | 'card' }) {
   const [width, height] = size === 'table' ? [64, 48] : [64, 52]
+  // Si la foto no carga (ej. las URLs de prueba del seed), el placeholder.
+  const foto = useFotoConRespaldo(propiedad.imageSrc)
   return (
     <Image
-      src={propiedad.imageSrc}
+      src={foto.src}
+      onError={foto.onError}
       alt=""
       width={width}
       height={height}

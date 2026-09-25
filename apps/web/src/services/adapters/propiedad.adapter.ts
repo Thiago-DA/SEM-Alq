@@ -27,13 +27,15 @@ import type {
   PropiedadResumen,
 } from '@rentar/shared-types'
 import { neighborhoods } from '@/lib/catalogs/neighborhoods'
+import { PLACEHOLDER_PHOTO_SRC } from '@/lib/imagenes/fotoConRespaldo'
 import { formatApproxAddress, formatFloorUnit } from './direccion'
 
 /**
  * Foto que se muestra cuando el inmueble no tiene fotos (o el endpoint no
- * las devuelve, como `/inmuebles/disponibles`).
+ * las devuelve, como `/inmuebles/disponibles`). Vive en
+ * `lib/imagenes/fotoConRespaldo.ts`, que también la usa cuando una foto no carga.
  */
-export const PLACEHOLDER_PHOTO_SRC = '/placeholder-propiedad.svg'
+export { PLACEHOLDER_PHOTO_SRC }
 
 // ─── Catálogos: id del back ↔ clave del front ───────────────────────────
 
