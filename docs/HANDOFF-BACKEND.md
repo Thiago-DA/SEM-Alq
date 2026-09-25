@@ -201,25 +201,32 @@ Lo que cada pantalla necesita y la API de `develop` todavía no tiene. No se mod
   símbolos** (`PASSWORD_REGEX` en `apps/web/src/lib/validation/usuario.rules.ts`). El back tiene
   que validar lo mismo.
 
-### US-39 Iniciar y cerrar sesión — sin endpoint propio, login directo contra Supabase Auth
+### US-39 Iniciar y cerrar sesión — `GET /usuarios/me` (existe) + login directo contra Supabase Auth
 
 - **Decisión (rama `feature/iniciar_cerrar_sesion`):** no hay `POST /auth/login` en `apps/api`. El
   login lo hace el front llamando directo al SDK de Supabase Auth (`signInWithPassword`) para
   obtener el JWT; `apps/api` no participa del login en sí, solo valida el token resultante. Se
   probó una versión con `POST /auth/login` propio (`auth.controller`/`auth.service`/`auth.routes`,
   `getSupabaseAuth()` en `config/supabase.ts`) y se sacó: ya no existe en `apps/api/src`.
-- Con esto, **todas** las rutas del back (incluidas `/mis-alquileres`, `/inmuebles`, etc.) siguen
-  pasando por `authenticateGateway`, que exige `Authorization: Bearer <token>` y lo valida contra el
-  JWKS de Supabase (ver "Observaciones para backend" más abajo) — nada cambia ahí, solo que el token
-  se consigue del lado del front, no de una ruta de `apps/api`.
-- **Pendiente de definir en el front:** cómo se guarda el `access_token`/`refresh_token` que devuelve
-  Supabase (hoy la cookie de sesión, `lib/auth/session-cookie.ts`, no es un JWT) y cómo `apiClient.ts`
-  pasa a mandar `Authorization: Bearer <token>` en vez de `x-user-id` (ver la nota en "Observaciones
-  para backend", punto 2). Mientras no se resuelva, un login real sigue sin poder usar el resto de
-  las pantallas contra la API real.
-- Sigue faltando: logout (invalidar/limpiar la sesión de Supabase del lado del front) y
-  `GET /usuarios/:id` para recuperar la sesión al recargar.
-- Falta el resumen de cada rol para "Viendo como" (`GET /usuarios/me/contextos`, propuesto).
+- **Novedad:** con el JWT ya no alcanza para armar la sesión de la app (el token de Supabase no trae
+  nombre, apellido ni roles), así que se agregó `GET /api/v1/usuarios/me` (protegida con
+  `authenticateGateway`, `usuario.controller.ts#obtenerMiPerfil`, mapeada en `usuarios.routes.ts`,
+  mount `/usuarios` en `routes/v1/index.ts`). Devuelve `{ id, nombre, apellido, email, roles }` del
+  usuario del token. `POST /registrar-usuario` (US-19) se separó a su propio archivo,
+  `routes/v1/registrar-usuario.routes.ts`, mount `/registrar-usuario`.
+- Con esto, **todas** las rutas del back (incluidas `/mis-alquileres`, `/inmuebles`, `/usuarios/me`,
+  etc.) pasan por `authenticateGateway`, que exige `Authorization: Bearer <token>` y lo valida contra
+  el JWKS de Supabase (ver "Observaciones para backend" más abajo) — el token se consigue del lado
+  del front, no de una ruta de `apps/api`.
+- **Pendiente en el front (todavía no arrancó):** hoy `apiClient.ts` sigue mandando `x-user-id`, no
+  hay ningún cliente de Supabase en `apps/web` (sin `@supabase/supabase-js` en su `package.json`) y
+  `lib/auth/session-cookie.ts` no guarda ningún JWT. Falta: instalar el SDK de Supabase en el front,
+  hacer login/logout con él (`signInWithPassword` / `signOut`), pasar `apiClient.ts` a mandar
+  `Authorization: Bearer <access_token>` de esa sesión, y usar `GET /usuarios/me` para completar el
+  perfil (nombre, apellido, roles) después del login y al recargar la página. Mientras no se resuelva,
+  un login real contra Supabase sigue sin poder usar el resto de las pantallas contra la API real.
+- Sigue faltando: logout del lado del back no aplica (es `supabase.auth.signOut()` en el front, no
+  una ruta). Falta el resumen de cada rol para "Viendo como" (`GET /usuarios/me/contextos`, propuesto).
 
 ### `/panel` (inicio del locador) — no existe nada
 
@@ -286,8 +293,8 @@ Encontradas al integrar. No se tocó `apps/api`: quedan para el equipo.
    la "sesión" era `x-user-id` con default `'1'`: eso quedó desactualizado por este cambio. El
    `x-user-id` que sigue mandando `apiClient.ts` del front no lo lee nada en el back — ver la nota de
    US-39 en la sección 5.
-3. **Rutas duplicadas**: en `inmuebles.routes.ts`, `GET /disponibles` y `GET /:id` se registran dos
-   veces; en `publicaciones.routes.ts`, `GET /activas` también.
+3. **Rutas duplicadas**: en `inmuebles.routes.ts`, `GET /disponibles` y `GET /:id` todavía se
+   registran dos veces. (`publicaciones.routes.ts` ya se corrigió: `GET /activas` quedó una sola vez.)
 4. **Mensajes de error**: el manejador de errores responde 400 por defecto con el texto interno del
    `Error` (ej. "Regla de negocio no cumplida: …"). El front lo muestra tal cual, así que tiene que ser
    un texto para el usuario, en español y diciendo qué hacer.
