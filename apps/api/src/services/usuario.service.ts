@@ -1,6 +1,9 @@
 import { CreateUsuarioDTO, UsuarioDTO } from '../dtos';
 import { IUsuarioRepository, usuarioRepository } from '../repositories/usuario.repository';
 
+// Roles que un usuario puede elegir al registrarse (US-19).
+const ROLES_REGISTRABLES: string[] = ['locatario', 'locador'];
+
 export class UsuarioService {
   constructor(private readonly repository: IUsuarioRepository = usuarioRepository) {}
 
@@ -50,9 +53,19 @@ export class UsuarioService {
       throw error;
     }
 
+    // El rol es opcional: sin rol, el usuario queda como locatario (como antes).
+    // Solo se puede elegir locatario o locador; 'administrador' no se asigna desde el registro.
+    const rol = data.rol ?? 'locatario';
+    if (!ROLES_REGISTRABLES.includes(rol)) {
+      const error = new Error("El rol debe ser 'locatario' o 'locador'.");
+      (error as any).statusCode = 400;
+      throw error;
+    }
+
     return this.repository.create({
       ...data,
-      email: data.email.trim().toLowerCase()
+      email: data.email.trim().toLowerCase(),
+      rol
     });
   }
 }
