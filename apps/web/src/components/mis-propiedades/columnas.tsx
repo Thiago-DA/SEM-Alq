@@ -20,6 +20,7 @@ import { IndexBadge, MoneyAmount, StatusTag, type DataTableColumn } from '@renta
 import { formatARS } from '@rentar/ui/src/utils/formatARS'
 import { formatDate } from '@rentar/ui/src/utils/formatDate'
 import { tipoCorto } from '@/lib/catalogs/propiedad'
+import { USE_MOCKS } from '@/services/shared/config'
 import { useFotoConRespaldo } from '@/lib/imagenes/fotoConRespaldo'
 import { diasHasta, nombreMes } from '@/lib/utils/fechas'
 import styles from './MisPropiedades.module.css'
@@ -136,9 +137,30 @@ function Precio({ propiedad }: { propiedad: PropiedadLocador }) {
   )
 }
 
-/** Locatario actual y link al contrato (US-02: "nombre del locatario para propiedades alquiladas"). */
+/**
+ * `true` si es una alquilada cuyo locatario y próximo ajuste el back no manda
+ * (con el back real, `/mis-alquileres` todavía no los trae).
+ * NOTA: solo en modo real. En modo mock las alquiladas del elenco tienen
+ * locatario, y una alquilada creada en el alta (sin locatario) sigue
+ * mostrándose como antes.
+ */
+function datosDeAlquilerNoInformados(propiedad: PropiedadLocador): boolean {
+  return !USE_MOCKS && (propiedad.status === 'alquilada' || propiedad.status === 'alquilada_publicada')
+}
+
+/**
+ * Locatario actual y link al contrato (US-02: "nombre del locatario para
+ * propiedades alquiladas").
+ *
+ * NOTA: una alquilada sin locatario es un dato que NO VINO (con el back
+ * real, `/mis-alquileres` todavía no trae el locatario): se muestra "—", no
+ * "Sin contrato", que sería falso. "Sin contrato" queda para las que no
+ * están alquiladas (y, en modo mock, como estaba).
+ */
 function Locatario({ propiedad }: { propiedad: PropiedadLocador }) {
-  if (!propiedad.tenantName) return <span className={styles.muted}>Sin contrato</span>
+  if (!propiedad.tenantName) {
+    return <span className={styles.muted}>{datosDeAlquilerNoInformados(propiedad) ? '—' : 'Sin contrato'}</span>
+  }
   return (
     <span className={styles.stack}>
       <span className={styles.tenant}>{propiedad.tenantName}</span>
@@ -152,6 +174,8 @@ function Locatario({ propiedad }: { propiedad: PropiedadLocador }) {
 /**
  * Próximo ajuste y su tipo (US-02). Alquiladas: índice + fecha (en ámbar a
  * menos de 60 días). Sin contrato, el índice cargado se aplica "al firmar".
+ * NOTA: una alquilada sin próximo ajuste es un dato que no vino (el back
+ * todavía no lo calcula): "—", nunca "al firmar".
  */
 function ProximoAjuste({ propiedad }: { propiedad: PropiedadLocador }) {
   if (propiedad.nextAdjustment) {
@@ -163,7 +187,7 @@ function ProximoAjuste({ propiedad }: { propiedad: PropiedadLocador }) {
       </span>
     )
   }
-  if (propiedad.adjustmentIndex && !propiedad.tenantName) {
+  if (propiedad.adjustmentIndex && !propiedad.tenantName && !datosDeAlquilerNoInformados(propiedad)) {
     return (
       <span className={styles.adjust}>
         <IndexBadge index={propiedad.adjustmentIndex} />
