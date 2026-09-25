@@ -131,6 +131,12 @@ export async function apiRequest<T>(path: string, options: ApiRequestOptions = {
     response = await fetch(buildUrl(path, query), {
       method,
       headers,
+      // NOTA: los datos de la API son en vivo. Sin `no-store`, un Server
+      // Component que llame a un service (la landing) se prerenderiza en el
+      // build: Next hace el pedido UNA vez en `next build` y las propiedades
+      // quedan congeladas (o vacías, si la API no estaba levantada). Con
+      // `no-store`, Next pide en cada request (y la ruta pasa a ser dinámica).
+      cache: 'no-store',
       body: body === undefined ? undefined : JSON.stringify(body),
     })
   } catch {
