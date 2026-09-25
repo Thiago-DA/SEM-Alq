@@ -7,6 +7,7 @@ export interface AuthenticatedUser {
   nombre: string;
   email: string;
   roles: string[];
+  authUserId: string;
 }
 
 /**
@@ -21,6 +22,7 @@ export const authenticateGateway = async (
   try {
     const authorization = req.header('authorization');
     const token = authorization?.match(/^Bearer\s+(.+)$/i)?.[1];
+
     if (!token) {
       res.status(401).json({
         success: false,
@@ -30,6 +32,7 @@ export const authenticateGateway = async (
     }
 
     const payload = await verifySupabaseAccessToken(token);
+
     if (!payload.sub) {
       res.status(401).json({
         success: false,
@@ -39,6 +42,7 @@ export const authenticateGateway = async (
     }
 
     const usuario = await usuarioRepository.findByAuthUserId(payload.sub);
+
     if (!usuario) {
       res.status(401).json({
         success: false,
@@ -67,11 +71,12 @@ export const authenticateGateway = async (
 };
 
 /**
- * Middleware para asegurar que el usuario tenga un rol específico (ej. "locador").
+ * Middleware para asegurar que el usuario tenga un rol específico.
  */
 export const requireRole = (roleRequired: string) => {
   return (req: Request, res: Response, next: NextFunction): void => {
     const user = (req as any).user as AuthenticatedUser;
+
     if (!user || !user.roles.includes(roleRequired)) {
       res.status(403).json({
         success: false,
@@ -79,7 +84,7 @@ export const requireRole = (roleRequired: string) => {
       });
       return;
     }
+
     next();
   };
 };
-
