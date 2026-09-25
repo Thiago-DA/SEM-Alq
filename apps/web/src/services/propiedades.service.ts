@@ -28,8 +28,7 @@ import type {
   PropiedadResumen,
   UbicacionOpciones,
 } from '@rentar/shared-types'
-import { buscarEnLista, PAGE_SIZE, ubicacionesDe } from '@/lib/search/busqueda'
-import { escribirBusqueda } from '@/lib/search/busquedaParams'
+import { buscarEnLista, ubicacionesDe } from '@/lib/search/busqueda'
 import { cobros as cobrosElenco, propiedades as propiedadesElenco, reclamos as reclamosElenco, type PropiedadMock } from '@/lib/mocks'
 import { hoy } from '@/lib/utils/fechas'
 import { isSearchable, propiedadMockToLocador, propiedadMockToResumen, propiedadNuevaToMock } from './adapters/propiedad-mock.adapter'
@@ -40,6 +39,7 @@ import {
   propiedadNuevaToCreateInmueble,
 } from './adapters/propiedad.adapter'
 import { apiRequest } from './shared/apiClient'
+import { mapConLimite } from './shared/concurrency'
 import type { InmuebleDetalleResponse } from './shared/backend-dtos'
 import { USE_MOCKS } from './shared/config'
 import { delay } from './shared/delay'
@@ -84,32 +84,66 @@ export function misPropiedadesMock(ownerId: string): PropiedadLocador[] {
  * @backend GET /api/v1/inmuebles/disponibles   (existe · sin fotos, tags ni contrato)
  *          GET /api/v1/inmuebles/:id            (existe · se usa solo para los tags de cada una)
  * @returns PropiedadResumen[]
- * TODO(backend): que `/inmuebles/disponibles` incluya tags, foto principal y
- * expensas (del contrato). Mientras tanto se hace un pedido de detalle por
- * inmueble para los tags (N+1), que alcanza para pocos datos de prueba.
+ * NOTA: los tags no vienen en `/disponibles`, así que se pide el detalle de
+ * cada inmueble (N+1), de a {@link DETALLES_EN_PARALELO} por vez.
+ * TODO(backend): que `/inmuebles/disponibles` incluya tags, fotos (al menos
+ * la principal) y los datos del contrato que muestra la tarjeta (expensas e
+ * índice), para sacar el N+1.
  */
 export async function listarPropiedadesPublicadas(): Promise<PropiedadResumen[]> {
   if (USE_MOCKS) {
     await delay()
     return readPropiedadesMock().filter(isSearchable).map(propiedadMockToResumen)
   }
-  return traerDisponiblesDelBack()
+  return disponiblesDelBack()
+}
+
+/** Tope de pedidos de detalle en paralelo (ver el N+1 de {@link listarPropiedadesPublicadas}). */
+const DETALLES_EN_PARALELO = 5
+
+/**
+ * Cuánto se reusa la lista de disponibles en el navegador.
+ * NOTA: `/buscar` pide la lista varias veces (resultados, opciones de
+ * ubicación y el "Ver N propiedades" del Drawer, que se recalcula con cada
+ * filtro). Como el back no filtra (devuelve siempre la lista entera), se
+ * guarda una sola por 30 segundos en vez de repetir el N+1 en cada cambio.
+ * Del lado del servidor (la landing) no se guarda: cada request pide datos frescos.
+ */
+const DISPONIBLES_TTL_MS = 30_000
+
+/** Lista de disponibles guardada en el navegador (ver {@link DISPONIBLES_TTL_MS}). */
+let disponiblesEnCache: { pedido: Promise<PropiedadResumen[]>; hasta: number } | null = null
+
+/** Descarta la lista guardada (por ejemplo, después de dar de alta una propiedad). */
+function olvidarDisponibles(): void {
+  disponiblesEnCache = null
 }
 
 /**
- * Rama real: todas las disponibles del back, con sus tags.
- * Ver el TODO(backend) de {@link listarPropiedadesPublicadas} (N+1).
+ * Rama real: todas las disponibles del back, con sus tags. Reusa la lista
+ * guardada si todavía no venció; si el pedido falla, no queda guardado.
+ */
+function disponiblesDelBack(): Promise<PropiedadResumen[]> {
+  if (typeof window === 'undefined') return traerDisponiblesDelBack()
+  if (disponiblesEnCache && disponiblesEnCache.hasta > Date.now()) return disponiblesEnCache.pedido
+  const pedido = traerDisponiblesDelBack()
+  disponiblesEnCache = { pedido, hasta: Date.now() + DISPONIBLES_TTL_MS }
+  pedido.catch(olvidarDisponibles)
+  return pedido
+}
+
+/**
+ * Pide `/disponibles` y el detalle de cada inmueble (de a
+ * {@link DETALLES_EN_PARALELO}) para sus tags.
  *
  * NOTA: si falla el detalle de un inmueble, la tarjeta sale igual, sin
  * características: es mejor mostrar la propiedad que esconderla por un dato
  * secundario.
  */
-async function traerDisponiblesDelBack(query?: Record<string, string | string[]>): Promise<PropiedadResumen[]> {
-  const inmuebles = await apiRequest<Inmueble[]>('/inmuebles/disponibles', { query })
-  const detalles = await Promise.all(
-    inmuebles.map((inmueble) =>
-      apiRequest<InmuebleDetalleResponse>(`/inmuebles/${inmueble.id}`).catch((): InmuebleDetalleResponse | null => null),
-    ),
+async function traerDisponiblesDelBack(): Promise<PropiedadResumen[]> {
+  const inmuebles = await apiRequest<Inmueble[]>('/inmuebles/disponibles')
+  const detalles = await mapConLimite(inmuebles, DETALLES_EN_PARALELO, (inmueble) =>
+    apiRequest<InmuebleDetalleResponse>(`/inmuebles/${inmueble.id}`).catch((): InmuebleDetalleResponse | null => null),
   )
   return inmuebles.map((inmueble, index) => {
     const detalle = detalles[index]
@@ -117,30 +151,20 @@ async function traerDisponiblesDelBack(query?: Record<string, string | string[]>
   })
 }
 
-/** Pasa los query params de la búsqueda a un objeto para `apiRequest` (los repetidos, como lista). */
-function queryDeBusqueda(filtros: BusquedaFiltros, orden: OrdenBusqueda, pagina: number): Record<string, string | string[]> {
-  const params = escribirBusqueda({ filtros, orden, pagina })
-  const query: Record<string, string | string[]> = { tamanioPagina: String(PAGE_SIZE) }
-  for (const key of new Set(params.keys())) {
-    const valores = params.getAll(key)
-    query[key] = valores.length > 1 ? valores : valores[0]
-  }
-  return query
-}
-
 /**
  * US-34 Consultar propiedades a alquilar — la búsqueda de `/buscar`: filtros,
  * orden y una página de 10 resultados.
- * @backend GET /api/v1/inmuebles/disponibles   (existe · faltan filtros, orden y paginación)
- * @query   { provincia?, ciudad?, barrio[]?, precioMin?, precioMax?, tipo[]?, dorm[]?, amb[]?,
- *            m2Min?, m2Max?, tag[]?, indice?, orden?, pagina?, tamanioPagina? }
- *          (mismos nombres que la URL de /buscar, ver lib/search/busquedaParams.ts)
+ * @backend GET /api/v1/inmuebles/disponibles   (existe · sin filtros, orden ni paginación)
+ * @query   (propuesto) { provincia?, ciudad?, barrio[]?, precioMin?, precioMax?, tipo[]?, dorm[]?,
+ *            amb[]?, m2Min?, m2Max?, tag[]?, indice?, orden?, pagina?, tamanioPagina? }
+ *          (mismos nombres que la URL de /buscar: `escribirBusqueda` de lib/search/busquedaParams.ts)
  * @returns Paginado<PropiedadResumen>
  * TODO(backend): aceptar esos query params y responder `{ items, page, pageSize, total }`.
- * NOTA: mientras tanto el back ignora los params y devuelve la lista entera:
- * se filtra, ordena y pagina acá, con las mismas reglas que el modo mock
- * (lib/search/busqueda.ts). Los params se mandan igual, para que el día que
- * el back los tome no haya que tocar el front.
+ * Cuando exista, mandarlos con `escribirBusqueda({ filtros, orden, pagina })`
+ * y sacar el filtrado local y el caché de `disponiblesDelBack`.
+ * NOTA: mientras tanto el back devuelve la lista entera y se filtra, ordena y
+ * pagina acá, con las mismas reglas que el modo mock (lib/search/busqueda.ts).
+ * Los params no se mandan: el back los ignora.
  */
 export async function buscarPropiedades(filtros: BusquedaFiltros, orden: OrdenBusqueda, pagina: number): Promise<Paginado<PropiedadResumen>> {
   if (USE_MOCKS) {
@@ -148,9 +172,7 @@ export async function buscarPropiedades(filtros: BusquedaFiltros, orden: OrdenBu
     const publicadas = readPropiedadesMock().filter(isSearchable).map(propiedadMockToResumen)
     return buscarEnLista(publicadas, filtros, orden, pagina)
   }
-  // NOTA: respaldo mientras el back no pagine (ver el TODO(backend) de arriba).
-  const disponibles = await traerDisponiblesDelBack(queryDeBusqueda(filtros, orden, pagina))
-  return buscarEnLista(disponibles, filtros, orden, pagina)
+  return buscarEnLista(await disponiblesDelBack(), filtros, orden, pagina)
 }
 
 /**
@@ -284,6 +306,7 @@ export async function registrarPropiedad(nueva: PropiedadNueva): Promise<Propied
 
   const fotos = await subirFotosPropiedad(nueva)
   const inmueble = await apiRequest<Inmueble>('/inmuebles', { method: 'POST', body: propiedadNuevaToCreateInmueble(nueva, fotos) })
+  olvidarDisponibles() // la nueva tiene que aparecer en /buscar sin esperar
   return { id: String(inmueble.id), status: estadoDePropiedadNueva(nueva) }
 }
 
