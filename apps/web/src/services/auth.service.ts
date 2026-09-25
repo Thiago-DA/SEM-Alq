@@ -171,17 +171,38 @@ export interface RegistroInput {
 /** Mensaje de mail duplicado (diseño, "Validaciones del paso 2"). */
 export const EMAIL_TAKEN_MESSAGE = 'Ya existe una cuenta con ese email.'
 
+/** Mensaje de DNI duplicado (US-19: el documento identifica a la persona). */
+export const DNI_TAKEN_MESSAGE = 'Ya existe una cuenta con ese DNI.'
+
+/**
+ * `true` si el 409 del registro es por el DNI (y no por el mail).
+ * NOTA: el back responde 409 en los dos casos, con el texto crudo del error:
+ * el de Supabase Auth (en inglés) para el mail, o el de Postgres para el DNI
+ * ("duplicate key value violates unique constraint
+ * \"uq_usuario_numero_documento\""). Se distingue por ese texto.
+ * TODO(backend): responder un código por campo (ej. `email_duplicado`,
+ * `dni_duplicado`) y el mensaje en español, así el front no depende del
+ * texto de Postgres.
+ */
+function esDniDuplicado(mensaje: string): boolean {
+  return /numero_documento/i.test(mensaje)
+}
+
 /**
  * US-19 Registrar usuario — crear la cuenta.
  * @backend POST /api/v1/registrar-usuario   (existe · sin token)
  * @body    RegistrarUsuarioRequest (lo arma `registroInputToRequest`)
  * @returns UsuarioSesion (la respuesta la traduce `registroResponseToSesion`)
  * TODO(backend): el back hoy ignora `rol` y registra a todos como locatario
- * (aceptarlo está en revisión en `feature/registro-con-rol`).
- * @throws {ServiceError} `conflict` con {@link EMAIL_TAKEN_MESSAGE} si el mail ya existe.
+ * (aceptarlo está en revisión en `feature/registro-con-rol`, PR #2).
+ * @throws {ServiceError} `conflict` con {@link EMAIL_TAKEN_MESSAGE} si el mail ya existe;
+ *   `validation` con {@link DNI_TAKEN_MESSAGE} si el DNI ya existe (índice
+ *   único `uq_usuario_numero_documento`; el front no lo valida, lo decide la base).
  *
- * NOTA: no inicia sesión. Después de registrarse, el usuario entra por
- * `/login` (flujo registro → login → panel).
+ * NOTA: esta función no inicia sesión. El login automático después del
+ * registro lo hace la pantalla (`RegistroForm`) con `useAuth().login`, así
+ * `AuthProvider` se entera de la sesión nueva. El back crea la cuenta ya
+ * confirmada (`email_confirm: true`), por eso se puede entrar enseguida.
  */
 export async function registrarUsuario(input: RegistroInput): Promise<UsuarioSesion> {
   if (USE_MOCKS) {
@@ -220,9 +241,13 @@ export async function registrarUsuario(input: RegistroInput): Promise<UsuarioSes
     })
     return registroResponseToSesion(response, input.rol)
   } catch (error) {
-    // El back responde 409 con "Email o documento ya registrado".
     if (error instanceof ServiceError && error.code === 'conflict') {
-      throw new ServiceError('conflict', error.message || EMAIL_TAKEN_MESSAGE)
+      // DNI repetido: va como error de datos (arriba del formulario, que
+      // conserva lo escrito). Mail repetido: `conflict`, que la pantalla
+      // muestra con su aviso y el campo marcado. En los dos casos, con un
+      // mensaje en español (el del back viene crudo, ver `esDniDuplicado`).
+      if (esDniDuplicado(error.message)) throw new ServiceError('validation', DNI_TAKEN_MESSAGE)
+      throw new ServiceError('conflict', EMAIL_TAKEN_MESSAGE)
     }
     throw error
   }
