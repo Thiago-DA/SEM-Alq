@@ -22,3 +22,33 @@ export const neighborhoods: Neighborhood[] = [
   { slug: 'cofico', name: 'Cofico', tier: 'alternativo' },
   { slug: 'alta-cordoba', name: 'Alta Córdoba', tier: 'alternativo' },
 ]
+
+/** Un barrio como opción de filtro (slug + nombre visible). */
+export interface OpcionBarrio {
+  slug: string
+  name: string
+}
+
+/**
+ * Opciones de barrio para un filtro: el catálogo del piloto más los barrios
+ * que aparecen en los datos (con el back real, `inmueble.barrio` es texto
+ * libre y puede traer barrios que el catálogo no tiene, como "Alberdi").
+ * Sin duplicados (por slug): primero el catálogo, en su orden, y después los
+ * de los datos, en orden alfabético. Los que vienen sin slug se ignoran.
+ * TODO(db): un catálogo de barrios en la base (id + nombre), para no
+ * depender del texto libre ni de esta mezcla.
+ */
+export function barriosConDatos(desdeDatos: readonly OpcionBarrio[]): OpcionBarrio[] {
+  const opciones: OpcionBarrio[] = neighborhoods.map(({ slug, name }) => ({ slug, name }))
+  const vistos = new Set(opciones.map((opcion) => opcion.slug))
+
+  const extra: OpcionBarrio[] = []
+  for (const barrio of desdeDatos) {
+    if (!barrio.slug || vistos.has(barrio.slug)) continue
+    vistos.add(barrio.slug)
+    extra.push({ slug: barrio.slug, name: barrio.name })
+  }
+  extra.sort((a, b) => a.name.localeCompare(b.name, 'es'))
+
+  return [...opciones, ...extra]
+}
