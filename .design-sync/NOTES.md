@@ -72,6 +72,15 @@ Sprint 1. Todas las props son nuevas y opcionales: los usos anteriores no cambia
   amenities fuera del catálogo de 5, el banner de suscripción del panel y las personas y barrios del
   export que no están en el elenco.
 
+Cambios posteriores a la subida del 2026-09-24, **pendientes de subir** en el próximo `/design-sync`:
+- `AppShell` (2026-09-25, pedido del PO): el layout llega siempre al alto de la pantalla. antd
+  pisaba el `min-height: 100vh` con su `.ant-layout { min-height: 0 }` (misma especificidad, se
+  inyecta después), y con poco contenido el sidebar quedaba corto. Arreglo: clase doble en
+  `.layout` y `.layoutCompact`. No cambia props ni el aspecto con contenido largo.
+- `AppShell` (2026-09-25, pedido del PO): el logo del menú lateral y del menú móvil es un link a la
+  landing. Prop nueva y opcional `logoHref` (por defecto `/`), `data-testid="app-shell-logo-link"`.
+  NOTA: el mapa decía que el logo del AppShell lleva a `/panel`; el PO lo cambió a la landing.
+
 ## Re-sync del Sprint 1 desde SEM-Alq (2026-09-24)
 
 Primer re-sync desde este repo (camino atómico, anclado en el `_ds_sync.json` del proyecto).

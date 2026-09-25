@@ -117,7 +117,7 @@ importa mocks ni llama a `fetch` directo.
 
 - **El elenco único** vive en `apps/web/src/lib/mocks/`. Los datos salen de ahí: ninguna pantalla
   inventa su propio departamento, inquilino o monto. Reglas completas en su `README.md`.
-- Lo que se crea en modo mock (cuentas, propiedades, el borrador del alta) se guarda en el
+- Lo que se crea en modo mock (cuentas y propiedades) se guarda en el
   `localStorage` del navegador con claves `rentar:mock:*`. El botón flotante de desarrollo
   "Reiniciar datos de prueba" lo borra.
 - **"Hoy" es el 23/09/2026** en modo mock (`apps/web/src/lib/utils/fechas.ts`), para que los datos

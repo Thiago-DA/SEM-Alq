@@ -70,7 +70,7 @@ function Opcional({ children }: { children: ReactNode }) {
   )
 }
 
-/** Props de `Form.Item` para un `DatePicker` que guarda la fecha como texto ISO (JSON puro para el borrador). */
+/** Props de `Form.Item` para un `DatePicker` que guarda la fecha como texto ISO (`YYYY-MM-DD`, lo que espera el service). */
 const fechaIso = {
   getValueProps: (value?: string | null) => ({ value: value ? dayjs(value) : null }),
   normalize: (value: dayjs.Dayjs | null) => (value ? value.format('YYYY-MM-DD') : null),

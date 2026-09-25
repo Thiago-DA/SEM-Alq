@@ -86,6 +86,12 @@ interface AppShellProps {
    * Salir"). Debajo de 768px reemplaza a toda la barra superior. Opcional.
    */
   mobileHeader?: ReactNode
+  /**
+   * A dónde lleva el logo del menú lateral (y del menú móvil). Por defecto, a
+   * la landing (`/`): pedido del PO, el logo siempre saca del panel al sitio
+   * público.
+   */
+  logoHref?: string
   'data-testid'?: string
 }
 
@@ -117,6 +123,7 @@ export function AppShell({
   roleOptions,
   onRoleChange,
   mobileHeader,
+  logoHref = '/',
   ...rest
 }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -138,10 +145,12 @@ export function AppShell({
     <Layout className={`${styles.layout} ${compact ? styles.layoutCompact : ''}`} {...rest}>
       <Sider width={240} className={styles.sider}>
         <div className={styles.logoWrap}>
-          {/* `priority`: el logo del sider está siempre arriba del pliegue. Con lazy-loading, bajo
-              1024px (sider en `display: none`) el `<img>` nunca carga y su `decode()` queda
-              pendiente para siempre — colgaba la captura de previews de /design-sync. */}
-          <ImageComponent src={LOGO.src} width={LOGO.width} height={LOGO.height} alt="RentAR" style={{ height: '2rem', width: 'auto' }} priority />
+          <LinkComponent href={logoHref} className={styles.logoLink} aria-label="RentAR — ir al inicio" data-testid="app-shell-logo-link">
+            {/* `priority`: el logo del sider está siempre arriba del pliegue. Con lazy-loading, bajo
+                1024px (sider en `display: none`) el `<img>` nunca carga y su `decode()` queda
+                pendiente para siempre — colgaba la captura de previews de /design-sync. */}
+            <ImageComponent src={LOGO.src} width={LOGO.width} height={LOGO.height} alt="RentAR" style={{ height: '2rem', width: 'auto' }} priority />
+          </LinkComponent>
         </div>
         <Menu mode="inline" selectedKeys={[activeKey]} items={menuItems} style={{ borderInlineEnd: 'none' }} />
       </Sider>
@@ -155,7 +164,9 @@ export function AppShell({
         styles={{ body: { padding: 0 } }}
       >
         <div className={styles.logoWrap}>
-          <ImageComponent src={LOGO.src} width={LOGO.width} height={LOGO.height} alt="RentAR" style={{ height: '2rem', width: 'auto' }} />
+          <LinkComponent href={logoHref} className={styles.logoLink} onClick={() => setMobileOpen(false)} aria-label="RentAR — ir al inicio">
+            <ImageComponent src={LOGO.src} width={LOGO.width} height={LOGO.height} alt="RentAR" style={{ height: '2rem', width: 'auto' }} />
+          </LinkComponent>
         </div>
         <Menu mode="inline" selectedKeys={[activeKey]} items={menuItems} style={{ borderInlineEnd: 'none' }} />
       </Drawer>

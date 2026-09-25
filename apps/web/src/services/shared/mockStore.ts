@@ -81,8 +81,8 @@ export function saveMockRecord<T extends { id: string }>(collection: MockCollect
 }
 
 /**
- * Borra todo lo guardado con el prefijo `rentar:mock:` (las colecciones y el
- * borrador del alta, `rentar:mock:alta-borrador`) y deja solo el elenco
+ * Borra todo lo guardado con el prefijo `rentar:mock:` (las colecciones de
+ * cuentas y propiedades) y deja solo el elenco
  * original. Lo usa el botón "Reiniciar datos de prueba" de las herramientas
  * de desarrollo (`components/dev/DevTools.tsx`).
  */
