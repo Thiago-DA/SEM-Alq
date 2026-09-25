@@ -27,6 +27,7 @@ export interface CreateUsuarioPayload {
   numero_documento: string;
   fecha_nacimiento: string;
   acepta_terminos: boolean;
+  rol?: 'locatario' | 'locador'; // Opcional: sin rol, el usuario queda como locatario
 }
 
 export interface UsuarioXRol {

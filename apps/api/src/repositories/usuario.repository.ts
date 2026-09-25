@@ -1,12 +1,11 @@
 import { CreateUsuarioDTO, RolDTO, UsuarioDTO } from '../dtos';
 import { getSupabaseAdmin } from '../config/supabase';
 
-const ROL_LOCATARIO_ID = 0;
-
 export interface IUsuarioRepository {
   create(data: CreateUsuarioDTO): Promise<UsuarioDTO>;
   findByAuthUserId(authUserId: string): Promise<UsuarioDTO | null>;
   getRolesByUsuarioId(usuarioId: number): Promise<RolDTO[]>;
+  findRolIdByDescripcion(descripcion: string): Promise<number | null>;
 }
 
 export class UsuarioRepository implements IUsuarioRepository {
@@ -42,8 +41,29 @@ export class UsuarioRepository implements IUsuarioRepository {
     return (roles ?? []) as RolDTO[];
   }
 
+  async findRolIdByDescripcion(descripcion: string): Promise<number | null> {
+    const { data, error } = await getSupabaseAdmin()
+      .from('rol')
+      .select('id')
+      .eq('descripcion', descripcion)
+      .maybeSingle();
+
+    if (error) throw error;
+    return data ? data.id : null;
+  }
+
   async create(data: CreateUsuarioDTO): Promise<UsuarioDTO> {
     const supabase = getSupabaseAdmin();
+
+    // El id del rol se busca en la tabla `rol` antes de crear nada, así un rol
+    // inexistente no deja un usuario a medio crear en Auth.
+    const rolId = await this.findRolIdByDescripcion(data.rol ?? 'locatario');
+    if (rolId === null) {
+      const error = new Error(`El rol '${data.rol ?? 'locatario'}' no existe.`);
+      (error as any).statusCode = 400;
+      throw error;
+    }
+
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email: data.email,
       password: data.contraseña,
@@ -87,7 +107,7 @@ export class UsuarioRepository implements IUsuarioRepository {
 
     const { error: rolError } = await supabase
       .from('usuario_x_rol')
-      .insert({ id_usuario: usuario.id, id_rol: ROL_LOCATARIO_ID });
+      .insert({ id_usuario: usuario.id, id_rol: rolId });
 
     if (rolError) {
       await supabase.from('usuario').delete().eq('id', usuario.id);

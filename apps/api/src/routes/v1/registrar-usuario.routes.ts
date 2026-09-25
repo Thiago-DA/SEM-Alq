@@ -7,7 +7,8 @@ const router = Router();
  * @openapi
  * /api/v1/registrar-usuario:
  *   post:
- *     summary: Registrar un usuario como locatario
+ *     summary: Registrar un usuario como locatario o locador
+ *     description: El rol es opcional. Sin rol, el usuario queda como locatario. Solo se aceptan 'locatario' o 'locador'.
  *     tags:
  *       - Usuarios
  *     requestBody:
@@ -50,11 +51,15 @@ const router = Router();
  *                 format: date
  *               acepta_terminos:
  *                 type: boolean
+ *               rol:
+ *                 type: string
+ *                 enum: [locatario, locador]
+ *                 default: locatario
  *     responses:
  *       201:
  *         description: Usuario registrado
  *       400:
- *         description: Datos inválidos
+ *         description: Datos inválidos (incluye un rol distinto de locatario o locador)
  *       409:
  *         description: Email o documento ya registrado
  */
