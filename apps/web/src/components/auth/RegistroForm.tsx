@@ -45,6 +45,7 @@ import {
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { hoy } from '@/lib/utils/fechas'
 import { registrarUsuario, type RegistroInput } from '@/services/auth.service'
+import { USE_MOCKS } from '@/services/shared/config'
 import { ServiceError } from '@/services/shared/errors'
 import { FormAlert } from './FormAlert'
 import { isServerError, serverErrorCopy, type ServerErrorCopy } from './serverError'
@@ -211,8 +212,14 @@ export function RegistroForm({ initialRol, next }: RegistroFormProps) {
             </Link>
             {/* El texto de arriba es el del diseño; este aviso aclara que el email
                 no sale: ni el mock ni el back mandan emails (el back crea la
-                cuenta ya confirmada). docs/PRODUCT.md: nunca simular sin decirlo. */}
-            <SimulatedFeatureNotice feature="el email de confirmación" data-testid="registro-email-simulado" />
+                cuenta ya confirmada). docs/PRODUCT.md: nunca simular sin decirlo.
+                En modo mock queda el motivo por defecto ("no hay backend
+                conectado"); con el back real, ese motivo ya no es cierto. */}
+            <SimulatedFeatureNotice
+              feature="el email de confirmación"
+              reason={USE_MOCKS ? undefined : 'El servidor todavía no envía emails de confirmación.'}
+              data-testid="registro-email-simulado"
+            />
           </>
         }
         data-testid="registro-success"

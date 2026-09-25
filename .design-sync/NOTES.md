@@ -80,6 +80,11 @@ Cambios de la conexión con el back (`feature/conexion-back`, 2026-09-25):
   si se implementa desde un export. "¿Olvidaste tu contraseña?" queda solo, alineado a la derecha
   arriba del botón en escritorio y debajo del botón en móvil (como ya estaba). Se borró el
   `data-testid` `login-remember-checkbox` (avisado a QA).
+- **`SimulatedFeatureNotice`: prop opcional `reason`** (aprobada por el PO, **pendiente de subir**).
+  Es el motivo de la simulación como oración completa; sin `reason`, el texto es exactamente el de
+  antes ("… — no hay backend conectado en esta etapa."). El registro la usa en modo real: "El
+  servidor todavía no envía emails de confirmación." Ejemplo sumado en `/design-system`; al subir,
+  agregar una historia `ConMotivo` en `previews/SimulatedFeatureNotice.tsx`.
 
 ## Re-sync del Sprint 1 desde SEM-Alq (2026-09-24)
 
