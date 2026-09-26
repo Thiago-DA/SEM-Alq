@@ -186,6 +186,7 @@ datos en Supabase) o `front`. No se modificó `apps/api` ni `supabase/` desde es
 |---|---|
 | El back registra a todos como locatario: aceptar `rol` en el body. **Resuelto en el PR #2** (`feature/registro-con-rol`), en revisión. | backend |
 | El 409 trae el texto crudo del error (en inglés el de Auth, el de Postgres para el DNI). Responder un código por campo (ej. `email_duplicado`, `dni_duplicado`) y el mensaje en español. | backend |
+| La contraseña: el front pide al menos 8 caracteres, mayúscula, minúscula y **un número**, solo letras y números (`PASSWORD_REGEX`); el back no exige el número. Sumarlo a su regex. | backend |
 | La tabla `usuario` tiene una columna `contrasena`, y un registro la tiene cargada. Supabase Auth ya maneja las contraseñas: revisar si se puede sacar. | db |
 
 ### US-34 Consultar propiedades a alquilar

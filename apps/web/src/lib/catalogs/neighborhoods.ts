@@ -4,9 +4,10 @@
  * Qué es: la lista fija de barrios válidos. Es un catálogo (opciones de un
  * filtro o de un select), no datos de prueba: el elenco (`lib/mocks/`) solo
  * usa estos barrios.
- * TODO(backend): el back no tiene barrios todavía. Cuando exista la columna
- * `inmueble.barrio` (en curso en `feature/registrar-usuario`), este catálogo
- * puede venir de un endpoint (propuesto: `GET /api/v1/catalogos`).
+ * TODO(db): el back guarda el barrio como texto libre (`inmueble.barrio`).
+ * Con un catálogo de barrios en la base, este archivo podría venir de un
+ * endpoint (propuesto: `GET /api/v1/catalogos`). Mientras tanto, los filtros
+ * suman los barrios que traen los datos (`barriosConDatos`, más abajo).
  *
  * Quién lo usa: el `SearchBar` de la landing, `/buscar` (US-34), el filtro
  * de `/panel/propiedades` (US-02) y el alta (US-01).

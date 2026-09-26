@@ -261,13 +261,15 @@ export interface DetalleResumen {
  * - `address`: aproximada ("calle al 400"), ver la NOTA de privacidad en direccion.ts.
  * - `expenses`: están en `contrato`, que el listado no trae. TODO(backend):
  *   sumarlas. Mientras tanto `null` (no se muestra nada; nunca "Sin expensas").
- * - `adjustmentIndex`: también en `contrato`; `null`. TODO(backend).
+ * - `adjustmentIndex`: también en `contrato`; `null`. TODO(backend): sumar
+ *   el índice del contrato al listado.
  * - `characteristics`: el listado no trae tags; salen de `detalle` (un pedido
- *   por inmueble a `/inmuebles/:id`, ver el service). TODO(backend).
+ *   por inmueble a `/inmuebles/:id`, ver el service). TODO(backend): sumar
+ *   los tags al listado para sacar el N+1.
  * - `imageSrc` / `photoSrcs`: el listado no trae fotos; {@link PLACEHOLDER_PHOTO_SRC}.
  *   TODO(backend): sumar las fotos (o al menos la principal).
  * - `publishedAt`: el back no guarda la fecha de publicación; `''` (el orden
- *   "Más recientes" queda como venga). TODO(db).
+ *   "Más recientes" queda como venga). TODO(db): guardar la fecha de publicación.
  * - `status`: `/disponibles` solo devuelve `publicado`. TODO(backend): sumar
  *   las alquiladas con `fecha_disponible` (`alquilada_publicada`).
  */
@@ -318,10 +320,12 @@ export function inmuebleToPropiedadResumen(inmueble: Inmueble, detalle: DetalleR
  * - `expenses`: `contrato.expensas`.
  * - `imageSrc`: `foto_principal`, o el placeholder si no tiene fotos.
  * - `adjustmentIndex`: de `contrato.indice_aumento` (CAC → `null`).
- * - `publishedAt`: el back no guarda la fecha de alta; `''`. TODO(db).
+ * - `publishedAt`: el back no guarda la fecha de alta; `''`. TODO(db): guardar
+ *   la fecha de alta del inmueble.
  * - `tenantName`, `paymentStatus`, `paymentDueDate`, `daysOverdue`,
  *   `openClaims`, `nextAdjustment`: no existen todavía (módulos de contratos,
- *   cobros y reclamos). Se muestran vacíos ("—"). TODO(backend).
+ *   cobros y reclamos). Se muestran vacíos ("—"). TODO(backend): sumarlos a
+ *   `/mis-alquileres` cuando existan esos módulos.
  */
 export function misAlquileresItemToPropiedadLocador(item: MisAlquileresItem): PropiedadLocador {
   const type = propertyTypeFromDescripcion(item.tipo_inmueble)
@@ -400,13 +404,14 @@ export function frecuenciaAjusteTexto(everyMonths: number): string {
  *
  * Lo que el front carga y el back guarda distinto o no guarda:
  * - `characteristics`: `apto-profesional` no existe en el back y se descarta.
- *   TODO(db).
+ *   TODO(db): sumar el tag "Apto profesional".
  * - `paymentMethods`: el recargo se pierde y los dos de MercadoPago quedan
- *   como uno (ver {@link MEDIO_PAGO_ID}). TODO(db).
+ *   como uno (ver {@link MEDIO_PAGO_ID}). TODO(db): guardar el recargo por
+ *   medio de pago (a la planning).
  * - `depositMonths`: el back guarda el depósito como MONTO, no en meses. Se
  *   manda meses × precio. TODO(db): guardar los meses (o confirmar el monto).
  * - `adjustmentEveryMonths`: el back lo guarda como texto (ver
- *   {@link frecuenciaAjusteTexto}). TODO(db).
+ *   {@link frecuenciaAjusteTexto}). TODO(db): guardarlo como entero (meses).
  * - `floor` + `unit`: el back tiene un solo campo `piso`; van juntos ("7° B").
  * - `servicios`: el alta no los pide (no están en US-01); `null`.
  */
