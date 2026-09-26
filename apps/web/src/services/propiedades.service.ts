@@ -246,7 +246,8 @@ const MOCK_STORAGE_FULL_MESSAGE =
  * Mensaje mientras no exista el bucket de fotos en Supabase Storage.
  * NOTA: el back exige al menos 3 fotos con URL, así que sin bucket el alta
  * real no se puede guardar. Se avisa ANTES de mandar nada. La pantalla
- * agrega "Tus datos siguen acá: no perdiste nada." (el borrador no se borra).
+ * agrega "Tus datos siguen acá: no perdiste nada." (el formulario conserva lo
+ * escrito en memoria; no hay borrador en localStorage).
  */
 export const FOTOS_NO_DISPONIBLES_MESSAGE =
   'Todavía no podemos guardar las fotos de las propiedades, así que por ahora el alta no se puede completar.'
