@@ -21,8 +21,7 @@ import { hoy } from '@/lib/utils/fechas'
 /**
  * Valores del formulario del alta. Es `PropiedadNueva` con los campos
  * todavía opcionales (se van completando paso a paso) y la foto principal
- * por id (así sigue a la foto cuando se reordenan). Es JSON puro: se guarda
- * tal cual en el borrador local.
+ * por id (así sigue a la foto cuando se reordenan).
  */
 export interface AltaValues {
   type?: PropertyType

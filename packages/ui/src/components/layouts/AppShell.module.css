@@ -1,8 +1,14 @@
-.layout {
+/*
+ * NOTA: clase doble a propósito. antd trae `.ant-layout { min-height: 0 }` con
+ * la misma especificidad que una clase sola y se inyecta después, así que le
+ * ganaba a este `100vh`: con poco contenido, el sidebar terminaba donde
+ * terminaba la página en vez de llegar al final de la pantalla.
+ */
+.layout.layout {
   min-height: 100vh;
 }
 
-.layoutCompact {
+.layoutCompact.layoutCompact {
   min-height: 100%;
 }
 
@@ -21,6 +27,17 @@
   display: flex;
   align-items: center;
   padding: 1.25rem 1.5rem;
+}
+
+/* El logo es un link a la landing (`logoHref`): sin subrayado ni espacio extra alrededor de la imagen. */
+.logoLink {
+  display: inline-flex;
+  border-radius: var(--rentar-radius-sm);
+}
+
+.logoLink:focus-visible {
+  outline: 2px solid var(--rentar-color-blue);
+  outline-offset: 4px;
 }
 
 .header {

@@ -8,7 +8,8 @@
  * 2. "Tus datos" → nombre, apellido, fecha de nacimiento, DNI, teléfono,
  *    email, contraseña (con indicador de fuerza), repetir contraseña y
  *    términos.
- * Después muestra "Cuenta creada" con el siguiente paso según el rol.
+ * Después inicia sesión solo (ver `iniciarSesionAutomatica`) y muestra "Cuenta
+ * creada" con el siguiente paso según el rol.
  * Diseño: Claude Design, "Autenticación" · 03a (paso 1), 03 (paso 2) y 05 (estados).
  *
  * El paso 1 siempre se muestra. Si la URL trae un rol (`?rol=locador`) o se
@@ -17,13 +18,15 @@
  * paso 1 sin perder lo cargado: el formulario del paso 2 queda montado
  * (oculto) mientras se ve el paso 1.
  *
- * De dónde saca los datos: `services/auth.service.ts#registrarUsuario`.
+ * De dónde saca los datos: `services/auth.service.ts#registrarUsuario` y,
+ * para el login automático, `useAuth().login`.
  * Quién lo usa: `app/(auth)/registro/page.tsx`.
  */
 import { useState } from 'react'
 import Link from 'next/link'
 import { Button, Checkbox, DatePicker, Form, Input } from 'antd'
 import type { Dayjs } from 'dayjs'
+import type { UsuarioSesion } from '@rentar/shared-types'
 import { AuthLayout, PasswordStrengthMeter, SimulatedFeatureNotice } from '@rentar/ui'
 import {
   fuerzaPassword,
@@ -39,8 +42,10 @@ import {
   requisitosPassword,
   soloDigitos,
 } from '@/lib/validation/usuario.rules'
+import { useAuth } from '@/lib/auth/AuthProvider'
 import { hoy } from '@/lib/utils/fechas'
 import { registrarUsuario, type RegistroInput } from '@/services/auth.service'
+import { USE_MOCKS } from '@/services/shared/config'
 import { ServiceError } from '@/services/shared/errors'
 import { FormAlert } from './FormAlert'
 import { isServerError, serverErrorCopy, type ServerErrorCopy } from './serverError'
@@ -76,6 +81,7 @@ interface RegistroFormProps {
 /** Registro de usuario en dos pasos, con los estados de carga, error y éxito. */
 export function RegistroForm({ initialRol, next }: RegistroFormProps) {
   const [form] = Form.useForm<DatosFormValues>()
+  const { login } = useAuth()
 
   // ─── Estado local ───────────────────────────────────────────────────
   // El rol vive en el estado del formulario (no en la URL): lo elige el paso 1
@@ -88,6 +94,8 @@ export function RegistroForm({ initialRol, next }: RegistroFormProps) {
   const [serverError, setServerError] = useState<ServerErrorCopy | null>(null)
   const [nombreCreado, setNombreCreado] = useState('')
   const [emailCreado, setEmailCreado] = useState('')
+  // Usuario con la sesión ya iniciada por el login automático; `null` si falló.
+  const [sesionIniciada, setSesionIniciada] = useState<UsuarioSesion | null>(null)
   const [documentoAbierto, setDocumentoAbierto] = useState<DocumentoLegal | null>(null)
 
   const password = Form.useWatch('password', form) ?? ''
@@ -120,6 +128,7 @@ export function RegistroForm({ initialRol, next }: RegistroFormProps) {
       })
       setNombreCreado(usuario.nombre)
       setEmailCreado(usuario.email)
+      setSesionIniciada(await iniciarSesionAutomatica(values.email, values.password))
       setStep('listo')
     } catch (error) {
       if (error instanceof ServiceError && error.code === 'conflict') {
@@ -138,6 +147,24 @@ export function RegistroForm({ initialRol, next }: RegistroFormProps) {
     }
   }
 
+  /**
+   * Login automático después de crear la cuenta: el back la crea ya
+   * confirmada (`email_confirm: true`), así que se puede entrar enseguida con
+   * las mismas credenciales. Las credenciales se usan solo para este pedido:
+   * no se guardan en ningún lado.
+   *
+   * NOTA: si falla (sin red, Auth caído), NO es un error del registro —la
+   * cuenta ya existe—: devuelve `null` y la pantalla de éxito manda por
+   * /login con el email cargado, como antes de conectar el back.
+   */
+  async function iniciarSesionAutomatica(email: string, passwordIngresada: string): Promise<UsuarioSesion | null> {
+    try {
+      return await login({ email, password: passwordIngresada })
+    } catch {
+      return null
+    }
+  }
+
   /** "Reintentar": vuelve a enviar lo que ya estaba escrito (el form conserva los valores). */
   function handleRetry(): void {
     setServerError(null)
@@ -152,17 +179,23 @@ export function RegistroForm({ initialRol, next }: RegistroFormProps) {
   // ─── Render: cuenta creada ──────────────────────────────────────────
 
   function renderListo() {
-    const esLocador = rol === 'locador'
+    // El rol que se muestra es el que QUEDÓ en la cuenta: con sesión iniciada,
+    // el de `/usuarios/me`; si el login automático falló, el elegido en el paso 1.
+    // NOTA: hoy el back registra a todos como locatario (el rol del body entra
+    // con el PR #2, `feature/registro-con-rol`). Así, quien eligió "locador" ve
+    // "cuenta de locatario" en vez de un botón que lo lleve a una pantalla
+    // que no puede usar.
+    const esLocador = sesionIniciada ? sesionIniciada.roles.includes('locador') : rol === 'locador'
     // El siguiente paso depende del rol (diseño: "Locador: el CTA pasa a
     // Publicar mi primera propiedad").
-    // NOTA: el registro no inicia sesión, así que los destinos del panel pasan
-    // por /login con el email ya cargado (solo falta la contraseña) y vuelven
-    // al destino con ?next=. Si el back devuelve una sesión al registrar,
-    // esto se reemplaza por un login automático.
-    const viaLogin = (destino: string) =>
-      `/login?next=${encodeURIComponent(destino)}&email=${encodeURIComponent(emailCreado)}`
+    // NOTA: el registro inicia sesión solo (ver `iniciarSesionAutomatica`),
+    // así que los botones llevan directo a su destino. Si el login automático
+    // falló, los destinos del panel pasan por /login con el email ya cargado
+    // (solo falta la contraseña) y vuelven al destino con ?next=.
+    const destino = (ruta: string) =>
+      sesionIniciada ? ruta : `/login?next=${encodeURIComponent(ruta)}&email=${encodeURIComponent(emailCreado)}`
     const cta = esLocador
-      ? { label: 'Publicar mi primera propiedad', href: viaLogin('/panel/propiedades/nueva') }
+      ? { label: 'Publicar mi primera propiedad', href: destino('/panel/propiedades/nueva') }
       : { label: 'Buscar propiedades en Córdoba', href: '/buscar' }
     return (
       <StatusBlock
@@ -174,12 +207,19 @@ export function RegistroForm({ initialRol, next }: RegistroFormProps) {
             <Button type="primary" size="large" href={cta.href} className={styles.submit} data-testid="registro-success-cta">
               {cta.label}
             </Button>
-            <Link href={viaLogin('/panel')} className={styles.link} data-testid="registro-success-panel-link">
+            <Link href={destino('/panel')} className={styles.link} data-testid="registro-success-panel-link">
               Ir a mi panel
             </Link>
-            {/* El texto de arriba es el del diseño; este aviso aclara que en el
-                mock el email no sale (docs/PRODUCT.md: nunca simular sin decirlo). */}
-            <SimulatedFeatureNotice feature="el email de confirmación" data-testid="registro-email-simulado" />
+            {/* El texto de arriba es el del diseño; este aviso aclara que el email
+                no sale: ni el mock ni el back mandan emails (el back crea la
+                cuenta ya confirmada). docs/PRODUCT.md: nunca simular sin decirlo.
+                En modo mock queda el motivo por defecto ("no hay backend
+                conectado"); con el back real, ese motivo ya no es cierto. */}
+            <SimulatedFeatureNotice
+              feature="el email de confirmación"
+              reason={USE_MOCKS ? undefined : 'El servidor todavía no envía emails de confirmación.'}
+              data-testid="registro-email-simulado"
+            />
           </>
         }
         data-testid="registro-success"

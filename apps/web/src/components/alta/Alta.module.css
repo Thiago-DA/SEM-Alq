@@ -23,7 +23,18 @@
 .step {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+}
+
+/*
+ * NOTA: FormSection separa cada sección con 2rem de margen + 2rem de relleno, y
+ * el último campo de antd ya deja 24px abajo: sumados daban ~104px entre
+ * "¿Qué vas a publicar?" y "¿Dónde queda?". En el wizard la línea queda con
+ * 24px arriba (el margen del campo) y 24px abajo. Clase doble: gana a
+ * `.section + .section` de FormSection.
+ */
+.step.step > section + section {
+  margin-top: 0;
+  padding-top: 1.5rem;
 }
 
 /* ─── Grillas de campos ────────────────────────────────────────────── */
@@ -138,10 +149,34 @@
   cursor: not-allowed;
 }
 
-.stepperValue {
+/*
+ * NOTA: dos cosas descentraban el número del contador:
+ * 1. Ant Design trae la regla `.ant-form output { display: block;
+ *    padding-top: 15px; font-size; line-height }` para los `<output>` de un
+ *    formulario, y le gana a una clase sola: esos 15px bajaban el número.
+ *    Por eso la clase doble (`.stepperValue.stepperValue`) y el
+ *    `padding: 0`, igual que `.chips.chips` más abajo.
+ * 2. Con League Spartan las cifras quedan ~2,5px por arriba del centro de su
+ *    caja (la fuente reserva más lugar abajo de la línea base que arriba de
+ *    las mayúsculas). `text-box` recorta la caja justo a la altura de las
+ *    cifras y el flex del contador la centra contra los botones. Sin
+ *    `text-box` (Firefox), se baja el número a mano con el desplazamiento
+ *    medido.
+ */
+.stepperValue.stepperValue {
+  padding: 0;
   font-size: 1.0625rem;
   font-weight: 700;
+  line-height: 1;
   color: var(--rentar-color-text-primary);
+  transform: translateY(0.15em);
+}
+
+@supports (text-box: trim-both cap alphabetic) {
+  .stepperValue.stepperValue {
+    transform: none;
+    text-box: trim-both cap alphabetic;
+  }
 }
 
 /* ─── Características como chips (Alta · 02) ───────────────────────── */
@@ -681,31 +716,6 @@
 .publishErrorActions {
   display: flex;
   gap: 0.5625rem;
-}
-
-/* ─── Aviso de borrador local ──────────────────────────────────────── */
-
-.draftNotice {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.875rem 1rem;
-  border: 1px solid rgba(var(--rentar-color-blue-rgb), 0.25);
-  border-radius: 1rem;
-  background: var(--rentar-color-sky-light);
-}
-
-.draftText {
-  font-size: 0.9375rem;
-  color: var(--rentar-color-text-primary);
-}
-
-.draftActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
 }
 
 /* ─── Éxito (Alta · 08) ────────────────────────────────────────────── */

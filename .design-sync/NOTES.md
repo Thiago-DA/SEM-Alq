@@ -72,6 +72,36 @@ Sprint 1. Todas las props son nuevas y opcionales: los usos anteriores no cambia
   amenities fuera del catálogo de 5, el banner de suscripción del panel y las personas y barrios del
   export que no están en el elenco.
 
+Cambios posteriores a la subida del 2026-09-24, **pendientes de subir** en el próximo `/design-sync`:
+- `AppShell` (2026-09-25, pedido del PO): el layout llega siempre al alto de la pantalla. antd
+  pisaba el `min-height: 100vh` con su `.ant-layout { min-height: 0 }` (misma especificidad, se
+  inyecta después), y con poco contenido el sidebar quedaba corto. Arreglo: clase doble en
+  `.layout` y `.layoutCompact`. No cambia props ni el aspecto con contenido largo.
+- `AppShell` (2026-09-25, pedido del PO): el logo del menú lateral y del menú móvil es un link a la
+  landing. Prop nueva y opcional `logoHref` (por defecto `/`), `data-testid="app-shell-logo-link"`.
+  NOTA: el mapa decía que el logo del AppShell lleva a `/panel`; el PO lo cambió a la landing.
+
+Cambios de la conexión con el back (`feature/conexion-back`, 2026-09-25):
+- **Se sacó "Recordarme"** del login (`apps/web/src/components/auth/LoginForm.tsx`, decisión del PO).
+  Con Supabase Auth la sesión dura hasta que la persona la cierra, así que la opción no hacía nada.
+  No es un cambio de `@rentar/ui` (el formulario vive en `apps/web`), pero **el template de Claude
+  Design "Autenticación" · 01 y 02 todavía lo muestra**: actualizarlo ahí, y no volver a agregarlo
+  si se implementa desde un export. "¿Olvidaste tu contraseña?" queda solo, alineado a la derecha
+  arriba del botón en escritorio y debajo del botón en móvil (como ya estaba). Se borró el
+  `data-testid` `login-remember-checkbox` (avisado a QA).
+- **`SimulatedFeatureNotice`: prop opcional `reason`** (aprobada por el PO, **pendiente de subir**).
+  Es el motivo de la simulación como oración completa; sin `reason`, el texto es exactamente el de
+  antes ("… — no hay backend conectado en esta etapa."). El registro la usa en modo real: "El
+  servidor todavía no envía emails de confirmación." Ejemplo sumado en `/design-system`; al subir,
+  agregar una historia `ConMotivo` en `previews/SimulatedFeatureNotice.tsx`.
+- **Fotos que no cargan → placeholder** (aprobado por el PO). El `ImageComponent` que `apps/web`
+  inyecta en el `NextBridgeProvider` de `@rentar/ui` (`AppImage`, en `apps/web/src/lib/next-bridge.tsx`)
+  ahora pasa a `/placeholder-propiedad.svg` si la imagen falla, en vez del ícono de imagen rota
+  (`lib/imagenes/fotoConRespaldo.ts`). Afecta a todo lo que dibuja imágenes por el puente
+  (`PropertyCard`, `PropertyCardBusqueda`, logos). **El `DefaultImage` de `@rentar/ui` (el `<img>` de
+  las previews de Claude Design) no cambió**: en el proyecto de Claude Design una foto rota se sigue
+  viendo rota. Si se quiere lo mismo ahí, sumar el respaldo al `DefaultImage` en el próximo sync.
+
 ## Re-sync del Sprint 1 desde SEM-Alq (2026-09-24)
 
 Primer re-sync desde este repo (camino atómico, anclado en el `_ds_sync.json` del proyecto).

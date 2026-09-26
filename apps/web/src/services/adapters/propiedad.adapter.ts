@@ -1,41 +1,45 @@
 /**
- * propiedad.adapter.ts — traduce inmuebles y publicaciones del back a los
- * tipos de vista de propiedad.
+ * propiedad.adapter.ts — traduce los inmuebles del back a los tipos de vista
+ * de propiedad, y el alta del front al cuerpo que espera el back.
  *
- * Qué es: la frontera entre `Inmueble`/`Publicacion` (modelos del back,
- * tablas `inmueble` y `publicacion`) y `PropiedadResumen` (tipo de vista).
- * Cada función comenta, campo por campo, lo que el back todavía no devuelve.
+ * Qué es: la frontera entre `Inmueble` / `MisAlquileresItem` /
+ * `CreateInmuebleCompletoPayload` (modelos del back, `@rentar/shared-types`)
+ * y `PropiedadResumen` / `PropiedadLocador` / `PropiedadNueva` (tipos de
+ * vista). Cada función comenta, campo por campo, lo que el back todavía no
+ * devuelve o guarda distinto.
  * Cubre: US-34 (`PropiedadResumen`), US-02 (`PropiedadLocador`) y US-01
- * (`PropiedadNueva` → cuerpos de `POST /inmuebles` y `POST /publicaciones`).
+ * (`PropiedadNueva` → cuerpo de `POST /inmuebles`).
  * Quién lo usa: la rama real de `services/propiedades.service.ts`.
  */
 import type {
+  AdjustmentIndex,
   CharacteristicKey,
+  CreateFotoPayload,
+  CreateInmuebleCompletoPayload,
+  EstadoAlquiler,
   Inmueble,
+  MedioPagoPreferido,
   MisAlquileresItem,
   PropertyStatus,
   PropertyType,
   PropiedadLocador,
   PropiedadNueva,
   PropiedadResumen,
-  Publicacion,
 } from '@rentar/shared-types'
-import type { CrearInmuebleRequest, CrearPublicacionRequest } from '../shared/backend-dtos'
+import { neighborhoods } from '@/lib/catalogs/neighborhoods'
+import { PLACEHOLDER_PHOTO_SRC } from '@/lib/imagenes/fotoConRespaldo'
 import { formatApproxAddress, formatFloorUnit } from './direccion'
 
 /**
- * Foto que se muestra mientras el back no tenga fotos.
- * TODO(backend): el back no guarda fotos (en curso en
- * `feature/registrar-usuario`, tabla `foto_inmueble`).
+ * Foto que se muestra cuando el inmueble no tiene fotos (o el endpoint no
+ * las devuelve, como `/inmuebles/disponibles`). Vive en
+ * `lib/imagenes/fotoConRespaldo.ts`, que también la usa cuando una foto no carga.
  */
-export const PLACEHOLDER_PHOTO_SRC = '/placeholder-propiedad.svg'
+export { PLACEHOLDER_PHOTO_SRC }
 
 // ─── Catálogos: id del back ↔ clave del front ───────────────────────────
 
-/**
- * `tipo_inmueble.id` → `PropertyType`. Mismos ids que el seed del back
- * (`apps/api/src/repositories/lookup.repository.ts`).
- */
+/** `tipo_inmueble.id` → `PropertyType`. Mismos ids que la tabla `tipo_inmueble`. */
 const PROPERTY_TYPE_BY_TIPO_ID: Record<number, PropertyType> = {
   1: 'departamento',
   2: 'casa',
@@ -55,9 +59,10 @@ export function tipoIdFromPropertyType(type: PropertyType): number {
 }
 
 /**
- * `tag_inmueble.id` → `CharacteristicKey`. Mismos ids que el seed del back.
- * NOTA: `apto-profesional` no existe en el back (y el id 4 del back,
- * "Balcón con vista abierta", se muestra como `balcon`).
+ * `tags_inmueble.id` → `CharacteristicKey`. Mismos ids que la tabla.
+ * NOTA: el back tiene 4 tags y el front 5: `apto-profesional` no existe en
+ * el back. El id 4 del back, "Balcón con vista abierta", se muestra como
+ * `balcon`.
  * TODO(db): sumar el tag "Apto profesional".
  */
 const CHARACTERISTIC_BY_TAG_ID: Record<number, CharacteristicKey> = {
@@ -67,31 +72,107 @@ const CHARACTERISTIC_BY_TAG_ID: Record<number, CharacteristicKey> = {
   4: 'balcon',
 }
 
-/** Traduce `inmueble.tags` a una característica; `null` si el id no tiene equivalente. */
-export function characteristicFromTagId(tagId: number): CharacteristicKey | null {
-  return CHARACTERISTIC_BY_TAG_ID[tagId] ?? null
-}
-
-/** `CharacteristicKey` → `tag_inmueble.id`; `null` si el back no tiene ese tag (`apto-profesional`). */
+/** `CharacteristicKey` → `tags_inmueble.id`; `null` si el back no tiene ese tag (`apto-profesional`). */
 export function tagIdFromCharacteristic(key: CharacteristicKey): number | null {
   const entry = Object.entries(CHARACTERISTIC_BY_TAG_ID).find(([, value]) => value === key)
   return entry ? Number(entry[0]) : null
 }
 
 /**
- * `MisAlquileresItem.tipo_inmueble` (la descripción del tipo, ej.
- * "Departamento") → `PropertyType`. Una descripción desconocida se muestra
- * como departamento.
+ * Descripción de un tag (`tags_inmueble.descripcion`, como la devuelven
+ * `/mis-alquileres` e `/inmuebles/:id`) → `CharacteristicKey`. `null` si no
+ * tiene equivalente.
+ * NOTA: se compara por el comienzo del texto, sin tildes ni mayúsculas, para
+ * no romperse si backend retoca la descripción ("Balcón con vista abierta").
+ */
+export function characteristicFromTagDescripcion(descripcion: string): CharacteristicKey | null {
+  const texto = sinTildes(descripcion)
+  if (texto.includes('mascota')) return 'mascotas'
+  if (texto.includes('cochera')) return 'cochera'
+  if (texto.startsWith('amoblado') || texto.startsWith('amueblado')) return 'amoblado'
+  if (texto.startsWith('balcon')) return 'balcon'
+  if (texto.includes('profesional')) return 'apto-profesional'
+  return null
+}
+
+/**
+ * `MisAlquileresItem.tipo_inmueble` / `InmuebleDetalle.tipo_inmueble` (la
+ * descripción del tipo, ej. "Departamento") → `PropertyType`. Una
+ * descripción desconocida se muestra como departamento.
  */
 function propertyTypeFromDescripcion(descripcion: string): PropertyType {
-  const texto = descripcion.trim().toLowerCase()
+  const texto = sinTildes(descripcion)
   if (texto.startsWith('casa')) return 'casa'
   if (texto.startsWith('ph')) return 'ph'
   if (texto.startsWith('mono')) return 'monoambiente'
   return 'departamento'
 }
 
-// ─── Inmueble + Publicación → PropiedadResumen ──────────────────────────
+/**
+ * `tipo_indice.id` ↔ `AdjustmentIndex`. Mismos ids que la tabla.
+ * NOTA: el back además tiene CAC (id 3, Cámara Argentina de la
+ * Construcción), que el front no ofrece: US-01 habla solo de ICL e IPC. Un
+ * contrato con CAC se muestra sin índice.
+ */
+const INDICE_ID: Record<AdjustmentIndex, number> = { ICL: 1, IPC: 2 }
+
+/**
+ * Descripción del índice (`MisAlquileresItem.contrato.indice_aumento`, ej.
+ * "ICL (Índice de Contratos de Locación)") → `AdjustmentIndex`; `null` para
+ * CAC o un índice desconocido.
+ */
+function adjustmentIndexFromDescripcion(descripcion: string | null | undefined): AdjustmentIndex | null {
+  const texto = descripcion?.trim().toUpperCase() ?? ''
+  if (texto.startsWith('ICL')) return 'ICL'
+  if (texto.startsWith('IPC')) return 'IPC'
+  return null
+}
+
+/**
+ * Medio de pago del front → `medio_pago.id` del back.
+ *
+ * NOTA: los catálogos no coinciden:
+ * - Front: transferencia, MercadoPago débito, MercadoPago crédito y efectivo,
+ *   cada uno con recargo (0 a 3 %).
+ * - Back: Transferencia bancaria (1), Efectivo (2), Mercado Pago (3) y
+ *   Débito automático (4), sin recargo.
+ * Los dos de MercadoPago van al mismo id (3, se deduplica al armar el
+ * cuerpo). "Débito automático" no se ofrece en el front.
+ * TODO(db): el recargo de cada medio se pierde al guardar: `medio_pago_x_contrato`
+ * no tiene dónde guardarlo (queda para la planning).
+ */
+const MEDIO_PAGO_ID: Record<MedioPagoPreferido, number> = {
+  transferencia: 1,
+  efectivo: 2,
+  mercadopago_debito: 3,
+  mercadopago_credito: 3,
+}
+
+/** Saca tildes y pasa a minúsculas, para comparar textos del back. */
+function sinTildes(texto: string): string {
+  return texto.trim().toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+}
+
+/** "Nueva Córdoba" → "nueva-cordoba". */
+function slugDe(nombre: string): string {
+  return sinTildes(nombre)
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+/**
+ * Barrio del back (texto libre, `inmueble.barrio`) → slug y nombre del front.
+ * Si está en el catálogo del piloto (`lib/catalogs/neighborhoods.ts`), se
+ * usa ese; si no (ej. "Alberdi"), se arma el slug a partir del nombre.
+ * TODO(db): acordar un catálogo de barrios (id + nombre) en vez de texto libre.
+ */
+function barrioDe(barrio: string | null | undefined): { slug: string; name: string } {
+  const nombre = barrio?.trim() ?? ''
+  if (!nombre) return { slug: '', name: '' }
+  const slug = slugDe(nombre)
+  const delCatalogo = neighborhoods.find((item) => item.slug === slug)
+  return delCatalogo ? { slug: delCatalogo.slug, name: delCatalogo.name } : { slug, name: nombre }
+}
 
 /**
  * NOTA: el back guarda la capital como "Córdoba" (`inmueble.ciudad`) y el
@@ -100,58 +181,128 @@ function propertyTypeFromDescripcion(descripcion: string): PropertyType {
  * TODO(db): acordar un catálogo de ciudades (id + nombre) en vez de texto libre.
  */
 function normalizarCiudad(ciudad: string): string {
-  return ciudad.trim().toLowerCase() === 'córdoba' ? 'Córdoba Capital' : ciudad
+  return sinTildes(ciudad) === 'cordoba' ? 'Córdoba Capital' : ciudad
 }
 
-/** Los datos de la publicación que usa el resumen (vienen en `Publicacion` o en `InmuebleDetalleResponse.publicacion`). */
-export type PublicacionResumen = Pick<Publicacion, 'titulo' | 'precio'> & { created_at?: string | Date }
+/** Inversa de {@link normalizarCiudad}, para el alta. */
+function ciudadParaBack(ciudad: string): string {
+  return ciudad === 'Córdoba Capital' ? 'Córdoba' : ciudad
+}
 
 /**
- * `Inmueble` + `Publicacion` → `PropiedadResumen` (tarjeta de `/buscar`, US-34).
- *
- * Campo por campo, lo que el back todavía no devuelve (TODO(backend) en
- * `docs/HANDOFF-BACKEND.md`, "Brechas contra la API actual"):
- * - `title`, `priceMonthly`: vienen de la publicación. `GET /inmuebles/disponibles`
- *   no la incluye; el service la busca aparte. Sin publicación: título =
- *   dirección y precio 0.
- * - `address`: aproximada ("calle al 400"), ver la NOTA de privacidad en direccion.ts.
- * - `province`: no existe en el back; se asume Córdoba (el piloto).
- *   TODO(db): columna `provincia` (en curso en `feature/registrar-usuario`).
- * - `neighborhoodSlug`/`neighborhoodName`: no hay barrio; se usa la ciudad.
- * - `expenses`: no existe; `null` (no se muestra "Sin expensas", que sería falso).
- * - `adjustmentIndex`: no existe; `null`.
- * - `availableFrom`: no existe; `null` (= disponible ya).
- * - `imageSrc` / `photoSrcs`: no hay fotos; {@link PLACEHOLDER_PHOTO_SRC}.
- * - `characteristics`: el back guarda UN tag (`tags: number`), no una lista.
- * - `status`: `/disponibles` solo devuelve publicadas; `'publicada'`.
+ * Numéricos del back: la API los devuelve como número, pero una columna
+ * `numeric` de Postgres puede llegar como texto ("360000.00") según cómo se
+ * lea. Se normaliza acá para no mostrar `NaN`.
  */
-export function inmuebleToPropiedadResumen(inmueble: Inmueble, publicacion: PublicacionResumen | null): PropiedadResumen {
-  const address = formatApproxAddress(inmueble.direccion, inmueble.numero)
-  const characteristic = inmueble.tags ? characteristicFromTagId(inmueble.tags) : null
-  const publishedAt = publicacion?.created_at ?? inmueble.created_at
+function aNumero(valor: number | string | null | undefined): number {
+  const numero = typeof valor === 'string' ? Number(valor) : valor
+  return typeof numero === 'number' && Number.isFinite(numero) ? numero : 0
+}
+
+// ─── Estados ────────────────────────────────────────────────────────────
+
+/**
+ * `estado_alquiler` (+ `fecha_disponible`) → `PropertyStatus`.
+ * Una alquilada CON fecha de disponibilidad es `alquilada_publicada`: se
+ * vuelve a ofrecer para el próximo inquilino (US-02, US-34).
+ * NOTA: hoy la base solo usa `publicado` y `alquilado`; `pausado` lo acepta
+ * la validación del back y se mapea por si aparece.
+ */
+function statusDeInmueble(estado: EstadoAlquiler, fechaDisponible: string | null | undefined): PropertyStatus {
+  if (estado === 'alquilado') return fechaDisponible ? 'alquilada_publicada' : 'alquilada'
+  if (estado === 'pausado') return 'pausada'
+  return 'publicada'
+}
+
+/** Estado del alta (US-01) → `estado_alquiler` del back. */
+const ESTADO_ALQUILER_DE_ALTA: Record<PropiedadNueva['status'], EstadoAlquiler> = {
+  publicada: 'publicado',
+  pausada: 'pausado',
+  alquilada: 'alquilado',
+}
+
+// ─── Títulos ────────────────────────────────────────────────────────────
+
+/** Nombre del tipo para armar el título ("Departamento de 2 ambientes"). */
+const TYPE_TITLE: Record<PropertyType, string> = {
+  departamento: 'Departamento',
+  casa: 'Casa',
+  ph: 'PH',
+  monoambiente: 'Monoambiente',
+}
+
+/**
+ * Título de la publicación armado con el tipo y los ambientes (Alta · 01:
+ * "Con esto armamos el título de la publicación"): "Departamento de 2
+ * ambientes", "Monoambiente", "Casa de 3 ambientes".
+ * NOTA: el back no guarda un título; se arma igual en el alta y al leer.
+ */
+export function tituloDePropiedadNueva(nueva: Pick<PropiedadNueva, 'type' | 'rooms'>): string {
+  if (nueva.type === 'monoambiente') return TYPE_TITLE.monoambiente
+  return `${TYPE_TITLE[nueva.type]} de ${nueva.rooms} ${nueva.rooms === 1 ? 'ambiente' : 'ambientes'}`
+}
+
+// ─── Inmueble → PropiedadResumen (US-34) ────────────────────────────────
+
+/** Datos de `GET /inmuebles/:id` que completan el resumen (el listado no los trae). */
+export interface DetalleResumen {
+  /** Descripciones de los tags (`InmuebleDetalleResponse.tags`). */
+  tags: string[]
+}
+
+/**
+ * `Inmueble` (de `GET /inmuebles/disponibles`) → `PropiedadResumen`
+ * (tarjeta de `/buscar`, US-34).
+ *
+ * Campo por campo, lo que el back todavía no devuelve (brechas en
+ * `docs/HANDOFF-BACKEND.md`):
+ * - `title`: el back no tiene título; se arma con el tipo y los ambientes,
+ *   igual que en el alta.
+ * - `address`: aproximada ("calle al 400"), ver la NOTA de privacidad en direccion.ts.
+ * - `expenses`: están en `contrato`, que el listado no trae. TODO(backend):
+ *   sumarlas. Mientras tanto `null` (no se muestra nada; nunca "Sin expensas").
+ * - `adjustmentIndex`: también en `contrato`; `null`. TODO(backend): sumar
+ *   el índice del contrato al listado.
+ * - `characteristics`: el listado no trae tags; salen de `detalle` (un pedido
+ *   por inmueble a `/inmuebles/:id`, ver el service). TODO(backend): sumar
+ *   los tags al listado para sacar el N+1.
+ * - `imageSrc` / `photoSrcs`: el listado no trae fotos; {@link PLACEHOLDER_PHOTO_SRC}.
+ *   TODO(backend): sumar las fotos (o al menos la principal).
+ * - `publishedAt`: el back no guarda la fecha de publicación; `''` (el orden
+ *   "Más recientes" queda como venga). TODO(db): guardar la fecha de publicación.
+ * - `status`: `/disponibles` solo devuelve `publicado`. TODO(backend): sumar
+ *   las alquiladas con `fecha_disponible` (`alquilada_publicada`).
+ */
+export function inmuebleToPropiedadResumen(inmueble: Inmueble, detalle: DetalleResumen | null): PropiedadResumen {
+  const type = propertyTypeFromTipoId(inmueble.tipo)
+  const barrio = barrioDe(inmueble.barrio)
+  const status = statusDeInmueble(inmueble.estado_alquiler, inmueble.fecha_disponible)
+  const characteristics = (detalle?.tags ?? [])
+    .map(characteristicFromTagDescripcion)
+    .filter((key): key is CharacteristicKey => key !== null)
 
   return {
     id: String(inmueble.id),
-    title: publicacion?.titulo ?? address,
-    address,
-    province: 'Córdoba',
+    title: tituloDePropiedadNueva({ type, rooms: inmueble.ambientes }),
+    address: formatApproxAddress(inmueble.direccion, inmueble.numero),
+    province: inmueble.provincia,
     city: normalizarCiudad(inmueble.ciudad),
-    neighborhoodSlug: '',
-    neighborhoodName: inmueble.ciudad,
-    type: propertyTypeFromTipoId(inmueble.tipo),
-    priceMonthly: publicacion?.precio ?? 0,
+    neighborhoodSlug: barrio.slug,
+    neighborhoodName: barrio.name,
+    type,
+    priceMonthly: aNumero(inmueble.precio_publicado),
     expenses: null,
     bedrooms: inmueble.dormitorios,
     rooms: inmueble.ambientes,
-    areaM2: inmueble.m2,
+    areaM2: inmueble.m2_totales,
     adjustmentIndex: null,
-    characteristics: characteristic ? [characteristic] : [],
+    characteristics: [...new Set(characteristics)],
     description: inmueble.descripcion ?? '',
-    availableFrom: null,
+    availableFrom: inmueble.fecha_disponible ?? null,
     imageSrc: PLACEHOLDER_PHOTO_SRC,
     photoSrcs: [PLACEHOLDER_PHOTO_SRC],
-    publishedAt: publishedAt ? new Date(publishedAt).toISOString() : '',
-    status: 'publicada',
+    publishedAt: '',
+    status: status === 'alquilada_publicada' ? 'alquilada_publicada' : 'publicada',
   }
 }
 
@@ -161,45 +312,52 @@ export function inmuebleToPropiedadResumen(inmueble: Inmueble, publicacion: Publ
  * `MisAlquileresItem` (respuesta de `GET /api/v1/mis-alquileres`) →
  * `PropiedadLocador` (fila de `/panel/propiedades`, US-02).
  *
- * Campo por campo, lo que el back todavía no devuelve:
- * - Solo trae las propiedades CON publicación; US-02 pide todas.
- * - `status`: se deduce de `estado_alquiler` y `publicacion.activa`
- *   (alquilado → `alquilada`; activa → `publicada`; si no, `pausada`).
- *   No hay "alquilada/publicada" ni fecha de disponibilidad.
+ * Campo por campo:
+ * - `title`: el back no tiene título; se arma con el tipo y los ambientes.
+ * - `address`: exacta (la ve solo su dueño): calle, altura y piso.
+ * - `status`: de `estado_alquiler` y `fecha_disponible` (ver `statusDeInmueble`).
+ * - `priceMonthly`: alquilada → `contrato.monto_alquiler`; si no, `precio_publicado`.
+ * - `expenses`: `contrato.expensas`.
+ * - `imageSrc`: `foto_principal`, o el placeholder si no tiene fotos.
+ * - `adjustmentIndex`: de `contrato.indice_aumento` (CAC → `null`).
+ * - `publishedAt`: el back no guarda la fecha de alta; `''`. TODO(db): guardar
+ *   la fecha de alta del inmueble.
  * - `tenantName`, `paymentStatus`, `paymentDueDate`, `daysOverdue`,
- *   `openClaims`, `nextAdjustment`: no existen. Se muestran vacíos ("—").
- * - `neighborhoodSlug`/`neighborhoodName`: no hay barrio; se usa la ciudad.
- * - `expenses`, `adjustmentIndex`: no existen; 0 y `null`.
- * - `imageSrc`: no hay fotos; {@link PLACEHOLDER_PHOTO_SRC}.
+ *   `openClaims`, `nextAdjustment`: no existen todavía (módulos de contratos,
+ *   cobros y reclamos). Se muestran vacíos ("—"). TODO(backend): sumarlos a
+ *   `/mis-alquileres` cuando existan esos módulos.
  */
 export function misAlquileresItemToPropiedadLocador(item: MisAlquileresItem): PropiedadLocador {
-  const alquilada = item.estado_alquiler === 'alquilado'
-  const fecha = item.publicacion.fecha_publicacion
+  const type = propertyTypeFromDescripcion(item.tipo_inmueble)
+  const status = statusDeInmueble(item.estado_alquiler, item.fecha_disponible)
+  const alquilada = status === 'alquilada' || status === 'alquilada_publicada'
+  const barrio = barrioDe(item.barrio)
+
   return {
     id: String(item.id_inmueble),
-    title: item.publicacion.titulo,
+    title: tituloDePropiedadNueva({ type, rooms: item.ambientes }),
     address: item.piso ? `${item.direccion} ${item.numero}, ${item.piso}` : `${item.direccion} ${item.numero}`,
-    neighborhoodSlug: '',
-    neighborhoodName: normalizarCiudad(item.ciudad),
-    type: propertyTypeFromDescripcion(item.tipo_inmueble),
+    neighborhoodSlug: barrio.slug,
+    neighborhoodName: barrio.name || normalizarCiudad(item.ciudad),
+    type,
     rooms: item.ambientes,
-    status: alquilada ? 'alquilada' : item.publicacion.activa ? 'publicada' : 'pausada',
-    priceMonthly: alquilada ? item.contrato.monto : item.publicacion.precio,
-    expenses: 0,
-    imageSrc: PLACEHOLDER_PHOTO_SRC,
-    publishedAt: fecha ? new Date(fecha).toISOString() : '',
+    status,
+    priceMonthly: aNumero(alquilada ? item.contrato.monto_alquiler : item.precio_publicado),
+    expenses: aNumero(item.contrato.expensas),
+    imageSrc: item.foto_principal ?? PLACEHOLDER_PHOTO_SRC,
+    publishedAt: '',
     tenantName: null,
     paymentStatus: null,
     paymentDueDate: null,
     daysOverdue: null,
     openClaims: 0,
-    adjustmentIndex: null,
+    adjustmentIndex: adjustmentIndexFromDescripcion(item.contrato.indice_aumento),
     nextAdjustment: null,
-    availableFrom: null,
+    availableFrom: item.fecha_disponible ?? null,
   }
 }
 
-// ─── PropiedadNueva → cuerpos del alta (US-01) ──────────────────────────
+// ─── PropiedadNueva → cuerpo del alta (US-01) ───────────────────────────
 
 /**
  * Estado con que queda la propiedad del alta. Una alquilada CON fecha de
@@ -217,67 +375,82 @@ export function seVeEnBusqueda(nueva: Pick<PropiedadNueva, 'status' | 'available
   return estado === 'publicada' || estado === 'alquilada_publicada'
 }
 
-/** Nombre del tipo para armar el título de la publicación ("Departamento de 2 ambientes"). */
-const TYPE_TITLE: Record<PropiedadNueva['type'], string> = {
-  departamento: 'Departamento',
-  casa: 'Casa',
-  ph: 'PH',
-  monoambiente: 'Monoambiente',
-}
-
 /**
- * Título de la publicación armado con el tipo y los ambientes (Alta · 01:
- * "Con esto armamos el título de la publicación"): "Departamento de 2
- * ambientes", "Monoambiente", "Casa de 3 ambientes".
+ * Cada cuántos meses se ajusta (1 a 12) → `contrato.frecuencia_ajuste`.
+ * NOTA: el back guarda la frecuencia como texto libre ("Semestral", "Anual"
+ * en los datos de prueba). Se usan esos nombres para los valores habituales
+ * y "<n> meses" para el resto.
+ * TODO(db): guardar la frecuencia como un entero (meses).
  */
-export function tituloDePropiedadNueva(nueva: Pick<PropiedadNueva, 'type' | 'rooms'>): string {
-  if (nueva.type === 'monoambiente') return TYPE_TITLE.monoambiente
-  return `${TYPE_TITLE[nueva.type]} de ${nueva.rooms} ${nueva.rooms === 1 ? 'ambiente' : 'ambientes'}`
+export function frecuenciaAjusteTexto(everyMonths: number): string {
+  const nombres: Record<number, string> = {
+    1: 'Mensual',
+    2: 'Bimestral',
+    3: 'Trimestral',
+    4: 'Cuatrimestral',
+    6: 'Semestral',
+    12: 'Anual',
+  }
+  return nombres[everyMonths] ?? `${everyMonths} meses`
 }
 
 /**
- * `PropiedadNueva` → cuerpo de `POST /api/v1/inmuebles`.
+ * `PropiedadNueva` → cuerpo de `POST /api/v1/inmuebles`
+ * (`CreateInmuebleCompletoPayload`). El back crea inmueble, fotos, tags,
+ * contrato y medios de pago juntos (con rollback si algo falla).
  *
- * Lo que US-01 pide y el back todavía no recibe (se pierde al guardar):
- * provincia, barrio, superficie cubierta (`m2` = superficie total),
- * antigüedad, estado, disponibilidad, fotos, expensas, índice, periodicidad,
- * medios de pago, interés, días de gracia, depósito y duración. El precio va
- * en la publicación. De las características se manda solo la primera que el
- * back conoce (`tags` es un solo id).
- * TODO(backend): sumar esos campos (en curso en `feature/registrar-usuario`).
+ * @param fotos Las fotos ya subidas a Storage, en orden y con la principal
+ *   marcada (las arma `propiedades.service.ts#subirFotosPropiedad`).
+ *
+ * Lo que el front carga y el back guarda distinto o no guarda:
+ * - `characteristics`: `apto-profesional` no existe en el back y se descarta.
+ *   TODO(db): sumar el tag "Apto profesional".
+ * - `paymentMethods`: el recargo se pierde y los dos de MercadoPago quedan
+ *   como uno (ver {@link MEDIO_PAGO_ID}). TODO(db): guardar el recargo por
+ *   medio de pago (a la planning).
+ * - `depositMonths`: el back guarda el depósito como MONTO, no en meses. Se
+ *   manda meses × precio. TODO(db): guardar los meses (o confirmar el monto).
+ * - `adjustmentEveryMonths`: el back lo guarda como texto (ver
+ *   {@link frecuenciaAjusteTexto}). TODO(db): guardarlo como entero (meses).
+ * - `floor` + `unit`: el back tiene un solo campo `piso`; van juntos ("7° B").
+ * - `servicios`: el alta no los pide (no están en US-01); `null`.
  */
-export function propiedadNuevaToCrearInmueble(nueva: PropiedadNueva, idLocador: number): CrearInmuebleRequest {
-  const tag = nueva.characteristics.map(tagIdFromCharacteristic).find((id): id is number => id !== null) ?? null
+export function propiedadNuevaToCreateInmueble(nueva: PropiedadNueva, fotos: CreateFotoPayload[]): CreateInmuebleCompletoPayload {
+  const tags = nueva.characteristics.map(tagIdFromCharacteristic).filter((id): id is number => id !== null)
+  const mediosPago = nueva.paymentMethods.map((medio) => MEDIO_PAGO_ID[medio.method])
+  const barrio = neighborhoods.find((item) => item.slug === nueva.neighborhoodSlug)
+
   return {
     tipo: tipoIdFromPropertyType(nueva.type),
+    descripcion: nueva.description.trim() || null,
+    provincia: nueva.province,
+    ciudad: ciudadParaBack(nueva.city),
+    barrio: barrio?.name ?? nueva.neighborhoodSlug,
     direccion: nueva.street.trim(),
     numero: nueva.streetNumber,
     piso: formatFloorUnit(nueva.floor, nueva.unit),
-    // El back guarda la capital como "Córdoba" (ver normalizarCiudad).
-    ciudad: nueva.city === 'Córdoba Capital' ? 'Córdoba' : nueva.city,
+    m2_totales: nueva.totalAreaM2,
+    m2_cubiertos: nueva.coveredAreaM2,
     ambientes: nueva.rooms,
     dormitorios: nueva.bedrooms,
     banos: nueva.bathrooms,
-    m2: nueva.totalAreaM2,
-    descripcion: nueva.description.trim() || null,
-    tags: tag,
-    id_locador: idLocador,
+    antiguedad: nueva.ageYears,
+    precio_publicado: nueva.priceMonthly,
+    estado_alquiler: ESTADO_ALQUILER_DE_ALTA[nueva.status],
+    fecha_disponible: nueva.availableFrom,
     servicios: null,
-  }
-}
-
-/**
- * `PropiedadNueva` → cuerpo de `POST /api/v1/publicaciones`: el título y
- * el precio. `activa` = aparece en la búsqueda (publicada, o alquilada con
- * fecha de disponibilidad; pausada o alquilada sin fecha → inactiva).
- * TODO(backend): la publicación no guarda la fecha de disponibilidad: el
- * back no puede distinguir una "alquilada/publicada" (ver HANDOFF).
- */
-export function propiedadNuevaToCrearPublicacion(nueva: PropiedadNueva, idInmueble: number): CrearPublicacionRequest {
-  return {
-    id_inmueble: idInmueble,
-    titulo: tituloDePropiedadNueva(nueva),
-    precio: nueva.priceMonthly,
-    activa: seVeEnBusqueda(nueva),
+    tags: [...new Set(tags)],
+    fotos,
+    condiciones_contrato: {
+      monto_alquiler: nueva.priceMonthly,
+      expensas: nueva.expenses,
+      indice_aumento: nueva.adjustmentIndex ? INDICE_ID[nueva.adjustmentIndex] : null,
+      frecuencia_ajuste: nueva.adjustmentEveryMonths ? frecuenciaAjusteTexto(nueva.adjustmentEveryMonths) : null,
+      duracion_meses: nueva.contractMonths,
+      deposito: nueva.depositMonths ? nueva.depositMonths * nueva.priceMonthly : null,
+      interes_por_dia: nueva.dailyInterestPct,
+      dias_gracia: nueva.graceDays,
+      medios_pago: [...new Set(mediosPago)],
+    },
   }
 }
