@@ -30,6 +30,7 @@ import { neighborhoods } from '@/lib/catalogs/neighborhoods'
 import { PLACEHOLDER_PHOTO_SRC } from '@/lib/imagenes/fotoConRespaldo'
 import type { InmuebleDetalleResponse, InmuebleDisponibleResponse } from '../shared/backend-dtos'
 import { formatApproxAddress, formatFloorUnit } from './direccion'
+import { tituloDePublicacion } from './titulo'
 
 /**
  * Foto que se muestra cuando el inmueble no tiene fotos (o el endpoint no
@@ -263,19 +264,6 @@ export function tituloDePropiedadNueva(nueva: Pick<PropiedadNueva, 'type' | 'roo
   return `${TYPE_TITLE[nueva.type]} de ${nueva.rooms} ${nueva.rooms === 1 ? 'ambiente' : 'ambientes'}`
 }
 
-/**
- * Título del detalle público (US-41) cuando el back no manda uno: tipo +
- * dormitorios + barrio, ej. "Departamento de 1 dormitorio en Nueva Córdoba",
- * "Monoambiente en Güemes", "Casa de 2 dormitorios".
- * NOTA de privacidad: nunca la dirección. El título se ve en las migas y en
- * el subtítulo del detalle, y la zona pública no muestra la altura.
- * TODO(backend): el back no guarda un título de la publicación.
- */
-export function tituloDelDetalle({ type, bedrooms, neighborhoodName }: { type: PropertyType; bedrooms: number; neighborhoodName: string }): string {
-  const base = type === 'monoambiente' ? TYPE_TITLE.monoambiente : `${TYPE_TITLE[type]} de ${bedrooms} ${bedrooms === 1 ? 'dormitorio' : 'dormitorios'}`
-  return neighborhoodName ? `${base} en ${neighborhoodName}` : base
-}
-
 // ─── Disponibles → PropiedadResumen (US-34) ─────────────────────────────
 
 /**
@@ -284,8 +272,8 @@ export function tituloDelDetalle({ type, bedrooms, neighborhoodName }: { type: P
  *
  * Campo por campo, lo que el back todavía no devuelve (brechas en
  * `docs/HANDOFF-BACKEND.md`):
- * - `title`: el back no tiene título; se arma con el tipo y los ambientes,
- *   igual que en el alta.
+ * - `title`: el back no tiene título; se arma con tipo + dormitorios + barrio
+ *   (`titulo.ts#tituloDePublicacion`), igual que en el detalle. Nunca la dirección.
  * - `address`: aproximada ("calle al 400"), ver la NOTA de privacidad en direccion.ts.
  * - `priceMonthly`, `expenses` y `adjustmentIndex`: del contrato del inmueble
  *   (`precio`, `expensas`, `indice_ajuste`). CAC → `null` (el front no lo ofrece).
@@ -314,7 +302,7 @@ export function inmuebleDisponibleToPropiedadResumen(item: InmuebleDisponibleRes
 
   return {
     id: String(item.id),
-    title: tituloDePropiedadNueva({ type, rooms: item.ambientes }),
+    title: tituloDePublicacion({ type, bedrooms: item.dormitorios, neighborhoodName: barrio.name }),
     address: formatApproxAddress(item.direccion, item.numero),
     province: item.provincia,
     city: normalizarCiudad(item.ciudad),
@@ -358,7 +346,8 @@ function montoONull(valor: number | string | null | undefined): number | null {
  *
  * Campo por campo:
  * - `title`: el back no tiene título; se arma con tipo + dormitorios +
- *   barrio ({@link tituloDelDetalle}). Nunca la dirección: se ve en las migas.
+ *   barrio (`titulo.ts#tituloDePublicacion`), igual que la tarjeta de
+ *   `/buscar`. Nunca la dirección: se ve en las migas.
  * - `address`: APROXIMADA ("Rondeau al 400"), nunca la altura ni el piso
  *   (NOTA de privacidad de `PropiedadDetalle`).
  * - `priceMonthly` / `expenses`: `null` si no vienen o vienen en `-1` (ver
@@ -394,7 +383,7 @@ export function inmuebleDetalleToPropiedadDetalle(dto: InmuebleDetalleResponse):
 
   return {
     id: String(dto.id),
-    title: tituloDelDetalle({ type, bedrooms: dto.dormitorios, neighborhoodName: barrio.name }),
+    title: tituloDePublicacion({ type, bedrooms: dto.dormitorios, neighborhoodName: barrio.name }),
     address: formatApproxAddress(dto.direccion, dto.numero),
     province: dto.provincia,
     city: normalizarCiudad(dto.ciudad),
