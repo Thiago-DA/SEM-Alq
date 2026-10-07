@@ -43,6 +43,16 @@ Cambios de la tanda 3 (búsqueda, US-34), también **pendientes de subir** al fi
   si hay más de una foto. Link "estirado" para que las flechas del carrusel sean botones válidos.
   `adjustmentIndex` acepta `null` (sin badge). La API anterior no cambió.
 
+Sprint 2, tanda 1 (detalle público, US-41, y solicitudes, US-35). **Sin cambios en `@rentar/ui`.**
+Candidatos a pasar al design system (necesitan el OK del PO antes de tocar el paquete):
+- **`OwnerCard`** ("Detalle de propiedad" · 01 lo presenta como componente nuevo): hoy es local,
+  `apps/web/src/components/detalle-propiedad/OwnerCard.tsx`, armada con `Card` y `Avatar` de antd.
+  Avatar con iniciales, nombre (o "El dueño" si no se conoce), la acción principal como slot,
+  "Enviar mensaje" deshabilitado con tooltip y secciones extra como `children`. Sin WhatsApp (no hay
+  teléfono del dueño en ninguna fuente).
+- `PhotoGallery` en móvil: el diseño (· 03) pide carrusel con swipe y puntos, sin miniaturas. Hoy
+  se usa tal cual (imagen grande + miniaturas en todos los anchos).
+
 Cambios de la tanda 4 (locador: /panel, US-02 y US-01), también **pendientes de subir** al final del
 Sprint 1. Todas las props son nuevas y opcionales: los usos anteriores no cambian.
 - `WizardLayout` ("Alta de propiedad" · 01, 06, 07 y 09): `status: 'error'` por paso (el Steps lo

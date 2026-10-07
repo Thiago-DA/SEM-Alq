@@ -21,7 +21,8 @@
  *
  * Quién lo usa: `components/buscar/BuscarPropiedades.tsx`,
  * `services/propiedades.service.ts` (rama real, para mandar los filtros al back)
- * y la landing (`Landing.tsx`, para "Buscar más propiedades").
+ * la landing (`Landing.tsx`, para "Buscar más propiedades") y el detalle de
+ * la propiedad (`components/detalle-propiedad/`, links a `/buscar?barrio=`).
  */
 import type { AdjustmentIndex, BusquedaFiltros, CharacteristicKey, FilterState, OrdenBusqueda, PropertyType } from '@rentar/shared-types'
 import type { RangoPrecio } from '@/lib/types/filters'
@@ -108,6 +109,22 @@ export function escribirBusqueda({ filtros, orden, pagina }: EstadoBusqueda): UR
   if (orden !== 'predeterminado') params.set('orden', orden)
   if (pagina > 1) params.set('pagina', String(pagina))
   return params
+}
+
+/**
+ * `/buscar` filtrado por un barrio (`/buscar?barrio=guemes`), o `/buscar` si
+ * no hay barrio. Lo usan el detalle de la propiedad (US-41: "Ver propiedades
+ * en Güemes", migas) y la pantalla de éxito de la solicitud (US-35: "Seguir
+ * buscando").
+ */
+export function hrefBuscarEnBarrio(neighborhoodSlug: string | null | undefined): string {
+  if (!neighborhoodSlug) return '/buscar'
+  const params = escribirBusqueda({
+    filtros: { ...FILTROS_INICIALES, neighborhoodSlugs: [neighborhoodSlug] },
+    orden: 'predeterminado',
+    pagina: 1,
+  })
+  return `/buscar?${params.toString()}`
 }
 
 // ─── Desde la landing ───────────────────────────────────────────────────
