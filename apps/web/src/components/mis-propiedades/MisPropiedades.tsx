@@ -16,11 +16,10 @@
  * - "filtrar por barrio, tipo, estado de publicación, si posee reclamos" y
  *   "solo barrios de sus propiedades": ver `lib/mis-propiedades/filtros.ts`.
  *
- * Acciones: la fila entera abre el detalle (`/panel/propiedades/[id]`,
- * placeholder), con mouse o teclado. En móvil, "Ver detalle" y el "⋯" (que
- * por ahora solo ofrece "Ver detalle"). NOTA: pausar, publicar y eliminar
- * viven en el detalle, que es de otro sprint (US-03 Modificar y US-04
- * Eliminar mis propiedades; publicar/pausar no tiene US en Sprint 0, mapa US-40).
+ * Acciones: la fila entera abre el detalle (`/panel/propiedades/[id]`), con
+ * mouse o teclado. En móvil, "Ver detalle" y el "⋯", con "Ver detalle" y
+ * "Editar" (US-03). NOTA: eliminar vive en el detalle (US-04); publicar y
+ * pausar no tienen US en Sprint 0 (mapa US-40) ni endpoint.
  *
  * Quién lo usa: `app/(app)/panel/propiedades/page.tsx`.
  */
@@ -367,10 +366,16 @@ export function MisPropiedades() {
                 <Button type="primary" className={styles.cardPrimary} onClick={() => abrirDetalle(propiedad)} data-testid="mis-propiedades-ver-detalle">
                   Ver detalle
                 </Button>
-                {/* NOTA: por ahora el menú solo tiene "Ver detalle"; pausar, publicar y eliminar llegan con el detalle (US-03, US-04). */}
+                {/* NOTA: eliminar vive en el detalle (US-04), con su confirmación; pausar y publicar no tienen US todavía. */}
                 <Dropdown
                   trigger={['click']}
-                  menu={{ items: [{ key: 'detalle', label: 'Ver detalle', onClick: () => abrirDetalle(propiedad) }] }}
+                  menu={{
+                    items: [
+                      { key: 'detalle', label: 'Ver detalle', onClick: () => abrirDetalle(propiedad) },
+                      // US-03: atajo a la edición, sin pasar por el detalle.
+                      { key: 'editar', label: <span data-testid="mis-propiedades-editar">Editar</span>, onClick: () => router.push(`/panel/propiedades/${encodeURIComponent(propiedad.id)}/editar`) },
+                    ],
+                  }}
                 >
                   <Button className={styles.cardMore} aria-label={`Más opciones de ${propiedad.address}`} icon={<EllipsisOutlined />} data-testid="mis-propiedades-mas" />
                 </Dropdown>
