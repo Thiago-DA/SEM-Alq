@@ -36,11 +36,11 @@
 import { useState } from 'react'
 import { Button, Form, Result } from 'antd'
 import { useRouter } from 'next/navigation'
-import type { PropiedadNueva } from '@rentar/shared-types'
 import { PageHeader, StatusTag, WizardLayout } from '@rentar/ui'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { neighborhoods } from '@/lib/catalogs/neighborhoods'
-import { ALTA_VALORES_INICIALES, CAMPOS_POR_PASO, ETIQUETA_CAMPO, type AltaValues } from '@/lib/validation/propiedad.rules'
+import { altaValuesToPropiedadNueva, erroresDeFormulario, esErrorDeValidacion, type ErrorDeCampo } from '@/lib/alta/valores'
+import { ALTA_VALORES_INICIALES, CAMPOS_POR_PASO, type AltaValues } from '@/lib/validation/propiedad.rules'
 import { seVeEnBusqueda, tituloDePropiedadNueva } from '@/services/adapters/propiedad.adapter'
 import { registrarPropiedad, type PropiedadRegistrada } from '@/services/propiedades.service'
 import { ServiceError } from '@/services/shared/errors'
@@ -67,71 +67,8 @@ const MIGA_LOCADOR = [
 ]
 const MIGA_LOCATARIO = [{ label: 'Mi panel', href: '/panel' }, { label: 'Publicar propiedad' }]
 
-/** Un error del paso para el resumen de arriba ("Faltan N datos para seguir"). */
-interface ErrorDePaso {
-  name: keyof AltaValues
-  label: string
-  message: string
-}
-
 /** En qué etapa está el alta. */
 type Fase = 'formulario' | 'publicando' | 'error' | 'exito'
-
-// ─── Helpers ────────────────────────────────────────────────────────────
-
-/** Valores ya validados del formulario → `PropiedadNueva` (lo que recibe el service). */
-function aPropiedadNueva(valores: AltaValues): PropiedadNueva {
-  const principal = Math.max(
-    0,
-    valores.photos.findIndex((foto) => foto.id === valores.mainPhotoId),
-  )
-  return {
-    type: valores.type ?? 'departamento',
-    street: valores.street ?? '',
-    streetNumber: valores.streetNumber ?? 0,
-    floor: valores.floor?.trim() || null,
-    unit: valores.unit?.trim() || null,
-    neighborhoodSlug: valores.neighborhoodSlug ?? '',
-    city: valores.city,
-    province: valores.province,
-    rooms: valores.rooms,
-    bedrooms: valores.bedrooms,
-    bathrooms: valores.bathrooms,
-    ageYears: valores.ageYears ?? null,
-    totalAreaM2: valores.totalAreaM2 ?? 0,
-    coveredAreaM2: valores.coveredAreaM2 ?? 0,
-    characteristics: valores.characteristics,
-    description: valores.description ?? '',
-    status: valores.status ?? 'pausada',
-    availableFrom: valores.availableFrom ?? null,
-    photos: valores.photos,
-    mainPhotoIndex: principal,
-    priceMonthly: valores.priceMonthly ?? 0,
-    expenses: valores.expenses ?? 0,
-    dailyInterestPct: valores.dailyInterestPct || null,
-    graceDays: valores.dailyInterestPct ? (valores.graceDays ?? 0) : null,
-    paymentMethods: valores.paymentMethods,
-    adjustmentIndex: valores.adjustmentIndex ?? null,
-    adjustmentEveryMonths: valores.adjustmentEveryMonths ?? null,
-    depositMonths: valores.depositMonths ?? null,
-    contractMonths: valores.contractMonths ?? null,
-  }
-}
-
-/** Errores de antd → resumen del paso. */
-function aErroresDePaso(errorFields: { name: (string | number)[]; errors: string[] }[]): ErrorDePaso[] {
-  return errorFields
-    .filter((campo) => campo.errors.length > 0)
-    .map((campo) => {
-      const name = campo.name[0] as keyof AltaValues
-      return { name, label: ETIQUETA_CAMPO[name] ?? String(name), message: campo.errors[0] }
-    })
-}
-
-/** `true` si lo que tiró `validateFields` es el error de validación de antd. */
-function esErrorDeValidacion(error: unknown): error is { errorFields: { name: (string | number)[]; errors: string[] }[] } {
-  return typeof error === 'object' && error !== null && 'errorFields' in error
-}
 
 // ─── Pantalla ───────────────────────────────────────────────────────────
 
@@ -145,7 +82,7 @@ export function AltaPropiedad() {
   // ─── Estado local ───────────────────────────────────────────────────
   const [paso, setPaso] = useState(0)
   const [pasosConError, setPasosConError] = useState<Set<number>>(new Set())
-  const [errores, setErrores] = useState<ErrorDePaso[]>([])
+  const [errores, setErrores] = useState<ErrorDeCampo[]>([])
   const [fase, setFase] = useState<Fase>('formulario')
   const [errorPublicacion, setErrorPublicacion] = useState<ServiceError | null>(null)
   const [registrada, setRegistrada] = useState<(PropiedadRegistrada & { resumen: string }) | null>(null)
@@ -155,7 +92,7 @@ export function AltaPropiedad() {
   // ─── Navegación entre pasos ─────────────────────────────────────────
 
   /** Muestra el resumen de errores de un paso y lleva el foco al primer campo. */
-  function mostrarErrores(pasoConError: number, lista: ErrorDePaso[]): void {
+  function mostrarErrores(pasoConError: number, lista: ErrorDeCampo[]): void {
     setPaso(pasoConError)
     setErrores(lista)
     setPasosConError((actual) => new Set(actual).add(pasoConError))
@@ -188,7 +125,7 @@ export function AltaPropiedad() {
       setPaso(destino)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     } catch (error) {
-      if (esErrorDeValidacion(error)) mostrarErrores(paso, aErroresDePaso(error.errorFields))
+      if (esErrorDeValidacion(error)) mostrarErrores(paso, erroresDeFormulario(error.errorFields))
     }
   }
 
@@ -202,13 +139,13 @@ export function AltaPropiedad() {
       validos = form.getFieldsValue(true) as AltaValues
     } catch (error) {
       if (!esErrorDeValidacion(error)) return
-      const lista = aErroresDePaso(error.errorFields)
+      const lista = erroresDeFormulario(error.errorFields)
       const pasoConError = CAMPOS_POR_PASO.findIndex((campos) => campos.some((campo) => lista.some((item) => item.name === campo)))
       mostrarErrores(pasoConError >= 0 ? pasoConError : 0, lista.filter((item) => CAMPOS_POR_PASO[pasoConError]?.includes(item.name)))
       return
     }
 
-    const nueva = aPropiedadNueva(validos)
+    const nueva = altaValuesToPropiedadNueva(validos)
     setFase('publicando')
     setErrorPublicacion(null)
     try {
