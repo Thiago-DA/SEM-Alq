@@ -8,7 +8,12 @@
  * en la zona pública (landing, `/buscar`) nunca se muestra la altura exacta
  * ni el piso, solo la calle y la cuadra. Cumple el "mostrar la dirección de
  * cada propiedad" de US-34 sin exponer dónde vive alguien. La dirección
- * exacta la ven el locador (US-02) y, más adelante, las partes del contrato.
+ * exacta la ven el locador (US-02) y, desde la US-35 actualizada, cualquier
+ * usuario con sesión en el detalle, el modal "Solicitar alquiler" y Mis
+ * solicitudes (decisión del PO). Las tarjetas de `/buscar` siguen con la
+ * aproximada para todos.
+ * NOTA: mientras el back mande la altura y el piso sin token, esto es solo
+ * cosmético (HANDOFF §10).
  *
  * Quién lo usa: `propiedad-mock.adapter.ts`, `propiedad.adapter.ts` y los
  * adaptadores de solicitudes.

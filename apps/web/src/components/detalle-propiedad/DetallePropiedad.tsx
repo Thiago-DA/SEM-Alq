@@ -2,7 +2,8 @@
 
 /**
  * DetallePropiedad.tsx — la pantalla `/propiedad/[id]`: fotos, precio,
- * características, descripción, condiciones, ubicación aproximada, la
+ * características, descripción, condiciones, ubicación (exacta con sesión,
+ * aproximada sin sesión: decisión del PO con la US-35 actualizada), la
  * tarjeta del dueño con "Solicitar alquiler" y las propiedades similares.
  *
  * Diseño: Claude Design, "Detalle de propiedad" · 01 (escritorio), · 02
@@ -90,9 +91,13 @@ export function DetallePropiedad({ id }: DetallePropiedadProps) {
   // (mismo patrón que `BuscarPropiedades`): "cargando" se deriva de que la
   // key no coincida, sin poner estado a mano dentro de un efecto.
   const [intento, setIntento] = useState(0)
-  const cargaKey = `${id}:${intento}`
+  // La dirección depende de la sesión (exacta con sesión, aproximada sin): se
+  // espera a que el AuthProvider la resuelva, así no se pide dos veces ni se ve
+  // la aproximada un instante (decisión del PO con la US-35 actualizada).
+  const conSesion = isLoading ? undefined : user !== null
+  const cargaKey = conSesion === undefined ? null : `${id}:${intento}:${conSesion ? 'con-sesion' : 'sin-sesion'}`
   const [cargaGuardada, setCargaGuardada] = useState<{ key: string; carga: CargaPropiedad } | null>(null)
-  const carga: CargaPropiedad = cargaGuardada?.key === cargaKey ? cargaGuardada.carga : { estado: 'cargando' }
+  const carga: CargaPropiedad = cargaKey !== null && cargaGuardada?.key === cargaKey ? cargaGuardada.carga : { estado: 'cargando' }
 
   const userId = isLoading ? undefined : (user?.id ?? null)
   // Sube después de enviar una solicitud, para volver a pedir "mi solicitud".
@@ -113,8 +118,9 @@ export function DetallePropiedad({ id }: DetallePropiedadProps) {
   // ─── Datos ──────────────────────────────────────────────────────────────
 
   useEffect(() => {
+    if (cargaKey === null) return
     let vigente = true
-    getPropiedad(id)
+    getPropiedad(id, { conSesion: conSesion === true })
       .then((propiedad) => {
         if (vigente) setCargaGuardada({ key: cargaKey, carga: { estado: 'lista', propiedad } })
       })
@@ -126,7 +132,7 @@ export function DetallePropiedad({ id }: DetallePropiedadProps) {
     return () => {
       vigente = false
     }
-  }, [id, cargaKey])
+  }, [id, cargaKey, conSesion])
 
   useEffect(() => {
     if (!userId) return
@@ -204,7 +210,10 @@ export function DetallePropiedad({ id }: DetallePropiedadProps) {
             {/* ─── Título ─── */}
             <header className={styles.titleBlock}>
               <h1 className={styles.title}>
-                {propiedad.address}
+                {/* Con sesión, la exacta con el piso; sin sesión, la aproximada (ver `getPropiedad`). */}
+                <span data-testid="detalle-propiedad-direccion" data-precision={propiedad.addressPrecision}>
+                  {propiedad.address}
+                </span>
                 {propiedad.neighborhoodName && <span className={styles.titleBarrio}> · {propiedad.neighborhoodName}</span>}
               </h1>
               <p className={styles.subtitle}>
@@ -294,20 +303,24 @@ export function DetallePropiedad({ id }: DetallePropiedadProps) {
               </section>
             )}
 
-            {/* ─── Ubicación aproximada ─── */}
+            {/* ─── Ubicación (exacta con sesión, aproximada sin) ─── */}
             <section className={styles.section} aria-labelledby="detalle-ubicacion">
               <h2 id="detalle-ubicacion" className={styles.sectionTitle}>
-                Ubicación aproximada
+                {propiedad.addressPrecision === 'exacta' ? 'Ubicación' : 'Ubicación aproximada'}
               </h2>
               <p className={styles.sectionSubtitle}>
                 {[propiedad.neighborhoodName, propiedad.address].filter(Boolean).join(' · ')}
               </p>
-              {/* NOTA: placeholder de mapa (no hay mapas en el MVP). Nunca la dirección exacta. */}
+              {/* NOTA: placeholder de mapa (no hay mapas en el MVP): marca la zona, no el punto exacto. */}
               <div className={styles.map} role="img" aria-label={`Zona aproximada: ${propiedad.neighborhoodName || propiedad.city}`}>
                 <span className={styles.mapRadius} />
                 <span className={styles.mapDot} />
               </div>
-              <p className={styles.mapNote}>Mostramos la cuadra, no la altura. La dirección exacta se comparte cuando el dueño acepta la solicitud.</p>
+              <p className={styles.mapNote}>
+                {propiedad.addressPrecision === 'exacta'
+                  ? 'Ves la dirección exacta porque iniciaste sesión.'
+                  : 'Mostramos la cuadra, no la altura. Iniciá sesión para ver la dirección exacta.'}
+              </p>
             </section>
           </div>
 
