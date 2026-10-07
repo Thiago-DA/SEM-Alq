@@ -338,6 +338,13 @@
   background: var(--rentar-color-bg-surface);
 }
 
+.emptyActions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.625rem;
+}
+
 .errorBlock {
   display: flex;
   flex-direction: column;

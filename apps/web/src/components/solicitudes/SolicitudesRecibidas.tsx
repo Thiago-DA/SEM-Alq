@@ -29,7 +29,7 @@
 import { useMemo, useState, useSyncExternalStore } from 'react'
 import { Alert, Button, Drawer, Select, Skeleton } from 'antd'
 import { useRouter } from 'next/navigation'
-import type { Solicitud } from '@rentar/shared-types'
+import type { PropiedadLocador, Solicitud } from '@rentar/shared-types'
 import { EmptyState, PageHeader } from '@rentar/ui'
 import { useServiceCall } from '@/lib/hooks/useServiceCall'
 import {
@@ -121,9 +121,28 @@ function FilasCargando() {
   )
 }
 
+/** Qué vacío corresponde, según las propiedades del locador. */
+type CasoVacio = 'sin_propiedades' | 'sin_publicadas' | 'con_publicadas'
+
 /**
- * Vacío del locador (· 06): si tiene propiedades publicadas, que ya aparecen
- * en la búsqueda; si no, "Publicá tu primera propiedad".
+ * Elige el caso del vacío. Cuentan como publicadas las que aparecen en la
+ * búsqueda y reciben solicitudes: `publicada` y `alquilada_publicada`.
+ */
+function casoVacio(propiedades: readonly PropiedadLocador[]): { caso: CasoVacio; publicadas: number } {
+  const publicadas = propiedades.filter((item) => item.status === 'publicada' || item.status === 'alquilada_publicada').length
+  if (propiedades.length === 0) return { caso: 'sin_propiedades', publicadas }
+  return { caso: publicadas > 0 ? 'con_publicadas' : 'sin_publicadas', publicadas }
+}
+
+/**
+ * Vacío del locador (· 06), con tres casos según `listarMisPropiedades`:
+ * - Con propiedades publicadas: que ya aparecen en la búsqueda.
+ * - Sin ninguna propiedad: "Publicá tu primera propiedad" (texto del diseño).
+ * - Con propiedades pero ninguna publicada (ej. Sofía, con una alquilada):
+ *   las solicitudes llegan solo a las publicadas (texto del PO, anotado en
+ *   `.design-sync/NOTES.md`).
+ * Si falla el pedido de propiedades, no se adivina el caso: solo "Ver mis
+ * propiedades".
  * NOTA: el diseño suma "las publicaciones con 5 fotos reciben el triple de
  * solicitudes"; es un dato que no tenemos, no se muestra.
  */
@@ -131,29 +150,53 @@ function VacioLocador() {
   const router = useRouter()
   const propiedades = useServiceCall(listarMisPropiedades)
   if (propiedades.status === 'cargando') return <FilasCargando />
-  const publicadas =
-    propiedades.status === 'listo' ? propiedades.data.filter((item) => item.status === 'publicada' || item.status === 'alquilada_publicada').length : 0
 
+  const verPropiedades = (
+    <Button onClick={() => router.push('/panel/propiedades')} data-testid="solicitudes-vacio-propiedades">
+      Ver mis propiedades
+    </Button>
+  )
+  const publicar = (texto: string) => (
+    <Button type="primary" onClick={() => router.push('/panel/propiedades/nueva')} data-testid="solicitudes-vacio-publicar">
+      {texto}
+    </Button>
+  )
+
+  // ─── Render ─────────────────────────────────────────────────────────
+  if (propiedades.status === 'error') {
+    return (
+      <div className={styles.emptyBlock} data-testid="solicitudes-vacio">
+        <EmptyState title="Todavía no recibiste solicitudes" description="Cuando alguien solicite una de tus propiedades publicadas, la vas a ver acá." action={verPropiedades} />
+      </div>
+    )
+  }
+
+  const { caso, publicadas } = casoVacio(propiedades.data)
   return (
-    <div className={styles.emptyBlock} data-testid="solicitudes-vacio">
-      {publicadas > 0 ? (
+    <div className={styles.emptyBlock} data-testid="solicitudes-vacio" data-caso={caso}>
+      {caso === 'con_publicadas' && (
         <EmptyState
           title="Todavía no recibiste solicitudes"
           description={`${publicadas === 1 ? 'Tu propiedad publicada ya aparece' : `Tus ${publicadas} propiedades publicadas ya aparecen`} en la búsqueda. Cuando alguien la solicite, la vas a ver acá.`}
-          action={
-            <Button onClick={() => router.push('/panel/propiedades')} data-testid="solicitudes-vacio-propiedades">
-              Ver mis propiedades
-            </Button>
-          }
+          action={verPropiedades}
         />
-      ) : (
+      )}
+      {caso === 'sin_propiedades' && (
         <EmptyState
           title="Todavía no recibiste solicitudes"
           description="Publicá una propiedad y las solicitudes que te manden van a aparecer acá."
+          action={publicar('Publicá tu primera propiedad')}
+        />
+      )}
+      {caso === 'sin_publicadas' && (
+        <EmptyState
+          title="Todavía no recibiste solicitudes"
+          description="Ninguna de tus propiedades está publicada. Las solicitudes llegan solo a las publicadas."
           action={
-            <Button type="primary" onClick={() => router.push('/panel/propiedades/nueva')} data-testid="solicitudes-vacio-publicar">
-              Publicá tu primera propiedad
-            </Button>
+            <div className={styles.emptyActions}>
+              {publicar('Publicar una propiedad')}
+              {verPropiedades}
+            </div>
           }
         />
       )}

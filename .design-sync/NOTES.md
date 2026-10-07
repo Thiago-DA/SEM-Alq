@@ -67,6 +67,12 @@ el 2026-10-07):
   "no puede volver a solicitar por 30 días" no van; el locador cancela una aceptada (US-38); una
   sola aceptada por propiedad ("Podés aceptar a más de una persona" ya no vale); el locatario ve la
   dirección aproximada en Mis solicitudes.
+- **Texto nuevo para el template "Flujo de solicitudes" · 06 (vacío del locador), pedido por el PO
+  el 2026-10-07:** el diseño tiene dos casos y la app tres. Con propiedades publicadas: "Todavía no
+  recibiste solicitudes" + "Ver mis propiedades". Sin ninguna propiedad: "Publicá tu primera
+  propiedad" (el del diseño). **Nuevo:** con propiedades pero ninguna publicada (ej. solo
+  alquiladas o pausadas): "Ninguna de tus propiedades está publicada. Las solicitudes llegan solo a
+  las publicadas.", con "Publicar una propiedad" (primario) y "Ver mis propiedades".
 
 Cambios de la tanda 4 (locador: /panel, US-02 y US-01), también **pendientes de subir** al final del
 Sprint 1. Todas las props son nuevas y opcionales: los usos anteriores no cambian.
