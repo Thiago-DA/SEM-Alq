@@ -19,9 +19,10 @@ está: el panel de administración no es de este sprint.
 
 ## Las propiedades (`propiedades.mock.ts`)
 
-1. **Las del mapa** (8): las 7 de Nicolás y la de Sofía. Las dos publicadas tienen un título
-   descriptivo (no la dirección), porque la tarjeta de `/buscar` ya muestra la dirección arriba y
-   "barrio · título" abajo:
+1. **Las del mapa** (8): las 7 de Nicolás y la de Sofía. **Todas tienen un título descriptivo,
+   nunca la dirección** (US-41: el detalle público muestra el título en las migas y el subtítulo,
+   y la zona pública nunca muestra la altura). Las alquiladas y la pausada usan "tipo de N
+   dormitorios en barrio" (ej. "Departamento de 1 dormitorio en el Centro"). Las dos publicadas:
    - Rondeau 480, PB (Güemes): "1 dormitorio en planta baja con cochera". $385.000 + $62.000,
      disponible desde el 01/10/2026 (cuando empieza CT-2026-0207).
    - Fructuoso Rivera 785 (Cofico): "PH de 2 dormitorios con patio".

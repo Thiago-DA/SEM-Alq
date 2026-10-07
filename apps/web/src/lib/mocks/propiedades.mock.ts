@@ -156,11 +156,6 @@ const TRANSFERENCIA: MedioPagoConRecargo = { method: 'transferencia', surchargeP
 const MP_DEBITO: MedioPagoConRecargo = { method: 'mercadopago_debito', surchargePct: 0 }
 const EFECTIVO: MedioPagoConRecargo = { method: 'efectivo', surchargePct: 0 }
 
-/** Arma el título "Calle 123, 7° B" a partir de la dirección. */
-function addressTitle(street: string, streetNumber: number, floor: string | null): string {
-  return floor ? `${street} ${streetNumber}, ${floor}` : `${street} ${streetNumber}`
-}
-
 /** Campos comunes de las 16 propiedades "de otros locadores". */
 interface OtroLocadorInput {
   id: string
@@ -226,7 +221,7 @@ const elenco: PropiedadMock[] = [
     status: 'alquilada',
     publishedAt: '2025-03-01',
     availableFrom: null,
-    title: addressTitle('Laprida', 340, null),
+    title: 'Departamento de 2 dormitorios en Nueva Córdoba',
     street: 'Laprida',
     streetNumber: 340,
     floor: null,
@@ -275,7 +270,7 @@ const elenco: PropiedadMock[] = [
     status: 'alquilada',
     publishedAt: '2026-02-10',
     availableFrom: null,
-    title: addressTitle('Obispo Trejo', 1250, '7° B'),
+    title: 'Departamento de 2 dormitorios en Nueva Córdoba',
     street: 'Obispo Trejo',
     streetNumber: 1250,
     floor: '7° B',
@@ -364,7 +359,7 @@ const elenco: PropiedadMock[] = [
     status: 'alquilada',
     publishedAt: '2025-06-15',
     availableFrom: null,
-    title: addressTitle('Belgrano', 1120, null),
+    title: 'Departamento de 1 dormitorio en el Centro',
     street: 'Belgrano',
     streetNumber: 1120,
     floor: null,
@@ -412,7 +407,7 @@ const elenco: PropiedadMock[] = [
     status: 'alquilada',
     publishedAt: '2025-09-01',
     availableFrom: null,
-    title: addressTitle('Av. Colón', 2450, '3° A'),
+    title: 'Departamento de 2 dormitorios en General Paz',
     street: 'Av. Colón',
     streetNumber: 2450,
     floor: '3° A',
@@ -496,7 +491,7 @@ const elenco: PropiedadMock[] = [
     status: 'pausada',
     publishedAt: '2026-05-12',
     availableFrom: null,
-    title: addressTitle('Chacabuco', 690, null),
+    title: 'Departamento de 1 dormitorio en Alta Córdoba',
     street: 'Chacabuco',
     streetNumber: 690,
     floor: null,
@@ -535,7 +530,7 @@ const elenco: PropiedadMock[] = [
     status: 'alquilada',
     publishedAt: '2025-11-20',
     availableFrom: null,
-    title: addressTitle('Mariano Moreno', 285, null),
+    title: 'Casa de 2 dormitorios en Nueva Córdoba',
     street: 'Mariano Moreno',
     streetNumber: 285,
     floor: null,
