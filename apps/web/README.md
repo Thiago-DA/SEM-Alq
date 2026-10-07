@@ -37,13 +37,34 @@ de prueba (modo mock).
 Cómo funciona la sesión real: `CLAUDE.md`, sección "Sesión (Supabase Auth)". Estado de cada
 endpoint y brechas: `docs/HANDOFF-BACKEND.md`.
 
+### Forzar el modo mock sin tocar `.env.local`
+
+Si tu `apps/web/.env.local` tiene `NEXT_PUBLIC_USE_MOCKS=false` (modo real) y querés probar con los
+datos de prueba un rato, no hace falta editarlo: pasá la variable al proceso al levantar la web.
+Next **no pisa** con los archivos `.env*` una variable que ya viene del entorno, así que gana la del
+comando:
+
+```bash
+# Git Bash
+NEXT_PUBLIC_USE_MOCKS=true npm run dev:web
+```
+
+```powershell
+# PowerShell
+$env:NEXT_PUBLIC_USE_MOCKS = 'true'; npm run dev:web
+```
+
+En PowerShell la variable queda puesta en esa terminal: cerrala (o
+`Remove-Item Env:NEXT_PUBLIC_USE_MOCKS`) para volver a lo que diga `.env.local`. En los dos casos
+hay que reiniciar `dev:web` para cambiar de modo: Next lee las `NEXT_PUBLIC_*` al arrancar.
+
 Cuentas de prueba del modo mock (contraseña `Rentar2026`):
 
 | Email | Roles | Para probar |
 |---|---|---|
 | `nicolas.arrieta@rentar.test` | locador | Panel con datos, Mis propiedades (7), alta |
 | `sofia.ledesma@rentar.test` | locador y locatario | Cambio de rol ("Viendo como") |
-| `julieta.peralta@rentar.test` | locatario | Login de locatario (va a `/panel`, la versión mínima: buscar o publicar) |
+| `julieta.peralta@rentar.test` | locatario | Login de locatario (va a `/panel`, la versión mínima: buscar o publicar). Solicitar alquiler (US-35): ya solicitó Rondeau 480 (`/propiedad/prop-rondeau-480` muestra "Tu solicitud · Pendiente"); el envío completo se prueba con Fructuoso Rivera 785 (`/propiedad/prop-rivera-785`) |
 
 Un locador recién registrado en `/registro` ve el panel vacío (onboarding). Lo creado se guarda en
 el navegador; el botón flotante de desarrollo "Reiniciar datos de prueba" lo borra.
@@ -54,6 +75,7 @@ el navegador; el botón flotante de desarrollo "Reiniciar datos de prueba" lo bo
 |---|---|---|---|
 | `/` | Landing | — | `app/(public)/page.tsx` → `components/Landing.tsx` |
 | `/buscar` | Búsqueda de propiedades | US-34 | `app/(public)/buscar/` → `components/buscar/` |
+| `/propiedad/[id]` | Detalle público de la propiedad y modal "Solicitar alquiler" | US-41 y US-35 (Jira) | `app/(public)/propiedad/[id]/` → `components/detalle-propiedad/` |
 | `/login` | Iniciar sesión | US-39 | `app/(auth)/login/` → `components/auth/LoginForm.tsx` |
 | `/registro` | Registro en un paso (sin rol) | US-19 | `app/(auth)/registro/` → `components/auth/RegistroForm.tsx` |
 | `/panel` | Inicio del locador (o el mínimo del locatario: buscar o publicar) | sin US en Sprint 0 | `app/(app)/panel/page.tsx` → `components/panel/` |
@@ -66,7 +88,7 @@ ningún botón del Sprint 1 quede roto. Se reemplazan ruta por ruta cuando llega
 
 | Ruta | Llega desde | US |
 |---|---|---|
-| `/propiedad/[id]` | Tarjetas de `/buscar` y de la landing | sin US en Sprint 0 (mapa US-35) |
+| `/panel/mis-solicitudes` | "Ver mis solicitudes" del modal y "Ver en Mis solicitudes" del detalle | US-36 / US-38 (tanda 2 del Sprint 2) |
 | `/panel/propiedades/[id]` | Filas de Mis propiedades | US-03 / US-04 |
 | `/recuperar` | "¿Olvidaste tu contraseña?" del login | US-40 |
 | `/panel/solicitudes`, `/contratos`, `/cobros`, `/reclamos`, `/mensajes`, `/reportes`, `/suscripcion` | Menú del locador | US-36/37, US-05, US-08/09, US-14 a 18, US-24 a 26, US-28, US-30 a 33 |
@@ -83,7 +105,7 @@ para cualquier usuario con sesión: al publicar la primera propiedad, la cuenta 
 | Carpeta | Qué hay |
 |---|---|
 | `app/` | Rutas. `(public)` con Header y Footer, `(auth)` con `AuthLayout`, `(app)/panel` con `AppShell`. |
-| `components/` | Pantallas y sus piezas, una carpeta por pantalla (`auth/`, `buscar/`, `panel/`, `mis-propiedades/`, `alta/`) más la landing. |
+| `components/` | Pantallas y sus piezas, una carpeta por pantalla (`auth/`, `buscar/`, `detalle-propiedad/`, `panel/`, `mis-propiedades/`, `alta/`) más la landing. |
 | `services/` | **La única frontera con el backend.** Ver `services/README.md`. |
 | `lib/mocks/` | El elenco de datos de prueba. Solo lo usan los services. Ver su `README.md`. |
 | `lib/auth/` | Sesión: `AuthProvider`, cookie `rentar_session`, redirección después del login y `supabase/` (clientes de Supabase de navegador, servidor y proxy). |
