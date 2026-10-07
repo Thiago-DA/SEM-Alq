@@ -9,7 +9,8 @@
  * se validan como cualquier otro campo.
  * NOTA: se componen acá (apps/web) y no en `@rentar/ui`: aprobado por
  * producto para esta tanda.
- * Quién lo usa: `PasosAlta.tsx`.
+ * Quién lo usa: `PasosAlta.tsx`; `Stepper`, también el modal "Solicitar
+ * alquiler" (personas a residir, US-35).
  */
 import { Checkbox, InputNumber, Radio } from 'antd'
 import { MinusOutlined, PlusOutlined } from '@ant-design/icons'

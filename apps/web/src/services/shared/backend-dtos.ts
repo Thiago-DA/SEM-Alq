@@ -174,8 +174,23 @@ export type EstadoSolicitudDto = 'pendiente' | 'aceptada' | 'rechazada' | 'cance
  */
 export interface CrearSolicitudRequest {
   id_inmueble: number
-  /** Opcional, hasta 1000 caracteres (US-35). */
+  /** Opcional, hasta 600 caracteres (US-35 actualizada). */
   mensaje?: string | null
+  /** E.164: "+" + código de país + número, de 10 a 15 dígitos (US-35). */
+  telefono: string
+  email: string
+  ocupacion: 'sin_informar' | 'relacion_dependencia' | 'monotributista' | 'autonoma' | 'estudiante' | 'jubilada'
+  /** Entero ≥ 0; 0 = no informa (HANDOFF §7). */
+  ingresos: number
+  /** Mínimo 1 (US-35). */
+  convivientes: number
+  mascotas: boolean
+  /** Hasta 300 caracteres; `null` si no tiene mascotas. */
+  detalle_mascotas: string | null
+  /** Al menos una de las que exige el inmueble, si exige alguna. */
+  garantias: ('propietaria' | 'caucion' | 'otra')[]
+  /** Siempre `true` (US-35: aceptación obligatoria). */
+  acepta_condiciones: true
 }
 
 /**

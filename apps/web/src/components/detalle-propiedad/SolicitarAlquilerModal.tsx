@@ -1,38 +1,40 @@
 'use client'
 
 /**
- * SolicitarAlquilerModal.tsx — el modal "Solicitar alquiler": cabecera de la
- * propiedad, mensaje opcional al dueño y "Antes de enviar"; después, la
- * pantalla de éxito.
+ * SolicitarAlquilerModal.tsx — el modal "Solicitar alquiler": el formulario
+ * de la solicitud (`FormularioSolicitud`) y, después, la pantalla de éxito.
  *
  * Diseño: Claude Design, "Flujo de solicitudes" · 01 (modal y "Enviada ·
  * confirmación") y · 05 (en móvil, pantalla completa con las acciones fijas
  * al pie).
- * Cubre: US-35 Enviar solicitud de alquiler (numeración de Jira).
- * Datos: `solicitudes.service#enviarSolicitud`.
+ * Cubre: US-35 Enviar solicitud de alquiler, versión actualizada en
+ * `develop` (80dfb8b), numeración de Jira: datos del locatario, ocupación,
+ * ingresos, convivientes, mascotas, garantías, mensaje de hasta 600,
+ * aceptación obligatoria y cuántas pendientes tiene en otras propiedades.
+ * Reemplaza la versión de la tanda 1 ("sin legajo, 1000 caracteres").
+ * Datos: `solicitudes.service#enviarSolicitud` y
+ * `#contarMisSolicitudesPendientes`; los datos precargados, de la sesión.
  * Quién lo usa: `DetallePropiedad`.
  *
- * NOTA (decisión del PO): el diseño también pide "Tus datos" (nombre, DNI,
- * teléfono, email), ocupación, ingresos, convivientes, mascotas, garantía y
- * un check final obligatorio. Ninguna US del sprint los pide: quedan afuera.
- * El modal tiene solo lo que US-35 pide (el mensaje opcional) y el texto de
- * "Antes de enviar".
+ * NOTA: las validaciones son reglas de antd `Form` (ver
+ * `lib/validation/solicitud.rules.ts`); al tocar "Enviar", si algo falta,
+ * arriba de las acciones aparece el resumen con un link a cada campo.
  * NOTA: el mail al locador lo manda el back (TODO(backend) en el service);
  * acá solo se avisa que se mandó.
  */
-import { useState } from 'react'
-import Image from 'next/image'
+import { useCallback, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { Alert, Button, Input, Modal } from 'antd'
+import { Alert, Button, Form, Modal } from 'antd'
 import { CheckCircleFilled } from '@ant-design/icons'
 import type { PropiedadDetalle } from '@rentar/shared-types'
-import { MoneyAmount } from '@rentar/ui'
 import { useAuth } from '@/lib/auth/AuthProvider'
+import { useServiceCall } from '@/lib/hooks/useServiceCall'
 import { hrefBuscarEnBarrio } from '@/lib/search/busquedaParams'
-import { SOLICITUD_MENSAJE_MAX } from '@/lib/validation/solicitud.rules'
-import { enviarSolicitud } from '@/services/solicitudes.service'
+import { aSolicitudNueva, valoresIniciales, type ValoresSolicitud } from '@/lib/solicitudes/formulario'
+import { contarMisSolicitudesPendientes, enviarSolicitud } from '@/services/solicitudes.service'
 import { ServiceError } from '@/services/shared/errors'
 import { hrefLoginParaSolicitar } from './estadoAccion'
+import { FormularioSolicitud } from './FormularioSolicitud'
 import styles from './SolicitarAlquilerModal.module.css'
 
 // ─── Tipos ──────────────────────────────────────────────────────────────
@@ -62,18 +64,36 @@ interface SolicitarAlquilerModalProps {
   onClose: (cambioElEstado: boolean) => void
 }
 
-/** Mis solicitudes (placeholder hasta la tanda 2). */
+/** Nombre de cada campo, para el resumen de errores. */
+const ETIQUETA: Record<string, string> = {
+  telefono: 'Teléfono',
+  email: 'Email',
+  ingresos: 'Ingresos',
+  convivientes: 'Personas a residir',
+  detalleMascotas: 'Detalle de las mascotas',
+  garantias: 'Garantías',
+  mensaje: 'Mensaje',
+  acepto: 'Confirmación',
+}
+
+/** Mis solicitudes. */
 const HREF_MIS_SOLICITUDES = '/panel/mis-solicitudes'
 
 /** Modal "Solicitar alquiler" (US-35). Se monta de cero cada vez que se abre. */
 export function SolicitarAlquilerModal({ open, propiedad, onClose }: SolicitarAlquilerModalProps) {
   const router = useRouter()
-  const { logout } = useAuth()
+  const { user, logout } = useAuth()
+  const [form] = Form.useForm<ValoresSolicitud>()
+  // Se calcula una sola vez (el modal se monta de cero cada vez que se abre).
+  const [iniciales] = useState(() => valoresIniciales(user))
+  const contarPendientes = useCallback(() => contarMisSolicitudesPendientes(propiedad.id), [propiedad.id])
+  const pendientes = useServiceCall(contarPendientes)
 
   // ─── Estado local ───────────────────────────────────────────────────────
-  const [mensaje, setMensaje] = useState('')
   const [enviando, setEnviando] = useState(false)
   const [fase, setFase] = useState<Fase>({ tipo: 'formulario', error: null })
+  /** Campos con error al tocar "Enviar" (el resumen de arriba de las acciones). */
+  const [errores, setErrores] = useState<{ name: string; label: string; message: string }[]>([])
 
   const nombreDueno = propiedad.owner?.fullName ?? null
   const primerNombre = nombreDueno?.split(' ')[0] ?? null
@@ -97,18 +117,31 @@ export function SolicitarAlquilerModal({ open, propiedad, onClose }: SolicitarAl
   }
 
   const enviar = async () => {
+    let valores: ValoresSolicitud
+    try {
+      valores = await form.validateFields()
+      setErrores([])
+    } catch (error) {
+      if (typeof error === 'object' && error !== null && 'errorFields' in error) {
+        const campos = (error as { errorFields: { name: (string | number)[]; errors: string[] }[] }).errorFields.filter((campo) => campo.errors.length > 0)
+        setErrores(campos.map((campo) => ({ name: String(campo.name[0]), label: ETIQUETA[String(campo.name[0])] ?? String(campo.name[0]), message: campo.errors[0] ?? '' })))
+        const primero = campos[0]
+        if (primero) form.scrollToField(primero.name, { focus: true, block: 'center' })
+      }
+      return
+    }
     setEnviando(true)
     setFase({ tipo: 'formulario', error: null })
     try {
-      await enviarSolicitud({ propertyId: propiedad.id, message: mensaje })
+      await enviarSolicitud(aSolicitudNueva(propiedad.id, valores))
       setFase({ tipo: 'exito' })
     } catch (error) {
       if (error instanceof ServiceError && error.code === 'conflict') {
         // 409: no se cierra sin explicar qué pasó.
         setFase({ tipo: 'duplicada' })
       } else if (error instanceof ServiceError && error.code === 'unauthorized') {
-        // 401: se vuelve a ingresar y se retoma acá (?solicitar=1). Si escribió algo, primero se avisa.
-        if (mensaje.trim()) setFase({ tipo: 'sesion_vencida' })
+        // 401: se vuelve a ingresar y se retoma acá (?solicitar=1). Si completó algo, primero se avisa.
+        if (form.isFieldsTouched()) setFase({ tipo: 'sesion_vencida' })
         else reingresar()
       } else {
         const texto = error instanceof ServiceError ? error.message : 'No pudimos enviar la solicitud. Probá de nuevo en un momento.'
@@ -149,7 +182,7 @@ export function SolicitarAlquilerModal({ open, propiedad, onClose }: SolicitarAl
         return (
           <div className={styles.footerRow}>
             <Button size="large" onClick={() => setFase({ tipo: 'formulario', error: null })} className={styles.action} data-testid="solicitar-volver-button">
-              Volver al mensaje
+              Volver a la solicitud
             </Button>
             <Button type="primary" size="large" onClick={reingresar} className={styles.action} data-testid="solicitar-reingresar-button">
               Ingresar de nuevo
@@ -198,24 +231,6 @@ export function SolicitarAlquilerModal({ open, propiedad, onClose }: SolicitarAl
           </div>
         ) : (
           <>
-            {/* ─── Cabecera de la propiedad ─── */}
-            <div className={styles.property}>
-              {/* `unoptimized`, como en el alta: en modo mock la foto puede ser una data URL. */}
-              <Image src={propiedad.imageSrc} alt="" width={96} height={72} unoptimized className={styles.propertyPhoto} />
-              <div className={styles.propertyText}>
-                <span className={styles.propertyAddress}>
-                  {propiedad.address}
-                  {propiedad.neighborhoodName && ` · ${propiedad.neighborhoodName}`}
-                </span>
-                <span className={styles.propertyMeta}>
-                  {propiedad.rooms} {propiedad.rooms === 1 ? 'ambiente' : 'ambientes'} · {propiedad.areaM2} m²
-                </span>
-                <span className={styles.propertyPrice}>
-                  {propiedad.priceMonthly === null ? 'Precio a consultar' : <><MoneyAmount amount={propiedad.priceMonthly} emphasis /> / mes</>}
-                </span>
-              </div>
-            </div>
-
             {fase.tipo === 'duplicada' && (
               <Alert
                 type="info"
@@ -233,46 +248,41 @@ export function SolicitarAlquilerModal({ open, propiedad, onClose }: SolicitarAl
                 showIcon
                 className={styles.alert}
                 title="Tu sesión venció"
-                description="Para enviarla tenés que ingresar de nuevo. Al volver se abre este formulario, pero el mensaje que escribiste se pierde: copialo antes si lo querés conservar."
+                description="Para enviarla tenés que ingresar de nuevo. Al volver se abre este formulario, pero lo que completaste se pierde: copiá el mensaje antes si lo querés conservar."
                 data-testid="solicitar-sesion-vencida"
               />
             )}
 
+            {/* El formulario queda montado en las otras fases (duplicada, sesión vencida), así no se pierde lo cargado. */}
+            <div hidden={fase.tipo !== 'formulario'}>
+              <Form<ValoresSolicitud> form={form} layout="vertical" requiredMark={false} initialValues={iniciales} onValuesChange={(cambios) => setErrores((actual) => actual.filter((error) => !(error.name in cambios)))} className={styles.form}>
+                <FormularioSolicitud
+                  propiedad={propiedad}
+                  usuario={user}
+                  nombreDueno={nombreDueno}
+                  pendientesEnOtras={pendientes.status === 'listo' ? pendientes.data : null}
+                  deshabilitado={enviando}
+                />
+              </Form>
+            </div>
+
             {fase.tipo === 'formulario' && (
               <>
-                {/* ─── Mensaje al dueño ─── */}
-                <section className={styles.field}>
-                  <label htmlFor="solicitar-mensaje" className={styles.label}>
-                    Mensaje al dueño <span className={styles.optional}>· opcional</span>
-                  </label>
-                  <p className={styles.help}>Lo primero que lee. Contale cuándo te querés mudar y por cuánto tiempo.</p>
-                  {/*
-                   * US-35: "se puede adjuntar un mensaje de hasta 1000 caracteres" y "se debe
-                   * informar en tiempo real la cantidad de caracteres ingresados": `maxLength`
-                   * corta en 1000 y `showCount` muestra "N / 1000" mientras se escribe.
-                   */}
-                  <Input.TextArea
-                    id="solicitar-mensaje"
-                    value={mensaje}
-                    onChange={(event) => setMensaje(event.target.value)}
-                    maxLength={SOLICITUD_MENSAJE_MAX}
-                    showCount
-                    autoSize={{ minRows: 5, maxRows: 10 }}
-                    disabled={enviando}
-                    placeholder={primerNombre ? `Hola ${primerNombre}, …` : 'Hola, …'}
-                    data-testid="solicitar-mensaje"
-                  />
-                </section>
-
-                {/* ─── Antes de enviar ─── */}
-                <section className={styles.before}>
-                  <h3 className={styles.beforeTitle}>Antes de enviar</h3>
-                  <p className={styles.beforeText}>
-                    Enviás una solicitud {nombreDueno ? `a ${nombreDueno}` : 'al dueño'} por {propiedad.address}. Va a ver tu nombre y apellido y tu mensaje, y le
-                    llega un aviso por mail. Enviarla no reserva la propiedad.
-                  </p>
-                </section>
-
+                {errores.length > 0 && (
+                  <div className={styles.errorSummary} role="alert" data-testid="solicitar-errores">
+                    <span className={styles.errorSummaryTitle}>{errores.length === 1 ? 'Falta 1 dato para enviar' : `Faltan ${errores.length} datos para enviar`}</span>
+                    <ul className={styles.errorSummaryList}>
+                      {errores.map((error) => (
+                        <li key={error.name}>
+                          <button type="button" className={styles.linkButton} onClick={() => form.scrollToField(error.name, { focus: true, block: 'center' })}>
+                            {error.label}
+                          </button>{' '}
+                          — {error.message}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
                 {fase.error && <Alert type="error" showIcon className={styles.alert} title={fase.error} data-testid="solicitar-error" />}
               </>
             )}

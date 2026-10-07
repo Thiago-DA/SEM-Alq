@@ -135,9 +135,17 @@ export interface Solicitud {
   respondedAt: string | null
 }
 
-/** Lo que manda el modal "Solicitar alquiler" (US-35). El postulante sale de la sesión. */
+/**
+ * Lo que manda el modal "Solicitar alquiler" (US-35 actualizada). El
+ * postulante (nombre, apellido y DNI) sale de la sesión: no se editan.
+ */
 export interface SolicitudNueva {
   propertyId: string
-  /** `null` o texto de hasta 1000 caracteres (US-35). */
+  /** `null` o texto de hasta 600 caracteres (US-35 actualizada). */
   message: string | null
+  /** Teléfono (E.164) y email que incluye en esta solicitud (no cambian el perfil). */
+  contact: ContactoSolicitud
+  legajo: LegajoSolicitud
+  /** US-35: "se debe aceptar lo que implica el envío de la solicitud". Siempre `true`. */
+  acceptedTerms: true
 }

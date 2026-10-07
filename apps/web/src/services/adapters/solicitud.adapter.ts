@@ -83,10 +83,23 @@ function datosParaElLocador(dto: SolicitudResponse): Pick<Solicitud, 'contact' |
 }
 
 /**
- * `SolicitudNueva` → cuerpo de `POST /solicitudes`. El id de la propiedad
- * viaja como número (los ids del back son enteros; en el front, texto).
- * El mensaje ya llega normalizado (`null` si estaba vacío).
+ * `SolicitudNueva` → cuerpo de `POST /solicitudes` (US-35 actualizada). El id
+ * de la propiedad viaja como número (los ids del back son enteros; en el
+ * front, texto). El mensaje ya llega normalizado (`null` si estaba vacío).
+ * El nombre, el apellido y el DNI no viajan: salen del token.
  */
 export function solicitudNuevaToCrearRequest(nueva: SolicitudNueva): CrearSolicitudRequest {
-  return { id_inmueble: Number(nueva.propertyId), mensaje: nueva.message }
+  return {
+    id_inmueble: Number(nueva.propertyId),
+    mensaje: nueva.message,
+    telefono: nueva.contact.phone,
+    email: nueva.contact.email.trim(),
+    ocupacion: nueva.legajo.occupation,
+    ingresos: nueva.legajo.monthlyIncome,
+    convivientes: nueva.legajo.residents,
+    mascotas: nueva.legajo.hasPets,
+    detalle_mascotas: nueva.legajo.hasPets ? nueva.legajo.petsDetail : null,
+    garantias: nueva.legajo.guarantees,
+    acepta_condiciones: true,
+  }
 }

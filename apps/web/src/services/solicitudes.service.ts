@@ -27,10 +27,9 @@ import { readSessionFromDocument } from '@/lib/auth/session-cookie'
 import { hoy } from '@/lib/utils/fechas'
 import {
   aceptadaDeLaPropiedad,
+  errorDeSolicitudNueva,
   esSolicitudActiva,
-  mensajeSolicitudValido,
   normalizarMensajeSolicitud,
-  SOLICITUD_MENSAJE_LARGO_MESSAGE,
   textoYaAceptaste,
   transicionSolicitud,
   type AccionSolicitud,
@@ -134,14 +133,18 @@ function cambiarEstadoMock(solicitud: SolicitudMock, accion: AccionSolicitud, ac
 // ─── Enviar (US-35) ─────────────────────────────────────────────────────
 
 /**
- * US-35 Enviar solicitud de alquiler — el usuario en sesión solicita una
- * propiedad publicada, con un mensaje opcional al locador.
- * @backend POST /api/v1/solicitudes   (no existe — propuesto) body { id_inmueble, mensaje? } → 201 SolicitudResponse
+ * US-35 Enviar solicitud de alquiler (actualizada) — el usuario en sesión
+ * solicita una propiedad publicada, con su contacto, su legajo (ocupación,
+ * ingresos, convivientes, mascotas y garantías), la aceptación y un mensaje
+ * opcional al locador.
+ * @backend POST /api/v1/solicitudes   (no existe — propuesto) body `CrearSolicitudRequest` → 201 SolicitudResponse
  * @returns Solicitud (la recién creada, `pendiente`)
  * @throws {ServiceError}
  *   - `unauthorized`: sin sesión (US-35: "se debe haber iniciado sesión").
- *   - `validation`: mensaje de más de 1000 caracteres (US-35, prueba "más de
- *     1000, falla") o la propiedad ya no se puede solicitar (alquilada o pausada).
+ *   - `validation`: un dato no cumple las reglas de la US-35 actualizada
+ *     (mensaje de más de 600, teléfono que no es E.164, email, ingresos,
+ *     convivientes, garantías exigidas, aceptación; ver
+ *     `errorDeSolicitudNueva`) o la propiedad ya no se puede solicitar.
  *   - `forbidden`: es su propia publicación.
  *   - `conflict`: ya tiene una solicitud pendiente o aceptada para esa propiedad.
  *   - `not_found`: la propiedad no existe.
@@ -154,9 +157,16 @@ function cambiarEstadoMock(solicitud: SolicitudMock, accion: AccionSolicitud, ac
  * (largo del mensaje, duplicada, propia, disponible).
  */
 export async function enviarSolicitud(nueva: SolicitudNueva): Promise<Solicitud> {
-  const message = normalizarMensajeSolicitud(nueva.message)
-  // Se valida en las dos ramas: el TextArea ya corta en 1000, pero la regla es de la US.
-  if (!mensajeSolicitudValido(message)) throw new ServiceError('validation', SOLICITUD_MENSAJE_LARGO_MESSAGE)
+  const normalizada: SolicitudNueva = {
+    ...nueva,
+    message: normalizarMensajeSolicitud(nueva.message),
+    legajo: { ...nueva.legajo, petsDetail: nueva.legajo.hasPets ? nueva.legajo.petsDetail?.trim() || null : null },
+  }
+  const { message } = normalizada
+  // Se valida en las dos ramas (el formulario ya lo hace, pero las reglas son de la US).
+  // Las garantías exigidas se conocen solo en mock: en real, las valida el back.
+  const errorSinGarantias = errorDeSolicitudNueva(normalizada, [])
+  if (errorSinGarantias) throw new ServiceError('validation', errorSinGarantias)
 
   if (USE_MOCKS) {
     await delay(800)
@@ -168,6 +178,8 @@ export async function enviarSolicitud(nueva: SolicitudNueva): Promise<Solicitud>
     if (propiedad.status !== 'publicada' && propiedad.status !== 'alquilada_publicada') {
       throw new ServiceError('validation', PROPIEDAD_NO_SOLICITABLE_MESSAGE)
     }
+    const errorGarantias = errorDeSolicitudNueva(normalizada, propiedad.requiredGuarantees ?? [])
+    if (errorGarantias) throw new ServiceError('validation', errorGarantias)
     const existentes = readSolicitudesMock()
     const repetida = existentes.some(
       (item) => item.propertyId === nueva.propertyId && item.applicantUserId === userId && esSolicitudActiva(item.status),
@@ -184,6 +196,8 @@ export async function enviarSolicitud(nueva: SolicitudNueva): Promise<Solicitud>
       status: 'pendiente',
       createdAt: ahoraMock(),
       respondedAt: null,
+      contact: normalizada.contact,
+      legajo: normalizada.legajo,
     }
     if (!saveMockRecord('solicitudes', solicitud)) throw new ServiceError('server', MOCK_STORAGE_FULL_MESSAGE)
     return aVista(solicitud, 'postulante')
@@ -191,7 +205,7 @@ export async function enviarSolicitud(nueva: SolicitudNueva): Promise<Solicitud>
 
   const dto = await apiRequest<SolicitudResponse>('/solicitudes', {
     method: 'POST',
-    body: solicitudNuevaToCrearRequest({ propertyId: nueva.propertyId, message }),
+    body: solicitudNuevaToCrearRequest(normalizada),
   })
   return solicitudResponseToSolicitud(dto, 'postulante')
 }

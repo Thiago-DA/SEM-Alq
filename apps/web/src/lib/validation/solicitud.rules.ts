@@ -15,7 +15,7 @@
  * `components/mis-solicitudes/*`.
  */
 import type { FormRule } from 'antd'
-import type { EstadoSolicitud, GarantiaOfrecida, OcupacionPostulante } from '@rentar/shared-types'
+import type { EstadoSolicitud, GarantiaOfrecida, OcupacionPostulante, SolicitudNueva } from '@rentar/shared-types'
 
 /**
  * Largo máximo del mensaje opcional al locador (US-35 actualizada: "se puede
@@ -365,3 +365,22 @@ export function reglasGarantias(exigidas: readonly GarantiaOfrecida[]): FormRule
 export const reglasAceptacion: FormRule[] = [
   { validator: (_rule, value?: boolean) => (value === true ? Promise.resolve() : Promise.reject(new Error(MENSAJES_SOLICITUD.aceptacion))) },
 ]
+
+/**
+ * Valida una solicitud completa con las mismas reglas que el formulario. La
+ * usa el service (las dos ramas) para responder como el back: el front
+ * valida para ayudar, no para proteger (TODO(backend): repetirlas).
+ * @param exigidas Las garantías que exige la propiedad (`requiredGuarantees`).
+ * @returns el primer mensaje de error, o `null` si está bien.
+ */
+export function errorDeSolicitudNueva(nueva: SolicitudNueva, exigidas: readonly GarantiaOfrecida[]): string | null {
+  if (!mensajeSolicitudValido(nueva.message)) return SOLICITUD_MENSAJE_LARGO_MESSAGE
+  if (!TELEFONO_E164_REGEX.test(nueva.contact.phone)) return MENSAJES_SOLICITUD.telefonoLargo
+  if (!emailValido(nueva.contact.email)) return MENSAJES_SOLICITUD.emailInvalido
+  if (!ingresosValidos(nueva.legajo.monthlyIncome)) return MENSAJES_SOLICITUD.ingresosInvalidos
+  if (!convivientesValidos(nueva.legajo.residents)) return MENSAJES_SOLICITUD.convivientesMinimo
+  if ((nueva.legajo.petsDetail?.length ?? 0) > MASCOTAS_DETALLE_MAX) return MENSAJES_SOLICITUD.mascotasLargo
+  if (!garantiasCumplen(nueva.legajo.guarantees, exigidas)) return MENSAJES_SOLICITUD.garantiasExigidas
+  if (nueva.acceptedTerms !== true) return MENSAJES_SOLICITUD.aceptacion
+  return null
+}
