@@ -59,6 +59,35 @@ export interface SolicitudMock {
   legajo?: LegajoSolicitud
 }
 
+// ─── Contacto y legajo (US-35 actualizada) ──────────────────────────────
+// Datos completados en la tanda 4 del Sprint 2 (ver README, "Datos
+// completados"): el mapa no los define. El contacto es el de cada cuenta del
+// elenco, con el teléfono en E.164.
+
+const CONTACTO_JULIETA: ContactoSolicitud = { phone: '+543515550103', email: 'julieta.peralta@rentar.test' }
+const CONTACTO_MATIAS: ContactoSolicitud = { phone: '+543515550104', email: 'matias.quiroga@rentar.test' }
+const CONTACTO_DIEGO: ContactoSolicitud = { phone: '+543515550105', email: 'diego.ferreyra@rentar.test' }
+
+/** Julieta: trabaja en relación de dependencia y se muda con su pareja; ofrece la garantía propietaria de su madre. */
+const LEGAJO_JULIETA: LegajoSolicitud = {
+  occupation: 'relacion_dependencia',
+  monthlyIncome: 1250000,
+  residents: 2,
+  hasPets: false,
+  petsDetail: null,
+  guarantees: ['propietaria'],
+}
+
+/** Matías: estudiante de posgrado; prefiere no informar ingresos y ofrece seguro de caución. */
+const LEGAJO_MATIAS: LegajoSolicitud = {
+  occupation: 'estudiante',
+  monthlyIncome: 0,
+  residents: 1,
+  hasPets: false,
+  petsDetail: null,
+  guarantees: ['caucion'],
+}
+
 // ─── Solicitudes del elenco ─────────────────────────────────────────────
 
 export const solicitudes: SolicitudMock[] = [
@@ -74,6 +103,8 @@ export const solicitudes: SolicitudMock[] = [
     status: 'pendiente',
     createdAt: '2026-09-20',
     respondedAt: null,
+    contact: CONTACTO_JULIETA,
+    legajo: LEGAJO_JULIETA,
   },
 
   // ─── Tanda 2 del Sprint 2 (datos completados, ver README) ─────────────
@@ -87,6 +118,8 @@ export const solicitudes: SolicitudMock[] = [
     status: 'pendiente',
     createdAt: '2026-09-19T18:40:00',
     respondedAt: null,
+    contact: CONTACTO_MATIAS,
+    legajo: LEGAJO_MATIAS,
   },
   {
     id: 'SOL-2026-0033',
@@ -97,6 +130,8 @@ export const solicitudes: SolicitudMock[] = [
     status: 'rechazada',
     createdAt: '2026-09-02T10:15:00',
     respondedAt: '2026-09-04T09:30:00',
+    contact: CONTACTO_DIEGO,
+    legajo: { occupation: 'monotributista', monthlyIncome: 900000, residents: 1, hasPets: false, petsDetail: null, guarantees: ['propietaria'] },
   },
   // Fructuoso Rivera 785: la aceptada de Diego (US-38: Nicolás la puede
   // cancelar; mientras esté, el "Aceptar" de otra pendiente queda
@@ -110,6 +145,16 @@ export const solicitudes: SolicitudMock[] = [
     status: 'aceptada',
     createdAt: '2026-09-12T20:05:00',
     respondedAt: '2026-09-14T11:00:00',
+    contact: CONTACTO_DIEGO,
+    // Fructuoso Rivera 785 es apta mascotas: Diego declara su perro (la única del elenco con mascotas).
+    legajo: {
+      occupation: 'monotributista',
+      monthlyIncome: 950000,
+      residents: 2,
+      hasPets: true,
+      petsDetail: 'Un perro mediano, adulto, vacunado y castrado. Duerme adentro y no ladra cuando queda solo.',
+      guarantees: ['propietaria'],
+    },
   },
   {
     id: 'SOL-2026-0035',
@@ -120,6 +165,8 @@ export const solicitudes: SolicitudMock[] = [
     status: 'cancelada',
     createdAt: '2026-09-08T16:20:00',
     respondedAt: '2026-09-10T08:45:00',
+    contact: CONTACTO_MATIAS,
+    legajo: LEGAJO_MATIAS,
   },
   // Mis solicitudes de Julieta: una de cada estado, sobre publicadas de
   // otros locadores (no aparecen en el panel de nadie del elenco).
@@ -132,6 +179,8 @@ export const solicitudes: SolicitudMock[] = [
     status: 'aceptada',
     createdAt: '2026-09-15T21:10:00',
     respondedAt: '2026-09-21T12:30:00',
+    contact: CONTACTO_JULIETA,
+    legajo: LEGAJO_JULIETA,
   },
   {
     id: 'SOL-2026-0037',
@@ -142,6 +191,8 @@ export const solicitudes: SolicitudMock[] = [
     status: 'rechazada',
     createdAt: '2026-09-05T19:00:00',
     respondedAt: '2026-09-08T10:00:00',
+    contact: CONTACTO_JULIETA,
+    legajo: LEGAJO_JULIETA,
   },
   {
     id: 'SOL-2026-0038',
@@ -152,5 +203,7 @@ export const solicitudes: SolicitudMock[] = [
     status: 'cancelada',
     createdAt: '2026-09-10T22:30:00',
     respondedAt: '2026-09-12T09:15:00',
+    contact: CONTACTO_JULIETA,
+    legajo: LEGAJO_JULIETA,
   },
 ]

@@ -105,6 +105,15 @@ reclamos no se escriben en la propiedad: se calculan a partir de los cobros y re
   cancele la de Diego (US-38).
 - **Mis solicitudes de Julieta** (`/panel/mis-solicitudes`): los cuatro estados (0031, 0036, 0037
   y 0038). Las tres de otros locadores no aparecen en el panel de nadie del elenco.
+- **Contacto y legajo (US-35 actualizada, tanda 4 del Sprint 2):** las ocho tienen el contacto de su
+  cuenta (teléfono en E.164) y un legajo. Julieta (0031 y 0036 a 0038): relación de dependencia,
+  $1.250.000, 2 personas, sin mascotas, garantía propietaria. Matías (0032 y 0035): estudiante, no
+  informa ingresos, 1 persona, seguro de caución. Diego: monotributista, garantía propietaria; en
+  0033 (Rondeau), $900.000 y 1 persona; en 0034 (Fructuoso Rivera, apta mascotas), $950.000,
+  2 personas y **un perro**: la única del elenco con mascotas, para probar ese bloque. Las enviadas
+  desde el navegador antes de esta tanda se muestran "Sin datos de legajo".
+- **Garantías que exige el locador:** Rondeau 480 pide garantía propietaria o seguro de caución
+  (alcanza con una); Fructuoso Rivera 785 no pide ninguna. El alta todavía no carga este dato.
 - **Postulantes nuevos (no están en el mapa):** Matías Quiroga (`matias.quiroga@rentar.test`) y
   Diego Ferreyra (`diego.ferreyra@rentar.test`), locatarios, contraseña `Rentar2026`. Se sumaron
   en la tanda 2 del Sprint 2 con el OK del PO, con nombres del diseño ("Flujo de solicitudes ·
@@ -141,3 +150,5 @@ otros valores, ganan ellos.
 | Solicitud de Julieta | SOL-2026-0031, del 20/09/2026 | `solicitudes.mock.ts` |
 | Solicitudes de la tanda 2 (Sprint 2) | SOL-2026-0032 a 0038: postulantes, estados, fechas y los dos mensajes, elegidos para cubrir los cuatro estados y la regla de una sola aceptada | `solicitudes.mock.ts` |
 | Postulantes nuevos (Sprint 2) | Matías Quiroga y Diego Ferreyra, con su email, DNI, teléfono y fecha de nacimiento | `usuarios.mock.ts` |
+| Contacto y legajo de SOL-2026-0031 a 0038 (Sprint 2, tanda 4) | Ocupación, ingresos, personas, mascotas y garantías de cada postulante (ver "Las solicitudes") | `solicitudes.mock.ts` |
+| Garantías que exige Rondeau 480 (Sprint 2, tanda 4) | Propietaria o caución | `requiredGuarantees` en `propiedades.mock.ts` |

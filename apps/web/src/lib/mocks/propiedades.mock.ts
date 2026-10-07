@@ -377,6 +377,9 @@ const elenco: PropiedadMock[] = [
     graceDays: 5,
     contractMonths: 36,
     depositMonths: 1,
+    // US-35 actualizada: el dueño pide garantía propietaria o seguro de caución
+    // (alcanza con una). Dato completado en la tanda 4 del Sprint 2.
+    requiredGuarantees: ['propietaria', 'caucion'],
     rental: null,
   },
   {
