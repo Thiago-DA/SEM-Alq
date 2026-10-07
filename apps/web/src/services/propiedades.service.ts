@@ -5,14 +5,17 @@
  * Cada función tiene dos ramas: la mock (activa hoy, datos del elenco de
  * `lib/mocks/`) y la llamada real a `apps/api`; el interruptor es
  * `NEXT_PUBLIC_USE_MOCKS` (ver `shared/config.ts`).
- * Cubre: US-34 Consultar propiedades a alquilar, US-02 Consultar mis
- * propiedades y US-01 Registrar mis propiedades.
+ * Cubre: US-34 Consultar propiedades a alquilar, US-41 Consultar detalle de
+ * propiedad, US-02 Consultar mis propiedades y US-01 Registrar mis
+ * propiedades (y deja firmadas US-03 Modificar y US-04 Eliminar, tanda 3
+ * del Sprint 2).
  *
  * NOTA: `/buscar` y el panel llaman a este service desde el navegador (no
  * desde el servidor), así en modo mock también ven las propiedades creadas
  * en el alta, que viven en `localStorage` (ver `shared/mockStore.ts`).
- * Quién lo usa: la landing (`app/(public)/page.tsx`), `/buscar`, `/panel`,
- * `/panel/propiedades` y `/panel/propiedades/nueva`.
+ * Quién lo usa: la landing (`app/(public)/page.tsx`), `/buscar`,
+ * `/propiedad/[id]`, `/panel`, `/panel/propiedades` y
+ * `/panel/propiedades/nueva`.
  */
 import type {
   BusquedaFiltros,
@@ -23,25 +26,27 @@ import type {
   OrdenBusqueda,
   Paginado,
   PropertyStatus,
+  PropiedadDetalle,
   PropiedadLocador,
   PropiedadNueva,
   PropiedadResumen,
   UbicacionOpciones,
 } from '@rentar/shared-types'
 import { getSupabaseBrowserClient } from '@/lib/auth/supabase/client'
-import { buscarEnLista, ubicacionesDe } from '@/lib/search/busqueda'
+import { buscarEnLista, FILTROS_INICIALES, ubicacionesDe } from '@/lib/search/busqueda'
 import { cobros as cobrosElenco, propiedades as propiedadesElenco, reclamos as reclamosElenco, type PropiedadMock } from '@/lib/mocks'
 import { hoy } from '@/lib/utils/fechas'
 import { FOTO_PESO_MAXIMO_BYTES, FOTO_TIPOS_ACEPTADOS } from '@/lib/validation/propiedad.rules'
-import { isSearchable, propiedadMockToLocador, propiedadMockToResumen, propiedadNuevaToMock } from './adapters/propiedad-mock.adapter'
+import { isSearchable, propiedadMockToDetalle, propiedadMockToLocador, propiedadMockToResumen, propiedadNuevaToMock } from './adapters/propiedad-mock.adapter'
 import {
   estadoDePropiedadNueva,
+  inmuebleDetalleToPropiedadDetalle,
   inmuebleDisponibleToPropiedadResumen,
   misAlquileresItemToPropiedadLocador,
   propiedadNuevaToCreateInmueble,
 } from './adapters/propiedad.adapter'
 import { apiRequest } from './shared/apiClient'
-import type { DisponiblesQuery, InmueblesDisponiblesResponse } from './shared/backend-dtos'
+import type { DisponiblesQuery, InmuebleDetalleResponse, InmueblesDisponiblesResponse } from './shared/backend-dtos'
 import { USE_MOCKS } from './shared/config'
 import { delay } from './shared/delay'
 import { ServiceError } from './shared/errors'
@@ -173,6 +178,72 @@ export async function contarPropiedades(filtros: BusquedaFiltros): Promise<numbe
  */
 export async function listarUbicaciones(): Promise<UbicacionOpciones> {
   return ubicacionesDe(await listarPropiedadesPublicadas())
+}
+
+// ─── Detalle público (US-41) ────────────────────────────────────────────
+
+/** Mensaje si la publicación no existe o ya no se muestra (Detalle de propiedad · 04). */
+export const PROPIEDAD_NO_ENCONTRADA_MESSAGE = 'Esta publicación ya no está disponible.'
+
+/** Cuántas "Propiedades similares" muestra el detalle (Detalle de propiedad · 01). */
+const CANTIDAD_SIMILARES = 3
+
+/**
+ * US-41 Consultar detalle de propiedad — una publicación con todo lo que
+ * muestra `/propiedad/[id]`. Accesible con y sin sesión.
+ * @backend GET /api/v1/inmuebles/disponibles/:id   (existe · público; 400 id inválido, 404 si no existe o no está disponible)
+ * @returns PropiedadDetalle
+ * @throws {ServiceError} `not_found` con {@link PROPIEDAD_NO_ENCONTRADA_MESSAGE}
+ *   si no existe (o el id no es válido); `network` / `server` si falla la red
+ *   o el back (la pantalla ofrece "Reintentar").
+ * TODO(backend): faltan dueño, estado, condiciones del contrato, medios de
+ * pago y "si el usuario ya la solicitó" (ver
+ * `propiedad.adapter.ts#inmuebleDetalleToPropiedadDetalle` y
+ * `HANDOFF-BACKEND.md` §7, US-41).
+ *
+ * NOTA: en modo mock también se abre una alquilada sin fecha o pausada (con
+ * `availability: 'no_disponible'`, "Ya no está disponible"); el back real
+ * responde 404 para esas.
+ */
+export async function getPropiedad(id: string): Promise<PropiedadDetalle> {
+  if (USE_MOCKS) {
+    await delay()
+    const propiedad = readPropiedadesMock().find((item) => item.id === id)
+    if (!propiedad) throw new ServiceError('not_found', PROPIEDAD_NO_ENCONTRADA_MESSAGE)
+    // Dueño: nombre solo si está en el elenco de cuentas (Nicolás, Sofía); si no, "el dueño".
+    const cuenta = readUsuariosMock().find((usuario) => usuario.id === propiedad.ownerId)
+    const fullName = cuenta ? `${cuenta.nombre} ${cuenta.apellido}` : null
+    return propiedadMockToDetalle(propiedad, { id: propiedad.ownerId, fullName })
+  }
+  try {
+    const dto = await apiRequest<InmuebleDetalleResponse>(`/inmuebles/disponibles/${encodeURIComponent(id)}`)
+    return inmuebleDetalleToPropiedadDetalle(dto)
+  } catch (error) {
+    // 400 (id que no es un número, ej. un link viejo de modo mock) y 404 se ven igual: no existe.
+    if (error instanceof ServiceError && (error.code === 'not_found' || error.code === 'validation')) {
+      throw new ServiceError('not_found', PROPIEDAD_NO_ENCONTRADA_MESSAGE)
+    }
+    throw error
+  }
+}
+
+/**
+ * US-41 — "Propiedades similares": otras publicadas del mismo barrio (hasta
+ * {@link CANTIDAD_SIMILARES}), sin la que se está mirando.
+ * @backend GET /api/v1/inmuebles/disponibles   (existe · se filtra en el cliente, ver `buscarPropiedades`)
+ * @returns PropiedadResumen[] (vacío si no hay o la propiedad no tiene barrio)
+ *
+ * NOTA: reutiliza la búsqueda de `/buscar` (mismo filtro por barrio, orden
+ * predeterminado). Con el back real trae todas las disponibles (~2,7 s): la
+ * pantalla la pide aparte, sin frenar el detalle.
+ * TODO(backend): cuando `/disponibles` respete `barrio` y `limit`, pedir solo
+ * las del barrio.
+ */
+export async function listarSimilares(propiedad: Pick<PropiedadDetalle, 'id' | 'neighborhoodSlug'>): Promise<PropiedadResumen[]> {
+  if (!propiedad.neighborhoodSlug) return []
+  const filtros = { ...FILTROS_INICIALES, neighborhoodSlugs: [propiedad.neighborhoodSlug] }
+  const resultado = await buscarPropiedades(filtros, 'predeterminado', 1)
+  return resultado.items.filter((item) => item.id !== propiedad.id).slice(0, CANTIDAD_SIMILARES)
 }
 
 // ─── Mis propiedades (US-02) ────────────────────────────────────────────
@@ -431,4 +502,44 @@ export async function cambiarEstadoPublicacion(propiedadId: string, estado: 'pub
     return
   }
   await apiRequest<void>(`/inmuebles/${encodeURIComponent(propiedadId)}/publicacion`, { method: 'PATCH', body: { activa: estado === 'publicada' } })
+}
+
+// ─── Modificar y eliminar (US-03, US-04) · tanda 3 del Sprint 2 ─────────
+
+/**
+ * US-03 Modificar mis propiedades — actualiza una propiedad del locador en
+ * sesión.
+ * @backend PUT /api/v1/inmuebles/:id   (existe · token + rol locador)
+ * @returns void
+ *
+ * NOTA: `cambios` es `unknown` a propósito: qué campos se pueden modificar y
+ * con qué forma se definen en la tanda 3, contra los criterios de US-03 y el
+ * body que acepta el back. Hasta entonces no se adapta nada y ninguna
+ * pantalla la usa.
+ * TODO: tipar `cambios` y armar su adaptador en la tanda 3 (US-03).
+ */
+export async function actualizarPropiedad(propiedadId: string, cambios: unknown): Promise<void> {
+  if (USE_MOCKS) {
+    await delay()
+    throw new ServiceError('server', 'Modificar propiedades llega en la tanda 3 del Sprint 2.')
+  }
+  await apiRequest<unknown>(`/inmuebles/${encodeURIComponent(propiedadId)}`, { method: 'PUT', body: cambios })
+}
+
+/**
+ * US-04 Eliminar mis propiedades — elimina una propiedad del locador en
+ * sesión.
+ * @backend DELETE /api/v1/inmuebles/:id   (existe · token + rol locador; 404 si no existe)
+ * @returns void
+ *
+ * NOTA: ninguna pantalla la usa todavía. Las reglas (por ejemplo, qué pasa
+ * con una alquilada o con solicitudes pendientes) se revisan en la tanda 3
+ * contra US-04.
+ */
+export async function eliminarPropiedad(propiedadId: string): Promise<void> {
+  if (USE_MOCKS) {
+    await delay()
+    throw new ServiceError('server', 'Eliminar propiedades llega en la tanda 3 del Sprint 2.')
+  }
+  await apiRequest<void>(`/inmuebles/${encodeURIComponent(propiedadId)}`, { method: 'DELETE' })
 }

@@ -7,8 +7,8 @@
  * y `PropiedadResumen` / `PropiedadLocador` / `PropiedadNueva` (tipos de
  * vista). Cada función comenta, campo por campo, lo que el back todavía no
  * devuelve o guarda distinto.
- * Cubre: US-34 (`PropiedadResumen`), US-02 (`PropiedadLocador`) y US-01
- * (`PropiedadNueva` → cuerpo de `POST /inmuebles`).
+ * Cubre: US-34 (`PropiedadResumen`), US-41 (`PropiedadDetalle`), US-02
+ * (`PropiedadLocador`) y US-01 (`PropiedadNueva` → cuerpo de `POST /inmuebles`).
  * Quién lo usa: la rama real de `services/propiedades.service.ts`.
  */
 import type {
@@ -22,12 +22,13 @@ import type {
   PropertyStatus,
   PropertyType,
   PropiedadLocador,
+  PropiedadDetalle,
   PropiedadNueva,
   PropiedadResumen,
 } from '@rentar/shared-types'
 import { neighborhoods } from '@/lib/catalogs/neighborhoods'
 import { PLACEHOLDER_PHOTO_SRC } from '@/lib/imagenes/fotoConRespaldo'
-import type { InmuebleDisponibleResponse } from '../shared/backend-dtos'
+import type { InmuebleDetalleResponse, InmuebleDisponibleResponse } from '../shared/backend-dtos'
 import { formatApproxAddress, formatFloorUnit } from './direccion'
 
 /**
@@ -320,6 +321,92 @@ export function inmuebleDisponibleToPropiedadResumen(item: InmuebleDisponibleRes
     photoSrcs: [foto],
     publishedAt: '',
     status: item.fecha_disponible ? 'alquilada_publicada' : 'publicada',
+  }
+}
+
+// ─── Detalle → PropiedadDetalle (US-41) ─────────────────────────────────
+
+/**
+ * Un monto del detalle (`precio`, `expensas`) → número o `null`.
+ * TODO(backend): sin contrato, el back mandaba `-1` y desde el 29/09 manda
+ * `null` (`inmuebleService.getById`). Se aceptan los dos (y cualquier
+ * negativo) como "no informado" hasta que el back confirme que ya no manda
+ * `-1`. La pantalla muestra "Consultar" en vez del precio.
+ */
+function montoONull(valor: number | string | null | undefined): number | null {
+  if (valor === null || valor === undefined) return null
+  const numero = aNumero(valor)
+  return numero < 0 ? null : numero
+}
+
+/**
+ * Respuesta de `GET /api/v1/inmuebles/disponibles/:id` → `PropiedadDetalle`
+ * (`/propiedad/[id]`, US-41).
+ *
+ * Campo por campo:
+ * - `title`: el back no tiene título; se arma con el tipo y los ambientes
+ *   (igual que la tarjeta de `/buscar`).
+ * - `address`: APROXIMADA ("Rondeau al 400"), nunca la altura ni el piso
+ *   (NOTA de privacidad de `PropiedadDetalle`).
+ * - `priceMonthly` / `expenses`: `null` si no vienen o vienen en `-1` (ver
+ *   {@link montoONull}).
+ * - `photoSrcs`: todas las fotos, la principal primero y el resto por
+ *   `orden`; si no tiene, el placeholder.
+ * - `status`: TODO(backend): el detalle no devuelve `estado_alquiler`. La
+ *   ruta solo responde las disponibles (404 si no), así que se deduce: con
+ *   `fecha_disponible` → `alquilada_publicada`; sin fecha → `publicada`. Por
+ *   eso, con el back real, una que ya no está disponible llega como 404
+ *   (pantalla "Esta publicación ya no está disponible").
+ * - `publishedAt`: TODO(db): el back no guarda la fecha de publicación; `''`.
+ * - `owner`: TODO(backend): el detalle no trae el dueño (id y nombre). Sin
+ *   él, la tarjeta va sin nombre ("el dueño") y el front no puede saber si la
+ *   publicación es propia (el back tiene que rechazar esa solicitud).
+ * - `conditions`: TODO(backend): faltan plazo, frecuencia de ajuste y
+ *   depósito del contrato (`duracion_meses`, `frecuencia_ajuste`,
+ *   `deposito`). Con `null`, la sección "Condiciones del contrato" no se muestra.
+ * - `paymentMethods`: TODO(backend): faltan los medios de pago del contrato
+ *   (con su recargo). Con `null`, la sección "Cómo se paga" no se muestra.
+ */
+export function inmuebleDetalleToPropiedadDetalle(dto: InmuebleDetalleResponse): PropiedadDetalle {
+  const type = propertyTypeFromTipoId(dto.tipo.id)
+  const barrio = barrioDe(dto.barrio)
+  const characteristics = dto.tags
+    .map((tag) => CHARACTERISTIC_BY_TAG_ID[tag.id] ?? characteristicFromTagDescripcion(tag.descripcion))
+    .filter((key): key is CharacteristicKey => Boolean(key))
+  const fotos = [...dto.fotos]
+    .sort((a, b) => Number(b.es_principal) - Number(a.es_principal) || (a.orden ?? 0) - (b.orden ?? 0))
+    .map((foto) => foto.url)
+  const photoSrcs = fotos.length > 0 ? fotos : [PLACEHOLDER_PHOTO_SRC]
+  const status: PropertyStatus = dto.fecha_disponible ? 'alquilada_publicada' : 'publicada'
+
+  return {
+    id: String(dto.id),
+    title: tituloDePropiedadNueva({ type, rooms: dto.ambientes }),
+    address: formatApproxAddress(dto.direccion, dto.numero),
+    province: dto.provincia,
+    city: normalizarCiudad(dto.ciudad),
+    neighborhoodSlug: barrio.slug,
+    neighborhoodName: barrio.name,
+    type,
+    priceMonthly: montoONull(dto.precio),
+    expenses: montoONull(dto.expensas),
+    bedrooms: dto.dormitorios,
+    rooms: dto.ambientes,
+    bathrooms: dto.banos,
+    areaM2: aNumero(dto.m2_totales),
+    coveredAreaM2: aNumero(dto.m2_cubiertos),
+    adjustmentIndex: dto.indice_ajuste ? adjustmentIndexFromId(dto.indice_ajuste.id) : null,
+    characteristics: [...new Set(characteristics)],
+    description: dto.descripcion ?? '',
+    availableFrom: dto.fecha_disponible ?? null,
+    imageSrc: photoSrcs[0],
+    photoSrcs,
+    publishedAt: '',
+    status,
+    availability: 'disponible',
+    owner: null,
+    conditions: null,
+    paymentMethods: null,
   }
 }
 
