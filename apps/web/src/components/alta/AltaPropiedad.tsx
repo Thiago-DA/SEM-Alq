@@ -138,7 +138,7 @@ function esErrorDeValidacion(error: unknown): error is { errorFields: { name: (s
 /** Alta de una propiedad del locador en sesión. */
 export function AltaPropiedad() {
   const router = useRouter()
-  const { activeRole, refrescarUsuario } = useAuth()
+  const { activeRole, refrescarUsuario, logout } = useAuth()
   const [form] = Form.useForm<AltaValues>()
   const valores = (Form.useWatch([], form) as AltaValues | undefined) ?? ALTA_VALORES_INICIALES
 
@@ -236,6 +236,18 @@ export function AltaPropiedad() {
     } catch {
       return activeRole === 'locador'
     }
+  }
+
+  /**
+   * 401 al publicar (US-01: "se debe haber iniciado sesión"): vuelve a pedir el
+   * login y retoma en el alta (`/login?next=/panel/propiedades/nueva`).
+   * NOTA: primero se cierra la sesión que quedó en memoria (`logout({ quedarse:
+   * true })`): si no, `/login` todavía ve al usuario y lo devuelve al alta sin
+   * pedirle nada (mismo arreglo que el modal "Solicitar alquiler", US-35).
+   */
+  function ingresarDeNuevo(): void {
+    logout({ quedarse: true })
+    router.push(`/login?next=${encodeURIComponent('/panel/propiedades/nueva')}`)
   }
 
   function publicarOtra(): void {
@@ -380,10 +392,18 @@ export function AltaPropiedad() {
         {fase === 'error' && errorPublicacion && (
           <div className={styles.publishError} role="alert" data-testid="alta-error-publicar">
             <span className={styles.publishErrorTitle}>{publicada ? 'No pudimos publicarla' : 'No pudimos guardarla'}</span>
-            <span className={styles.publishErrorText}>{errorPublicacion.message} Tus datos siguen acá: no perdiste nada.</span>
+            <span className={styles.publishErrorText}>
+              {errorPublicacion.message}{' '}
+              {errorPublicacion.code !== 'unauthorized'
+                ? 'Tus datos siguen acá: no perdiste nada.'
+                : // Los datos del alta viven solo en memoria: al ir al login se pierden, y se avisa antes.
+                  form.isFieldsTouched()
+                  ? 'Al ingresar de nuevo, los datos que cargaste se pierden y el alta vuelve a empezar.'
+                  : ''}
+            </span>
             <div className={styles.publishErrorActions}>
               {errorPublicacion.code === 'unauthorized' ? (
-                <Button type="primary" onClick={() => router.push('/login?next=/panel/propiedades/nueva')} data-testid="alta-error-login">
+                <Button type="primary" onClick={ingresarDeNuevo} data-testid="alta-error-login">
                   Iniciar sesión
                 </Button>
               ) : (
