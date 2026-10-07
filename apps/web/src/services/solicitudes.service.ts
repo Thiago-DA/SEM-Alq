@@ -150,6 +150,7 @@ export async function enviarSolicitud(nueva: SolicitudNueva): Promise<Solicitud>
       status: 'pendiente',
       // "Hoy" del elenco (23/09/2026) con la hora actual, así ordena después de las del día.
       createdAt: hoy().hour(new Date().getHours()).minute(new Date().getMinutes()).format('YYYY-MM-DDTHH:mm:ss'),
+      respondedAt: null,
     }
     if (!saveMockRecord('solicitudes', solicitud)) throw new ServiceError('server', MOCK_STORAGE_FULL_MESSAGE)
     return aVista(solicitud)

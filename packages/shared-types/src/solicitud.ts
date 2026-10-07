@@ -33,8 +33,17 @@ export interface Solicitud {
   id: string
   property: {
     id: string
-    /** Dirección de la propiedad (US-36: la ve el locatario). */
+    /**
+     * Dirección de la propiedad (US-36: la ve el locatario). Depende de quién
+     * mira: EXACTA para el locador en Solicitudes recibidas ("Rondeau 480,
+     * PB": es su propia propiedad) y APROXIMADA para el postulante en Mis
+     * solicitudes ("Rondeau al 400"), igual que en la zona pública.
+     */
     address: string
+    /** Slug del barrio, para el atajo "Ver propiedades en <barrio>" (ej. `guemes`); `''` si no se conoce. */
+    neighborhoodSlug: string
+    /** Nombre visible del barrio (US-36), ej. "Güemes"; `''` si no se conoce. */
+    neighborhoodName: string
     /** Foto principal (US-36: "la imagen principal de la propiedad"). */
     imageSrc: string
   }
@@ -48,6 +57,14 @@ export interface Solicitud {
   status: EstadoSolicitud
   /** Fecha y hora ISO de envío. */
   createdAt: string
+  /**
+   * Fecha y hora ISO en que dejó de estar pendiente (se aceptó, se rechazó o
+   * se canceló); `null` mientras está pendiente. Arma la línea que explica el
+   * estado ("Aceptada el 14/09", "Te aceptaron hace 2 días").
+   * NOTA: si una aceptada se cancela (US-38), pasa a ser la fecha de la
+   * cancelación.
+   */
+  respondedAt: string | null
 }
 
 /** Lo que manda el modal "Solicitar alquiler" (US-35). El postulante sale de la sesión. */

@@ -27,11 +27,15 @@ export function solicitudMockToSolicitud(solicitud: SolicitudMock, propiedad: Pr
     property: {
       id: solicitud.propertyId,
       address: propiedad ? formatApproxAddress(propiedad.street, propiedad.streetNumber) : '',
+      neighborhoodSlug: propiedad?.neighborhoodSlug ?? '',
+      neighborhoodName: propiedad?.neighborhoodName ?? '',
       imageSrc: (propiedad && mainPhotoSrc(propiedad)) || PLACEHOLDER_PHOTO_SRC,
     },
     applicant: { id: solicitud.applicantUserId, fullName: solicitud.applicantName },
     message: solicitud.message,
     status: solicitud.status,
     createdAt: solicitud.createdAt,
+    // `?? null`: las enviadas en el navegador antes de la tanda 2 no tienen el campo.
+    respondedAt: solicitud.respondedAt ?? null,
   }
 }

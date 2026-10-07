@@ -14,6 +14,7 @@ import type { Solicitud, SolicitudNueva } from '@rentar/shared-types'
 import { PLACEHOLDER_PHOTO_SRC } from '@/lib/imagenes/fotoConRespaldo'
 import type { CrearSolicitudRequest, SolicitudResponse } from '../shared/backend-dtos'
 import { formatApproxAddress } from './direccion'
+import { barrioDe } from './propiedad.adapter'
 
 /**
  * `SolicitudResponse` → `Solicitud`.
@@ -23,16 +24,22 @@ import { formatApproxAddress } from './direccion'
  *   la zona pública. NOTA: el diseño muestra la exacta en Mis solicitudes;
  *   cuándo se le revela al postulante (¿al aceptar?) se define en la tanda 2
  *   con US-36. Mientras tanto no se expone.
+ * - `property.neighborhoodSlug` / `neighborhoodName`: `inmueble.barrio` (texto
+ *   libre), con el slug del catálogo si lo tiene (`barrioDe`).
  * - `property.imageSrc`: `foto_principal`, o el placeholder si no tiene fotos.
  * - `applicant.fullName`: "Nombre Apellido".
  * - `message`: `null` si vino vacío.
+ * - `respondedAt`: `fecha_respuesta` (TODO(backend): la columna no existe).
  */
 export function solicitudResponseToSolicitud(dto: SolicitudResponse): Solicitud {
+  const barrio = barrioDe(dto.inmueble.barrio)
   return {
     id: String(dto.id),
     property: {
       id: String(dto.inmueble.id),
       address: formatApproxAddress(dto.inmueble.direccion, dto.inmueble.numero),
+      neighborhoodSlug: barrio.slug,
+      neighborhoodName: barrio.name,
       imageSrc: dto.inmueble.foto_principal ?? PLACEHOLDER_PHOTO_SRC,
     },
     applicant: {
@@ -42,6 +49,7 @@ export function solicitudResponseToSolicitud(dto: SolicitudResponse): Solicitud 
     message: dto.mensaje?.trim() ? dto.mensaje : null,
     status: dto.estado,
     createdAt: dto.fecha_creacion,
+    respondedAt: dto.fecha_respuesta ?? null,
   }
 }
 

@@ -172,8 +172,9 @@ function slugDe(nombre: string): string {
  * Si está en el catálogo del piloto (`lib/catalogs/neighborhoods.ts`), se
  * usa ese; si no (ej. "Alberdi"), se arma el slug a partir del nombre.
  * TODO(db): acordar un catálogo de barrios (id + nombre) en vez de texto libre.
+ * Lo usa también `solicitud.adapter.ts` (barrio de la propiedad solicitada).
  */
-function barrioDe(barrio: string | null | undefined): { slug: string; name: string } {
+export function barrioDe(barrio: string | null | undefined): { slug: string; name: string } {
   const nombre = barrio?.trim() ?? ''
   if (!nombre) return { slug: '', name: '' }
   const slug = slugDe(nombre)

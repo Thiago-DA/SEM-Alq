@@ -188,6 +188,13 @@ export interface SolicitudResponse {
   mensaje: string | null
   /** Fecha y hora ISO de envío. */
   fecha_creacion: string
+  /**
+   * Fecha y hora ISO en que dejó de estar pendiente (aceptada, rechazada o
+   * cancelada); `null` mientras está pendiente.
+   * TODO(backend): sumar la columna y devolverla (Mis solicitudes y
+   * Solicitudes recibidas muestran "Aceptada el 14/09").
+   */
+  fecha_respuesta: string | null
   inmueble: {
     id: number
     direccion: string

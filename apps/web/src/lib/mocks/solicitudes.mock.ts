@@ -42,6 +42,8 @@ export interface SolicitudMock {
   status: EstadoSolicitud
   /** Fecha (o fecha y hora) ISO en que se envió. */
   createdAt: string
+  /** Fecha (o fecha y hora) ISO en que dejó de estar pendiente; `null` si sigue pendiente. */
+  respondedAt: string | null
 }
 
 // ─── Solicitudes del elenco ─────────────────────────────────────────────
@@ -58,5 +60,6 @@ export const solicitudes: SolicitudMock[] = [
     message: null,
     status: 'pendiente',
     createdAt: '2026-09-20',
+    respondedAt: null,
   },
 ]
