@@ -139,6 +139,14 @@ export interface PropiedadMock {
 
   /** Solo para propiedades alquiladas (US-02). */
   rental: AlquilerMock | null
+  /**
+   * Fecha ISO en que el locador la eliminó (US-04). Borrado LÓGICO
+   * (decisión del PO): la propiedad deja de verse en Mis propiedades, en
+   * `/buscar` y en su detalle, pero el registro queda para no perder el
+   * historial (las solicitudes canceladas siguen mostrando su dirección).
+   * Opcional: el elenco no tiene ninguna eliminada.
+   */
+  deletedAt?: string | null
 }
 
 // ─── Helpers de armado ──────────────────────────────────────────────────

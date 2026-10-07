@@ -268,3 +268,23 @@ export const ETIQUETA_CAMPO: Partial<Record<keyof AltaValues, string>> = {
   graceDays: 'Días de gracia',
   paymentMethods: 'Medios de pago',
 }
+
+// ─── Detalle y edición del locador (US-03, US-04) ───────────────────────
+
+/**
+ * Campos que fija el contrato vigente: con contrato, no se modifican desde
+ * la edición (Detalle de propiedad del locador · 06: "Con contrato vigente
+ * no se puede cambiar el precio ni el índice: eso vive en el contrato"; la
+ * frecuencia va con el índice).
+ */
+export const CAMPOS_FIJADOS_POR_CONTRATO = ['priceMonthly', 'adjustmentIndex', 'adjustmentEveryMonths'] as const satisfies readonly (keyof AltaValues)[]
+
+/**
+ * `true` si la propiedad se puede eliminar (US-04): no tiene contrato
+ * vigente (decisión del PO, tanda 3 del Sprint 2). El botón no se esconde:
+ * con contrato, abre el aviso que explica por qué no se puede.
+ */
+export function puedeEliminar(detalle: { activeContract: unknown }): boolean {
+  return detalle.activeContract === null
+}
+

@@ -38,7 +38,7 @@ import {
 } from '@/lib/validation/solicitud.rules'
 import { solicitudMockToSolicitud } from './adapters/solicitud-mock.adapter'
 import { solicitudNuevaToCrearRequest, solicitudResponseToSolicitud } from './adapters/solicitud.adapter'
-import { readPropiedadesMock } from './propiedades.service'
+import { readPropiedadesMock, readPropiedadesMockConBorradas } from './propiedades.service'
 import { apiRequest } from './shared/apiClient'
 import type { SolicitudResponse } from './shared/backend-dtos'
 import { USE_MOCKS } from './shared/config'
@@ -86,7 +86,8 @@ export function readSolicitudesMock(): SolicitudMock[] {
  * elige la dirección: exacta para el locador, aproximada para el postulante.
  */
 function aVista(solicitud: SolicitudMock, vista: ActorSolicitud): Solicitud {
-  const propiedad = readPropiedadesMock().find((item) => item.id === solicitud.propertyId) ?? null
+  // Con las eliminadas (US-04, borrado lógico): la solicitud cancelada sigue mostrando la dirección.
+  const propiedad = readPropiedadesMockConBorradas().find((item) => item.id === solicitud.propertyId) ?? null
   return solicitudMockToSolicitud(solicitud, propiedad, vista)
 }
 
@@ -255,7 +256,8 @@ export async function listarSolicitudesRecibidas(): Promise<Solicitud[]> {
   if (USE_MOCKS) {
     await delay()
     const userId = requireSessionUserId()
-    const propias = new Set(readPropiedadesMock().filter((item) => item.ownerId === userId).map((item) => item.id))
+    // Con las eliminadas: el locador conserva el historial (canceladas al eliminar, US-04).
+    const propias = new Set(readPropiedadesMockConBorradas().filter((item) => item.ownerId === userId).map((item) => item.id))
     return readSolicitudesMock()
       .filter((item) => propias.has(item.propertyId))
       .sort(masNuevasPrimero)
@@ -272,7 +274,7 @@ function solicitudPropiaMock(solicitudId: string): { solicitud: SolicitudMock; a
   const userId = requireSessionUserId()
   const solicitud = readSolicitudesMock().find((item) => item.id === solicitudId)
   if (!solicitud) throw new ServiceError('not_found', SOLICITUD_NO_ENCONTRADA_MESSAGE)
-  const propiedad = readPropiedadesMock().find((item) => item.id === solicitud.propertyId)
+  const propiedad = readPropiedadesMockConBorradas().find((item) => item.id === solicitud.propertyId)
   if (propiedad?.ownerId === userId) return { solicitud, actor: 'locador' }
   if (solicitud.applicantUserId === userId) return { solicitud, actor: 'postulante' }
   throw new ServiceError('not_found', SOLICITUD_NO_ENCONTRADA_MESSAGE)

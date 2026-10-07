@@ -12,6 +12,7 @@
  *
  * Quién lo usa: la rama real de los services y los adaptadores.
  */
+import type { EstadoAlquiler } from '@rentar/shared-types'
 
 /**
 /**
@@ -209,4 +210,71 @@ export interface SolicitudResponse {
     nombre: string
     apellido?: string | null
   }
+}
+
+// ─── Detalle de la propiedad del locador (US-03, US-04) · PROPUESTO ─────
+// NOTA: `GET /mis-alquileres/:id` no existe. Es la propuesta del front (ver
+// `docs/api-endpoints.md`, "Detalle de mi propiedad"): queda en la familia
+// de rutas que ya filtra por dueño y no se confunde con el detalle público.
+
+/**
+ * Un número que una columna `numeric` de Postgres puede mandar como texto
+ * ("360000.00"). Lo normaliza el adaptador.
+ */
+type NumericDto = number | string
+
+/**
+ * `GET /api/v1/mis-alquileres/:id` (no existe — propuesto): una propiedad
+ * del locador del token, con todo lo que cargó el alta. 404 si no es suya.
+ * Los nombres son los mismos que el cuerpo de `POST /inmuebles`
+ * (`CreateInmuebleCompletoPayload`), así el detalle y el `PUT` ampliado
+ * hablan el mismo idioma.
+ */
+export interface MisAlquileresDetalleResponse {
+  id_inmueble: number
+  tipo: number
+  descripcion: string | null
+  provincia: string
+  ciudad: string
+  barrio: string
+  /** Calle (dirección EXACTA: la ve solo el dueño). */
+  direccion: string
+  numero: number
+  piso: string | null
+  m2_totales: number
+  m2_cubiertos: number
+  ambientes: number
+  dormitorios: number
+  banos: number
+  antiguedad: number | null
+  precio_publicado: NumericDto
+  estado_alquiler: EstadoAlquiler
+  fecha_disponible: string | null
+  /** Fecha ISO de alta de la publicación. */
+  fecha_publicacion: string | null
+  /** Ids de `tags_inmueble`. */
+  tags: number[]
+  /** Fotos en orden, con la principal marcada. */
+  fotos: { url: string; es_principal: boolean; orden: number }[]
+  /** Las condiciones que cargó el alta (fila de `contrato` + medios de pago). */
+  condiciones_contrato: {
+    monto_alquiler: NumericDto
+    expensas: NumericDto
+    indice_aumento: number | null
+    frecuencia_ajuste: string | null
+    duracion_meses: number | null
+    deposito: NumericDto | null
+    interes_por_dia: NumericDto | null
+    dias_gracia: number | null
+    medios_pago: number[]
+  }
+  /** El contrato VIGENTE (estado "vigente"), o `null`. */
+  contrato_vigente: {
+    id: number | string
+    /** Nombre y apellido del locatario. */
+    locatario: string
+    fecha_fin: string
+    proximo_ajuste: string | null
+    monto_actual: NumericDto | null
+  } | null
 }

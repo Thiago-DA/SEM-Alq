@@ -25,11 +25,15 @@ import type {
   PropiedadDetalle,
   PropiedadNueva,
   PropiedadResumen,
+  CambiosPropiedad,
+  PropiedadLocadorDetalle,
+  FotoNueva,
+  MedioPagoConRecargo,
 } from '@rentar/shared-types'
 import { neighborhoods } from '@/lib/catalogs/neighborhoods'
 import { PLACEHOLDER_PHOTO_SRC } from '@/lib/imagenes/fotoConRespaldo'
-import type { InmuebleDetalleResponse, InmuebleDisponibleResponse } from '../shared/backend-dtos'
-import { formatApproxAddress, formatFloorUnit } from './direccion'
+import type { InmuebleDetalleResponse, InmuebleDisponibleResponse, MisAlquileresDetalleResponse } from '../shared/backend-dtos'
+import { formatApproxAddress, formatExactAddress, formatFloorUnit, separarPisoDepto } from './direccion'
 import { tituloDePublicacion } from './titulo'
 
 /**
@@ -590,4 +594,126 @@ export function propiedadNuevaToCreateInmueble(nueva: PropiedadNueva, fotos: Cre
       medios_pago: [...new Set(mediosPago)],
     },
   }
+}
+
+// ─── Detalle del locador y edición (US-03, US-04) ───────────────────────
+
+/** `medio_pago.id` → medio del front. Los dos de MercadoPago comparten id: vuelve como débito (ver {@link MEDIO_PAGO_ID}). */
+function medioPagoFromId(id: number): MedioPagoConRecargo | null {
+  const entry = Object.entries(MEDIO_PAGO_ID).find(([, value]) => value === id)
+  // TODO(db): el recargo no se guarda (ver MEDIO_PAGO_ID): vuelve en 0 %.
+  return entry ? { method: entry[0] as MedioPagoConRecargo['method'], surchargePct: 0 } : null
+}
+
+/** `estado_alquiler` → estado del alta (US-01). Una alquilada con fecha es `alquilada` + `availableFrom`. */
+function estadoAltaDeInmueble(estado: EstadoAlquiler): PropiedadNueva['status'] {
+  if (estado === 'pausado') return 'pausada'
+  if (estado === 'alquilado' || estado === 'publicado/alquilado') return 'alquilada'
+  return 'publicada'
+}
+
+/** Número que puede venir `null`: `null` se mantiene. */
+function numeroONull(valor: number | string | null | undefined): number | null {
+  return valor === null || valor === undefined ? null : aNumero(valor)
+}
+
+/**
+ * `MisAlquileresDetalleResponse` (propuesto) → `PropiedadLocadorDetalle`.
+ *
+ * Campo por campo:
+ * - `address`: dirección EXACTA ("Rondeau 480, PB"): la ve solo el dueño.
+ * - `values`: los datos con la forma del alta (`PropiedadNueva`), para la
+ *   ficha y para el formulario de edición. `piso` se separa en piso y depto
+ *   (`separarPisoDepto`); los tags vuelven a características; el depósito
+ *   vuelve a meses (el back guarda el MONTO, ver `propiedadNuevaToCreateInmueble`).
+ * - Fotos: en orden; cada una con un id local (`foto-<n>`) para el formulario.
+ * - `activeContract`: el contrato vigente, si hay. Si no viene, `null`.
+ * TODO(backend): crear la ruta (`GET /mis-alquileres/:id`, 404 si no es del que llama).
+ */
+export function misAlquileresDetalleToPropiedadLocadorDetalle(dto: MisAlquileresDetalleResponse): PropiedadLocadorDetalle {
+  const barrio = barrioDe(dto.barrio)
+  const { floor, unit } = separarPisoDepto(dto.piso)
+  const condiciones = dto.condiciones_contrato
+  const precio = aNumero(condiciones.monto_alquiler ?? dto.precio_publicado)
+  const fotos = [...dto.fotos].sort((a, b) => a.orden - b.orden)
+  const photos: FotoNueva[] = fotos.map((foto, index) => ({ id: `foto-${index + 1}`, src: foto.url, name: `Foto ${index + 1}` }))
+  const deposito = numeroONull(condiciones.deposito)
+  const mediosPago = [...new Set(condiciones.medios_pago)].map(medioPagoFromId).filter((medio): medio is MedioPagoConRecargo => medio !== null)
+  const type = propertyTypeFromTipoId(dto.tipo)
+
+  const values: PropiedadNueva = {
+    type,
+    street: dto.direccion,
+    streetNumber: dto.numero,
+    floor,
+    unit,
+    neighborhoodSlug: barrio.slug,
+    city: normalizarCiudad(dto.ciudad),
+    province: dto.provincia,
+    rooms: dto.ambientes,
+    bedrooms: dto.dormitorios,
+    bathrooms: dto.banos,
+    ageYears: dto.antiguedad,
+    totalAreaM2: dto.m2_totales,
+    coveredAreaM2: dto.m2_cubiertos,
+    characteristics: [...new Set(dto.tags.map((id) => CHARACTERISTIC_BY_TAG_ID[id]).filter((key): key is CharacteristicKey => key !== undefined))],
+    description: dto.descripcion ?? '',
+    status: estadoAltaDeInmueble(dto.estado_alquiler),
+    availableFrom: dto.fecha_disponible,
+    photos,
+    mainPhotoIndex: Math.max(0, fotos.findIndex((foto) => foto.es_principal)),
+    priceMonthly: precio,
+    expenses: aNumero(condiciones.expensas),
+    dailyInterestPct: numeroONull(condiciones.interes_por_dia),
+    graceDays: condiciones.dias_gracia,
+    paymentMethods: mediosPago,
+    adjustmentIndex: condiciones.indice_aumento ? adjustmentIndexFromId(condiciones.indice_aumento) : null,
+    adjustmentEveryMonths: mesesDeFrecuencia(condiciones.frecuencia_ajuste),
+    depositMonths: deposito && precio ? Math.round(deposito / precio) : null,
+    contractMonths: condiciones.duracion_meses,
+  }
+
+  const contrato = dto.contrato_vigente
+  return {
+    id: String(dto.id_inmueble),
+    title: tituloDePublicacion({ type, bedrooms: dto.dormitorios, neighborhoodName: barrio.name }),
+    address: formatExactAddress(dto.direccion, dto.numero, dto.piso),
+    neighborhoodName: barrio.name,
+    status: statusDeInmueble(dto.estado_alquiler, dto.fecha_disponible),
+    publishedAt: dto.fecha_publicacion,
+    values,
+    activeContract: contrato
+      ? {
+          id: String(contrato.id),
+          tenantName: contrato.locatario,
+          endDate: contrato.fecha_fin,
+          nextAdjustmentDate: contrato.proximo_ajuste,
+          currentAmount: numeroONull(contrato.monto_actual),
+        }
+      : null,
+  }
+}
+
+/**
+ * Los cambios de la edición (US-03), ya completos, → cuerpo del `PUT
+ * /inmuebles/:id` AMPLIADO (propuesto): el mismo cuerpo que `POST
+ * /inmuebles` (`CreateInmuebleCompletoPayload`), con las mismas
+ * traducciones que el alta ({@link propiedadNuevaToCreateInmueble}).
+ * @param fotos Las fotos en el orden final: las que ya estaban (con su URL)
+ *   y las nuevas, recién subidas a Storage.
+ * TODO(backend): hoy el `PUT` actualiza solo las columnas de `inmueble` e
+ * ignora `tags`, `fotos` y `condiciones_contrato` (ver HANDOFF §7, US-03).
+ */
+export function cambiosToUpdateInmueble(cambios: PropiedadNueva, fotos: CreateFotoPayload[]): CreateInmuebleCompletoPayload {
+  return propiedadNuevaToCreateInmueble(cambios, fotos)
+}
+
+/** `true` si los cambios traen todos los datos del alta (la pantalla de edición siempre manda el formulario completo). */
+export function cambiosCompletos(cambios: CambiosPropiedad): cambios is PropiedadNueva {
+  const requeridos: (keyof PropiedadNueva)[] = [
+    'type', 'street', 'streetNumber', 'neighborhoodSlug', 'city', 'province', 'rooms', 'bedrooms', 'bathrooms',
+    'totalAreaM2', 'coveredAreaM2', 'characteristics', 'description', 'status', 'photos', 'mainPhotoIndex',
+    'priceMonthly', 'expenses', 'paymentMethods',
+  ]
+  return requeridos.every((campo) => cambios[campo] !== undefined)
 }

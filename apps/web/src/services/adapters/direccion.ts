@@ -34,6 +34,23 @@ export function formatExactAddress(street: string, streetNumber: number, floor?:
 }
 
 /**
+ * Inversa de {@link formatFloorUnit}, para cargar el formulario de edición
+ * (US-03) con lo que guardó el alta: "7° B" → ("7", "B"); "7°" → ("7",
+ * null); "Depto B" → (null, "B"); "PB" → ("PB", null). Si no se entiende,
+ * todo va al piso.
+ */
+export function separarPisoDepto(piso: string | null | undefined): { floor: string | null; unit: string | null } {
+  const texto = piso?.trim()
+  if (!texto) return { floor: null, unit: null }
+  const soloDepto = texto.match(/^Depto\s+(.+)$/i)
+  if (soloDepto) return { floor: null, unit: soloDepto[1] ?? null }
+  const conNumero = texto.match(/^(\d+)\s*°\s*(.*)$/)
+  if (conNumero) return { floor: conNumero[1] ?? null, unit: conNumero[2]?.trim() || null }
+  const [primero, ...resto] = texto.split(/\s+/)
+  return { floor: primero ?? null, unit: resto.join(' ') || null }
+}
+
+/**
  * Piso y departamento del alta (US-01) en el formato del elenco:
  * ("7", "B") → "7° B"; ("7", null) → "7°"; (null, "B") → "Depto B";
  * "PB" se deja tal cual. `null` si no se cargó ninguno de los dos.

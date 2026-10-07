@@ -31,22 +31,36 @@ import type {
   PropiedadNueva,
   PropiedadResumen,
   UbicacionOpciones,
+  CambiosPropiedad,
+  PropiedadLocadorDetalle,
 } from '@rentar/shared-types'
 import { getSupabaseBrowserClient } from '@/lib/auth/supabase/client'
 import { buscarEnLista, FILTROS_INICIALES, ubicacionesDe } from '@/lib/search/busqueda'
-import { cobros as cobrosElenco, propiedades as propiedadesElenco, reclamos as reclamosElenco, type PropiedadMock } from '@/lib/mocks'
+import { cobros as cobrosElenco, propiedades as propiedadesElenco, reclamos as reclamosElenco, solicitudes as solicitudesElenco, type PropiedadMock, type SolicitudMock } from '@/lib/mocks'
 import { hoy } from '@/lib/utils/fechas'
 import { FOTO_PESO_MAXIMO_BYTES, FOTO_TIPOS_ACEPTADOS } from '@/lib/validation/propiedad.rules'
-import { isSearchable, propiedadMockToDetalle, propiedadMockToLocador, propiedadMockToResumen, propiedadNuevaToMock } from './adapters/propiedad-mock.adapter'
+import {
+  aplicarCambiosMock,
+  isSearchable,
+  propiedadMockToDetalle,
+  propiedadMockToDetalleLocador,
+  propiedadMockToLocador,
+  propiedadMockToResumen,
+  propiedadNuevaToMock,
+  tieneContratoVigenteMock,
+} from './adapters/propiedad-mock.adapter'
 import {
   estadoDePropiedadNueva,
   inmuebleDetalleToPropiedadDetalle,
   inmuebleDisponibleToPropiedadResumen,
   misAlquileresItemToPropiedadLocador,
   propiedadNuevaToCreateInmueble,
+  cambiosCompletos,
+  cambiosToUpdateInmueble,
+  misAlquileresDetalleToPropiedadLocadorDetalle,
 } from './adapters/propiedad.adapter'
 import { apiRequest } from './shared/apiClient'
-import type { DisponiblesQuery, InmuebleDetalleResponse, InmueblesDisponiblesResponse } from './shared/backend-dtos'
+import type { DisponiblesQuery, InmuebleDetalleResponse, InmueblesDisponiblesResponse, MisAlquileresDetalleResponse } from './shared/backend-dtos'
 import { USE_MOCKS } from './shared/config'
 import { delay } from './shared/delay'
 import { ServiceError } from './shared/errors'
@@ -57,12 +71,22 @@ import { readUsuariosMock } from './usuarios.service'
 // ─── Helpers de la rama mock ────────────────────────────────────────────
 
 /**
- * Todas las propiedades mock: el elenco más las creadas en el alta
- * (guardadas en el navegador).
+ * Todas las propiedades mock vigentes: el elenco más las creadas en el alta
+ * (guardadas en el navegador), sin las eliminadas (US-04).
  * NOTA: del lado del servidor devuelve solo el elenco (ver `shared/mockStore.ts`).
  * La comparte `solicitudes.service.ts` (dueño y disponibilidad de la propiedad solicitada).
  */
 export function readPropiedadesMock(): PropiedadMock[] {
+  return readPropiedadesMockConBorradas().filter((propiedad) => !propiedad.deletedAt)
+}
+
+/**
+ * Todas las propiedades mock, INCLUIDAS las eliminadas (US-04, borrado
+ * lógico). Solo para mostrar el historial: las solicitudes de una propiedad
+ * eliminada siguen mostrando su dirección y su foto.
+ * La comparte `solicitudes.service.ts`.
+ */
+export function readPropiedadesMockConBorradas(): PropiedadMock[] {
   return readMockCollection('propiedades', propiedadesElenco)
 }
 
@@ -504,42 +528,183 @@ export async function cambiarEstadoPublicacion(propiedadId: string, estado: 'pub
   await apiRequest<void>(`/inmuebles/${encodeURIComponent(propiedadId)}/publicacion`, { method: 'PATCH', body: { activa: estado === 'publicada' } })
 }
 
-// ─── Modificar y eliminar (US-03, US-04) · tanda 3 del Sprint 2 ─────────
+// ─── Detalle, modificar y eliminar (US-03, US-04) ───────────────────────
+
+/** 404 del detalle del locador: no existe, se eliminó o no es suya (mismo mensaje, para no revelar cuál). */
+export const MI_PROPIEDAD_NO_ENCONTRADA_MESSAGE = 'No encontramos esta propiedad.'
+
+/** 409 de eliminar: tiene contrato vigente (decisión del PO, tanda 3 del Sprint 2). */
+export const PROPIEDAD_CON_CONTRATO_MESSAGE = 'No podés eliminar una propiedad con contrato vigente.'
+
+/** Se intentó cambiar el precio o el ajuste de una propiedad con contrato vigente. */
+export const CAMPOS_FIJADOS_POR_CONTRATO_MESSAGE = 'Con un contrato vigente, el precio y el ajuste los fija el contrato.'
+
+/** Rama mock: una propiedad vigente del locador en sesión, o `not_found`. */
+function miPropiedadMock(propiedadId: string): PropiedadMock {
+  const ownerId = requireSessionUserId()
+  const propiedad = readPropiedadesMock().find((item) => item.id === propiedadId && item.ownerId === ownerId)
+  if (!propiedad) throw new ServiceError('not_found', MI_PROPIEDAD_NO_ENCONTRADA_MESSAGE)
+  return propiedad
+}
+
+/** "Ahora" en el elenco: el "hoy" fijo (23/09/2026) con la hora actual. */
+function ahoraMock(): string {
+  const ahora = new Date()
+  return hoy().hour(ahora.getHours()).minute(ahora.getMinutes()).format('YYYY-MM-DDTHH:mm:ss')
+}
 
 /**
- * US-03 Modificar mis propiedades — actualiza una propiedad del locador en
- * sesión.
- * @backend PUT /api/v1/inmuebles/:id   (existe · token + rol locador)
- * @returns void
- *
- * NOTA: `cambios` es `unknown` a propósito: qué campos se pueden modificar y
- * con qué forma se definen en la tanda 3, contra los criterios de US-03 y el
- * body que acepta el back. Hasta entonces no se adapta nada y ninguna
- * pantalla la usa.
- * TODO: tipar `cambios` y armar su adaptador en la tanda 3 (US-03).
+ * US-03 y US-04 — una propiedad del locador en sesión, con todo lo que cargó
+ * el alta, para su detalle (`/panel/propiedades/[id]`) y su edición.
+ * @backend GET /api/v1/mis-alquileres/:id   (no existe — propuesto) → MisAlquileresDetalleResponse
+ *          404 si el inmueble no existe, está eliminado o no es del que llama.
+ * @returns PropiedadLocadorDetalle (dirección EXACTA: la ve solo el dueño)
+ * @throws {ServiceError} `not_found` con {@link MI_PROPIEDAD_NO_ENCONTRADA_MESSAGE};
+ *   `unauthorized` sin sesión.
+ * TODO(backend): crear la ruta, en la familia de `/mis-alquileres` (ya filtra
+ * por dueño). Ver `docs/api-endpoints.md`, "Detalle de mi propiedad".
  */
-export async function actualizarPropiedad(propiedadId: string, cambios: unknown): Promise<void> {
+export async function getMiPropiedad(propiedadId: string): Promise<PropiedadLocadorDetalle> {
   if (USE_MOCKS) {
     await delay()
-    throw new ServiceError('server', 'Modificar propiedades llega en la tanda 3 del Sprint 2.')
+    return propiedadMockToDetalleLocador(miPropiedadMock(propiedadId))
   }
-  await apiRequest<unknown>(`/inmuebles/${encodeURIComponent(propiedadId)}`, { method: 'PUT', body: cambios })
+  const dto = await apiRequest<MisAlquileresDetalleResponse>(`/mis-alquileres/${encodeURIComponent(propiedadId)}`)
+  return misAlquileresDetalleToPropiedadLocadorDetalle(dto)
+}
+
+/**
+ * `true` si los cambios tocan algo que fija el contrato vigente (precio,
+ * índice o frecuencia de ajuste), comparando con lo guardado.
+ */
+function tocaCamposDelContrato(actual: PropiedadLocadorDetalle['values'], cambios: CambiosPropiedad): boolean {
+  return (
+    (cambios.priceMonthly !== undefined && cambios.priceMonthly !== actual.priceMonthly) ||
+    (cambios.adjustmentIndex !== undefined && cambios.adjustmentIndex !== actual.adjustmentIndex) ||
+    (cambios.adjustmentEveryMonths !== undefined && cambios.adjustmentEveryMonths !== actual.adjustmentEveryMonths)
+  )
+}
+
+/**
+ * Fotos de la edición para el back: las que ya estaban viajan con su URL; las
+ * nuevas (data URL del formulario) se suben antes a Storage, como en el alta.
+ * Devuelve también las rutas de las recién subidas, para borrarlas si el
+ * `PUT` falla.
+ * NOTA: de las fotos que ya estaban no se conoce el peso: van con `peso_kb: 0`
+ * y el formato según la extensión de la URL.
+ * TODO(backend): que el `PUT` ampliado acepte las fotos existentes solo con su URL.
+ */
+async function fotosParaEditar(cambios: PropiedadNueva): Promise<{ fotos: CreateFotoPayload[]; subidas: string[] }> {
+  const nuevas = cambios.photos.filter((foto) => foto.src.startsWith('data:'))
+  const resultados = await Promise.allSettled(nuevas.map(subirFotoPropiedad))
+  const subidas = resultados.flatMap((resultado) => (resultado.status === 'fulfilled' ? [resultado.value] : []))
+  const fallo = resultados.find((resultado): resultado is PromiseRejectedResult => resultado.status === 'rejected')
+  if (fallo) {
+    await borrarFotosSubidas(subidas.map((foto) => foto.path))
+    throw fallo.reason instanceof ServiceError ? fallo.reason : new ServiceError('server', FOTOS_NO_SUBIDAS_MESSAGE)
+  }
+  let siguienteNueva = 0
+  const fotos = cambios.photos.map((foto, index): CreateFotoPayload => {
+    const es_principal = index === cambios.mainPhotoIndex
+    if (foto.src.startsWith('data:')) {
+      const subida = subidas[siguienteNueva++]
+      return { url: subida?.url ?? '', peso_kb: subida?.peso_kb ?? 0, formato: subida?.formato ?? 'jpg', es_principal }
+    }
+    const formato = /\.png($|\?)/i.test(foto.src) ? 'png' : 'jpg'
+    return { url: foto.src, peso_kb: 0, formato, es_principal }
+  })
+  return { fotos, subidas: subidas.map((foto) => foto.path) }
+}
+
+/**
+ * US-03 Modificar mis propiedades — guarda los cambios de una propiedad del
+ * locador en sesión.
+ * @backend PUT /api/v1/inmuebles/:id   (existe · token + rol locador; propuesto AMPLIADO:
+ *          el mismo cuerpo que POST /inmuebles) → la propiedad actualizada
+ * @returns PropiedadLocadorDetalle (la propiedad como quedó)
+ * @throws {ServiceError} `not_found` si no es suya; `validation` si con
+ *   contrato vigente cambia el precio o el ajuste
+ *   ({@link CAMPOS_FIJADOS_POR_CONTRATO_MESSAGE}) o si una foto no es válida;
+ *   `server` si las fotos nuevas no se pueden subir.
+ *
+ * NOTA: la pantalla manda el formulario completo. Si llegaran cambios
+ * parciales, la rama real los completa con lo guardado (`getMiPropiedad`).
+ * NOTA: la rama real manda el cuerpo completo aunque hoy el `PUT` ignore
+ * parte (tags, fotos, condiciones): no se parte el formulario según lo que
+ * soporta el back (decisión del PO).
+ * TODO(backend): ampliar el `PUT` al cuerpo del alta y chequear que el
+ * inmueble sea del que llama (hoy no lo hace: HANDOFF §10).
+ * TODO(backend): hasta que el `PUT` guarde las fotos, cada edición con fotos
+ * nuevas deja archivos huérfanos en el bucket (HANDOFF §10).
+ */
+export async function actualizarPropiedad(propiedadId: string, cambios: CambiosPropiedad): Promise<PropiedadLocadorDetalle> {
+  if (USE_MOCKS) {
+    await delay(800)
+    const propiedad = miPropiedadMock(propiedadId)
+    const actual = propiedadMockToDetalleLocador(propiedad)
+    if (actual.activeContract && tocaCamposDelContrato(actual.values, cambios)) {
+      throw new ServiceError('validation', CAMPOS_FIJADOS_POR_CONTRATO_MESSAGE)
+    }
+    const actualizada = aplicarCambiosMock(propiedad, cambios)
+    if (!saveMockRecord('propiedades', actualizada)) throw new ServiceError('server', MOCK_STORAGE_FULL_MESSAGE)
+    return propiedadMockToDetalleLocador(actualizada)
+  }
+
+  const completos: PropiedadNueva = cambiosCompletos(cambios) ? cambios : { ...(await getMiPropiedad(propiedadId)).values, ...cambios }
+  const { fotos, subidas } = await fotosParaEditar(completos)
+  try {
+    await apiRequest<unknown>(`/inmuebles/${encodeURIComponent(propiedadId)}`, { method: 'PUT', body: cambiosToUpdateInmueble(completos, fotos) })
+  } catch (error) {
+    // Como en el alta: si no se guardó, las fotos recién subidas sobran.
+    await borrarFotosSubidas(subidas)
+    throw error
+  }
+  // TODO(backend): el PUT de hoy ignora las fotos: las recién subidas quedan huérfanas en el bucket (HANDOFF §10).
+  // NOTA: el PUT devuelve solo la fila de `inmueble`; la vista completa se vuelve a pedir.
+  return getMiPropiedad(propiedadId)
+}
+
+/**
+ * Rama mock de US-04: las solicitudes `pendiente` y `aceptada` de la
+ * propiedad pasan a `cancelada` (decisión del PO). Devuelve cuántas.
+ * NOTA: se escribe sobre la colección de solicitudes acá, y no con
+ * `solicitudes.service`, para no armar un import circular entre services.
+ */
+function cancelarSolicitudesDePropiedadMock(propertyId: string): number {
+  const activas = readMockCollection<SolicitudMock>('solicitudes', solicitudesElenco).filter(
+    (item) => item.propertyId === propertyId && (item.status === 'pendiente' || item.status === 'aceptada'),
+  )
+  const respondedAt = ahoraMock()
+  activas.forEach((item) => saveMockRecord('solicitudes', { ...item, status: 'cancelada', respondedAt }))
+  return activas.length
 }
 
 /**
  * US-04 Eliminar mis propiedades — elimina una propiedad del locador en
- * sesión.
- * @backend DELETE /api/v1/inmuebles/:id   (existe · token + rol locador; 404 si no existe)
+ * sesión. Borrado LÓGICO (decisión del PO): deja de verse en Mis
+ * propiedades, en `/buscar` y en su detalle, pero se conservan contratos y
+ * reclamos anteriores.
+ * @backend DELETE /api/v1/inmuebles/:id   (existe · token + rol locador; propuesto: borrado
+ *          lógico, 409 con contrato vigente y solicitudes canceladas)
  * @returns void
+ * @throws {ServiceError} `not_found` si no es suya; `conflict` con
+ *   {@link PROPIEDAD_CON_CONTRATO_MESSAGE} si tiene contrato vigente.
  *
- * NOTA: ninguna pantalla la usa todavía. Las reglas (por ejemplo, qué pasa
- * con una alquilada o con solicitudes pendientes) se revisan en la tanda 3
- * contra US-04.
+ * NOTA: al eliminar, las solicitudes `pendiente` y `aceptada` de la
+ * propiedad pasan a `cancelada` (decisión del PO).
+ * TODO(backend): borrado lógico (`eliminado_en` o estado `eliminada`), 409
+ * con contrato vigente, cancelar las solicitudes y mandar un mail a cada
+ * postulante. Hoy el DELETE borra en duro, en cascada, sin chequear el
+ * contrato ni el dueño (HANDOFF §10).
  */
 export async function eliminarPropiedad(propiedadId: string): Promise<void> {
   if (USE_MOCKS) {
-    await delay()
-    throw new ServiceError('server', 'Eliminar propiedades llega en la tanda 3 del Sprint 2.')
+    await delay(800)
+    const propiedad = miPropiedadMock(propiedadId)
+    if (tieneContratoVigenteMock(propiedad)) throw new ServiceError('conflict', PROPIEDAD_CON_CONTRATO_MESSAGE)
+    if (!saveMockRecord('propiedades', { ...propiedad, deletedAt: ahoraMock() })) throw new ServiceError('server', MOCK_STORAGE_FULL_MESSAGE)
+    cancelarSolicitudesDePropiedadMock(propiedadId)
+    return
   }
   await apiRequest<void>(`/inmuebles/${encodeURIComponent(propiedadId)}`, { method: 'DELETE' })
 }
