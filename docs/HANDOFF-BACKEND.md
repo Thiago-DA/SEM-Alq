@@ -92,7 +92,7 @@ El front conserva como respaldo el mensaje del 403 y el éxito sin "Ir a mis pro
 
 | Carpeta | Qué contiene |
 |---|---|
-| `apps/web/src/services/` | **La única frontera con el backend.** Un archivo por módulo (`auth`, `usuarios`, `propiedades`, `panel`). Cada función tiene rama mock y rama real. Ver su `README.md`. |
+| `apps/web/src/services/` | **La única frontera con el backend.** Un archivo por módulo (`auth`, `usuarios`, `propiedades`, `solicitudes`, `panel`). Cada función tiene rama mock y rama real. Ver su `README.md`. |
 | `apps/web/src/services/shared/` | `apiClient.ts` (cliente HTTP único, con el Bearer), `config.ts` (flag de mocks, URL de la API y las dos variables de Supabase), `errors.ts` (`ServiceError`), `mockStore.ts`, `backend-dtos.ts` (copias de DTOs del back), `session.ts`. |
 | `apps/web/src/services/adapters/` | Traducen DTO del back ↔ tipo de vista, campo por campo, con lo que falta marcado como `TODO(backend)` / `TODO(db)`. |
 | `apps/web/src/lib/auth/` | `AuthProvider` (usuario y rol activo), `session-cookie.ts` (`rentar_session`), `redirect.ts` (`?next=`) y `supabase/` (clientes de navegador, de servidor y de proxy). |
@@ -164,14 +164,16 @@ faltan datos o una parte (ver sección 7); **pendiente** = no existe o el front 
 | `GET /usuarios/me` | Sesión (login y recarga) | **Conectado** |
 | `POST /registrar-usuario` | `/registro` | **Conectado** (sin `rol`: el back registra locatario) |
 | `GET /inmuebles/disponibles` | `/buscar`, landing | **Parcial**: desde el 29/09 ignora casi todos los filtros, el orden y la paginación; el front trae todas y filtra, ordena y pagina en el cliente (sección 7) |
-| `GET /inmuebles/disponibles/:id` | — | Existe (antes `GET /inmuebles/:id`); el front ya no la usa: el listado trae lo que muestra la tarjeta |
+| `GET /inmuebles/disponibles/:id` | `/propiedad/[id]` (US-41) | **Parcial** (Sprint 2): la usa `getPropiedad`; le faltan dueño, estado, condiciones, medios de pago y si el usuario ya la solicitó (sección 7, US-41) |
 | `GET /mis-alquileres` | `/panel/propiedades`, conteos de `/panel` | **Parcial**: desde el 29/09 trae locatario, próximo ajuste y si tiene reclamos sin resolver (el front los suma en el próximo PR); siguen faltando pagos y fecha de alta |
 | `POST /inmuebles` | Alta | **Conectado** (29/09): alta real de punta a punta desde la pantalla, con fotos en Storage; cualquier rol, y suma el rol locador |
 | Supabase Storage, bucket `fotos-propiedades` | Alta | **Conectado** (29/09): el alta sube las fotos y, si falla, las borra (desde el 30/09, con la política de SELECT; sección 8) |
 | `GET /locadores/:idLocador/barrios` | — | Existe desde el 29/09 (Bearer + rol locador; solo el propio id). El front no la usa: arma los barrios del filtro de US-02 con sus propias propiedades |
 | `GET /usuarios/me/contextos` | "Viendo como" del UserMenu | **Pendiente** (propuesto; hoy se arma en el front con `/mis-alquileres`) |
 | `GET /catalogos/ubicaciones` | Filtros de ubicación | **Pendiente** (propuesto; hoy se arman con los datos) |
-| `GET /panel/cobros`, `/panel/reclamos`, `/panel/contratos`, `/solicitudes` | `/panel` | **Pendiente** (módulos de sprints futuros; en modo real se muestran vacíos) |
+| `GET /panel/cobros`, `/panel/reclamos`, `/panel/contratos`, `/solicitudes/recibidas?estado=pendiente` | `/panel` | **Pendiente** (módulos de sprints futuros; en modo real se muestran vacíos) |
+| `POST /solicitudes`, `GET /solicitudes/mias`, `GET /solicitudes/recibidas`, `PATCH /solicitudes/:id/{aceptar,rechazar,cancelar}` | `/propiedad/[id]` (US-35), `/panel/mis-solicitudes` y `/panel/solicitudes` (US-36 a US-38) | **Pendiente** (propuesto, Sprint 2; el front funciona en modo mock) |
+| `PUT /inmuebles/:id`, `DELETE /inmuebles/:id` | Detalle del locador (US-03, US-04, tanda 3 del Sprint 2) | Existen (Bearer + rol locador); el front las tiene firmadas, sin usar |
 | `PATCH /inmuebles/:id/publicacion` | Detalle (sprint 2) | **Pendiente** (propuesto; la función del service está lista, sin usar) |
 
 ## 6. Status HTTP y errores
@@ -259,6 +261,31 @@ cuando el back vuelva a respetar los filtros.
 | El tag "Apto profesional" no existe: no se manda. | db |
 | El back tiene un solo campo `piso`: piso y departamento viajan juntos ("3° B"). | db |
 | "Pausada" la acepta la validación del back y la base no la restringe (se guardaría `pausado`); hoy la base solo usa `publicado` y `alquilado`. | — (informativo) |
+
+### US-41 Consultar detalle de propiedad (Sprint 2, `/propiedad/[id]`)
+
+El front usa `GET /inmuebles/disponibles/:id` (existe). Lo que le falta lo cubre el adaptador
+(`propiedad.adapter.ts#inmuebleDetalleToPropiedadDetalle`) sin inventar datos: la sección que no
+tiene datos no se muestra.
+
+| Brecha | Dueño |
+|---|---|
+| **Dueño:** no trae el locador (id y nombre). La tarjeta del dueño va sin nombre ("el dueño") y el front no puede saber si la publicación es propia (para no ofrecer "Solicitar alquiler" a su dueño). Sumar `locador: { id, nombre, apellido }`. Sin teléfono ni email: el contacto se habilita al aceptar la solicitud. | backend |
+| **Estado:** no trae `estado_alquiler`. Hoy se deduce (con `fecha_disponible` → alquilada/publicada) y una alquilada sin fecha o pausada responde 404. Decidir si el detalle responde esas con su estado (el diseño muestra "Ya no está disponible") o se queda el 404. | backend / PO |
+| **Condiciones del contrato:** faltan `duracion_meses`, `frecuencia_ajuste` y `deposito` (hoy solo viene `indice_ajuste`). Sin ellas, "Condiciones del contrato" no se muestra. | backend |
+| **Medios de pago:** faltan los del contrato (`medio_pago_x_contrato`). Sin ellos, "Cómo se paga" no se muestra. | backend |
+| **"Ya la solicité":** el botón necesita saber si el usuario en sesión ya tiene una solicitud para ese inmueble. Propuesto `GET /solicitudes/mias?inmueble=:id`; alternativa: que el detalle devuelva `mi_solicitud` cuando llega con token. | backend |
+| **`-1` o `null` en `precio` y `expensas`:** desde el 29/09 manda `null` sin contrato; el adaptador también acepta el `-1` viejo. Confirmar que ya no se manda `-1`. | backend |
+| No hay fecha de publicación (el diseño dice "Publicada hace 6 días"). | db |
+
+### US-35 Enviar solicitud de alquiler (Sprint 2)
+
+| Brecha | Dueño |
+|---|---|
+| **No existe el módulo:** tabla de solicitudes y las 6 rutas de `api-endpoints.md` ("Solicitudes"). | db / backend |
+| **Mail al locador** al crear la solicitud, con el nombre del postulante y el mensaje opcional (US-35, cuarto criterio). El front solo muestra "Le avisamos por mail a <dueño>". | backend |
+| Repetir las validaciones del front (`lib/validation/solicitud.rules.ts`): mensaje de hasta 1000 caracteres, una sola activa por persona e inmueble (409), no a la propia (403), solo publicadas o alquiladas con fecha. | backend |
+| **US-38 contra el diseño:** Jira dice que cancela el locador una aceptada; el diseño, que cancela el locatario una pendiente. Se define en la tanda 2. | PO |
 
 ### `/panel` (inicio del locatario)
 
@@ -378,17 +405,21 @@ En todo el código y los docs se usa la numeración del Sprint 0
 (`Documentación/md/Estudio Inicial/Sprint 0.md`). El Mapa de pantallas y Claude Design usan otra.
 Equivalencias:
 
-| Mapa de diseño | Sprint 0 |
+| Mapa de diseño | Sprint 0 / Jira |
 |---|---|
 | US-01, US-02, US-19, US-34 | iguales |
-| US-35 Consultar detalle de publicación | sin US en Sprint 0 (`/propiedad/[id]`, placeholder) |
-| US-36 a US-39 (solicitudes) | US-35 a US-38 |
+| US-35 Consultar detalle de publicación | **US-41** Consultar detalle de propiedad (Jira, Sprint 2; no está en el Sprint 0) |
+| US-36 Solicitar alquiler | **US-35** Enviar solicitud de alquiler |
+| US-37 / US-38 Solicitudes recibidas (consultar, aceptar o rechazar) | **US-36 / US-37** |
+| US-39 Mis solicitudes / cancelar | **US-36 / US-38** |
 | US-40 Publicar o pausar propiedad | sin US en Sprint 0 |
 | US-42 Iniciar y cerrar sesión | **US-39** |
 | US-43 Recuperar contraseña | **US-40** |
 | US-44 y US-45 (administración de usuarios) | sin US en Sprint 0 |
 
-Cuando algo no tiene US en el Sprint 0, el código lo dice así: "sin US en Sprint 0 (mapa US-xx)".
+Desde el Sprint 2, el código y los docs usan la numeración de Jira (`Documentación/md/US/`), que
+coincide con la del Sprint 0 y suma las US nuevas (US-41). Cuando algo no tiene US, el código lo
+dice así: "sin US en Sprint 0 (mapa US-xx)".
 
 ## 12. `data-testid` para Selenium
 
@@ -424,10 +455,11 @@ Para ver todos: `grep -rn "data-testid" apps/web/src packages/ui/src`.
   `Usuario`, `Rol`, `Contrato`, `Reclamo`, `EstadoReclamo`…) están arriba de
   `packages/shared-types/src/index.ts`. `Publicacion` ya no existe.
 - Los tipos de vista del front están en archivos propios (`propiedad.ts`, `filters.ts`, `panel.ts`,
-  `status.ts`, `usuario-sesion.ts`, `neighborhood.ts`) y se exportan al final de `index.ts`.
+  `solicitud.ts`, `status.ts`, `usuario-sesion.ts`, `neighborhood.ts`) y se exportan al final de `index.ts`.
 - Qué adaptador conecta cada modelo con cada tipo de vista: `packages/shared-types/README.md`.
 - DTOs que el back todavía no exporta (`UsuarioMeResponse`, `InmueblesDisponiblesResponse`,
-  `InmuebleDetalleResponse`, `RegistrarUsuarioRequest`): copiados en `apps/web/src/services/shared/backend-dtos.ts`, con
+  `InmuebleDetalleResponse`, `RegistrarUsuarioRequest`) y los propuestos de solicitudes
+  (`CrearSolicitudRequest`, `SolicitudResponse`): copiados en `apps/web/src/services/shared/backend-dtos.ts`, con
   `TODO(backend)` para moverlos a `shared-types`.
 
 ## 14. Qué queda para el sprint 2

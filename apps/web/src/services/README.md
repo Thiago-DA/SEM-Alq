@@ -11,9 +11,15 @@ mocks ni llama a `fetch` directo**: llaman a una función de un service y recibe
 | `auth.service.ts` | `login`, `logout` (Supabase Auth, no pasan por la API), `registrarUsuario` | US-39, US-19 |
 | `usuarios.service.ts` | `getUsuarioActual` (`GET /usuarios/me`: nombre y roles del usuario del token) | US-39 |
 | `propiedades.service.ts` | `listarPropiedadesPublicadas`, `buscarPropiedades`, `contarPropiedades`, `listarUbicaciones` | US-34 |
+| | `getPropiedad`, `listarSimilares` (`GET /inmuebles/disponibles/:id`, existe) | US-41 |
 | | `listarMisPropiedades` | US-02 |
 | | `registrarPropiedad`, `subirFotoPropiedad` (Supabase Storage, bucket `fotos-propiedades`) | US-01 |
 | | `cambiarEstadoPublicacion` (lista pero sin usar: es del sprint del detalle) | — |
+| | `actualizarPropiedad`, `eliminarPropiedad` (`PUT` / `DELETE /inmuebles/:id`, existen; firmadas para la tanda 3) | US-03, US-04 |
+| `solicitudes.service.ts` | `enviarSolicitud`, `getMiSolicitudParaPropiedad` (rutas propuestas, no existen) | US-35 |
+| | `listarMisSolicitudes`, `listarSolicitudesRecibidas` | US-36 |
+| | `aceptarSolicitud`, `rechazarSolicitud` | US-37 |
+| | `cancelarSolicitud` (quién cancela se define en la tanda 2) | US-38 |
 | `panel.service.ts` | `getResumenCobros`, `getResumenReclamos`, `getEventosContratos`, `getSolicitudesPendientes`, `getResumenRoles` | `/panel` (sin US en Sprint 0) |
 
 ## Cómo está armada cada función

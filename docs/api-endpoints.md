@@ -1,4 +1,4 @@
-# Endpoints que usa el frontend — Sprint 1
+# Endpoints que usa el frontend — Sprints 1 y 2
 
 Lista de las rutas de `apps/api` (y de Supabase) que llama `apps/web`, sacada de los bloques
 `@backend` de `apps/web/src/services/*.service.ts` y verificada contra la API de `develop` el
@@ -44,13 +44,15 @@ Notas:
 | Método y ruta | Auth | Estado | US | Service | Body / query | Respuesta (`data`) |
 |---|---|---|---|---|---|---|
 | `GET /inmuebles/disponibles` | — | parcial (ver notas) | US-34 | `propiedades.service#listarPropiedadesPublicadas`, `#buscarPropiedades`, `#contarPropiedades`, `#listarUbicaciones` | el front manda solo `page=1&limit=1000`. El back documenta `barrio, precioMin, precioMax, tipo, dormitorios, ambientes, superficieMin, superficieMax, tags, indiceAjuste, page, limit, orden, direccion`, pero desde el 29/09 solo aplica `barrio` (igual exacto) y `tipo` | `{ items: InmuebleDisponibleResponse[], total, page, limit, totalPages }` (hoy siempre todas, `page: 1`); cada item con `tipo`, `tags` e `indice_ajuste` como `{ id, descripcion }`, `precio`, `expensas` (0 sin contrato), `foto_principal` y `fecha_disponible` → `inmuebleDisponibleToPropiedadResumen` |
-| `GET /inmuebles/disponibles/:id` | — | existe, sin usar | US-34 (detalle) | — (antes `GET /inmuebles/:id`, renombrada el 26/09) | — | `InmuebleDetalleResponse`: como el item de arriba más `servicio` y `fotos`. 400 id inválido, 404 |
+| `GET /inmuebles/disponibles/:id` | — | parcial | US-41 (detalle público, Jira) | `propiedades.service#getPropiedad` (antes `GET /inmuebles/:id`, renombrada el 26/09) | — | `InmuebleDetalleResponse`: como el item de arriba más `servicio` y `fotos` → `inmuebleDetalleToPropiedadDetalle`. 400 id inválido, 404 si no existe o no está disponible (el front muestra los dos como "Esta publicación ya no está disponible"). Le faltan dueño, estado, condiciones del contrato, medios de pago y si el usuario ya la solicitó (ver `HANDOFF-BACKEND.md` §7, US-41) |
 | `GET /locadores/:idLocador/barrios` | Bearer + rol `locador` (solo el propio id; otro → 403) | existe, sin usar | US-02 (filtro de barrio) | — | — | `string[]` (barrios de las propiedades del locador) |
 | `GET /mis-alquileres` | Bearer + rol `locador` | parcial | US-02 | `propiedades.service#listarMisPropiedades` | el back documenta `barrio, tipo, estado, reclamos`, pero no los aplica (el front filtra en el cliente) | `MisAlquileresItem[]` (todos los inmuebles del locador; desde el 29/09 también `contrato.locatario`, `contrato.fecha_proximo_ajuste` y `posee_reclamos_no_resueltos`, que el front suma en el próximo PR; con `fotos`, `foto_principal`, `tags` y `contrato` con `monto_alquiler`, `expensas`, `indice_aumento` como texto y `medios_pago` como nombres) → `misAlquileresItemToPropiedadLocador`. 401 / 403 |
 | `POST /inmuebles` | Bearer, cualquier rol (desde el 29/09, d88deca: además le suma el rol locador al usuario, en una transacción) | conectado (29/09: alta real de punta a punta con fotos en Storage) | US-01 | `propiedades.service#registrarPropiedad` | `CreateInmuebleCompletoPayload`: inmueble + `tags: number[]` + `fotos: { url, peso_kb, formato, es_principal }[]` (3 a 50, jpg/png, ≤ 350 KB) + `condiciones_contrato` (`monto_alquiler, expensas, indice_aumento (id), frecuencia_ajuste (texto), duracion_meses, deposito (monto), interes_por_dia, dias_gracia, medios_pago: number[]`) → `propiedadNuevaToCreateInmueble` | `Inmueble` creado (201). 400 con el mensaje de cada regla, 401. Si volviera un 403, el front muestra "Todavía no podés publicar desde esta cuenta…" |
 | Supabase Storage, bucket `fotos-propiedades` | sesión del usuario | conectado (29/09; desde el 30/09 también borra las fotos de un alta fallida) | US-01 | `propiedades.service#subirFotoPropiedad` | archivo en `<auth.uid>/<uuid>.<jpg\|png>`, `upsert: false` | URL pública, `peso_kb` (redondeado hacia arriba) y `formato` |
 | `GET /catalogos/ubicaciones` | — | pendiente (propuesto) | US-34 | `propiedades.service#listarUbicaciones` | — | `UbicacionOpciones` (hoy se arma con los datos) |
 | `PATCH /inmuebles/:id/publicacion` | Bearer + rol `locador` | pendiente (propuesto) | publicar/pausar (sin US en Sprint 0, mapa US-40) | `propiedades.service#cambiarEstadoPublicacion` (sin usar) | `{ activa: boolean }` | — |
+| `PUT /inmuebles/:id` | Bearer + rol `locador` | existe, sin usar | US-03 (tanda 3 del Sprint 2) | `propiedades.service#actualizarPropiedad` (firmada; los campos se revisan contra US-03 en la tanda 3) | por definir | `InmuebleDTO` actualizado. 400, 404 |
+| `DELETE /inmuebles/:id` | Bearer + rol `locador` | existe, sin usar | US-04 (tanda 3 del Sprint 2) | `propiedades.service#eliminarPropiedad` (firmada) | — | — (200). 400, 404 |
 
 Mapeos del alta (US-01), documentados en `services/adapters/propiedad.adapter.ts`:
 
@@ -70,8 +72,52 @@ Búsqueda (US-34), `GET /inmuebles/disponibles`:
 - Desde el 29/09 el back ignora casi todos los filtros y la paginación, así que el front trae todas
   en un pedido (hasta 1000) y filtra, ordena y pagina en el cliente, con las mismas reglas que el
   modo mock. Sirve para el piloto; no escala. Detalle y brechas en `HANDOFF-BACKEND.md` §7 (US-34).
-- `GET /inmuebles/disponibles/:id` manda `-1` en `precio` y `expensas` sin contrato (hoy el front
-  no la usa).
+- `GET /inmuebles/disponibles/:id` manda `null` en `precio` y `expensas` cuando el inmueble no tiene
+  contrato. NOTA: antes del 29/09 mandaba `-1`; el adaptador acepta los dos (y cualquier negativo)
+  como "no informado" y la pantalla muestra "Consultar" (`TODO(backend)`: confirmar que ya no
+  manda `-1`).
+
+## Solicitudes (Sprint 2)
+
+**Ninguna existe todavía: son la propuesta del front** (módulo nuevo, sin tabla ni rutas). Las firmas
+de `services/solicitudes.service.ts` ya son las definitivas; los DTOs propuestos están en
+`apps/web/src/services/shared/backend-dtos.ts` (`CrearSolicitudRequest`, `SolicitudResponse`) y el
+adaptador, en `services/adapters/solicitud.adapter.ts`. Prefijo `/solicitudes`, igual que las rutas
+existentes (`/inmuebles`, `/mis-alquileres`). Todas con **Bearer**: el usuario sale del token.
+
+| Método y ruta | Auth | Estado | US (Jira) | Service | Body / query | Respuesta (`data`) | Errores | Mail que dispara |
+|---|---|---|---|---|---|---|---|---|
+| `POST /solicitudes` | Bearer, cualquier rol | pendiente (propuesto) | US-35 | `solicitudes.service#enviarSolicitud` | `{ id_inmueble: number, mensaje?: string \| null }` (mensaje de hasta 1000 caracteres) | `SolicitudResponse` (201, `estado: 'pendiente'`) | 400 mensaje de más de 1000 o propiedad no disponible (alquilada o pausada); 401; 403 si es su propia publicación; 404 si el inmueble no existe; **409 si ya tiene una solicitud pendiente o aceptada para ese inmueble** | Al **locador**: nombre y apellido del postulante y el mensaje, si lo hay (US-35) |
+| `GET /solicitudes/mias` | Bearer | pendiente (propuesto) | US-36 (y US-35: estado del botón del detalle) | `#listarMisSolicitudes`; con `?inmueble=:id`, `#getMiSolicitudParaPropiedad` | `inmueble` (opcional): id del inmueble | `SolicitudResponse[]` del usuario del token, de la más nueva a la más vieja | 401 | — |
+| `GET /solicitudes/recibidas` | Bearer + rol `locador` | pendiente (propuesto) | US-36 | `#listarSolicitudesRecibidas`; con `?estado=pendiente`, `panel.service#getSolicitudesPendientes` | `estado` (opcional) | `SolicitudResponse[]` de los inmuebles del locador | 401, 403 | — |
+| `PATCH /solicitudes/:id/aceptar` | Bearer + rol `locador` (dueño del inmueble) | pendiente (propuesto) | US-37 | `#aceptarSolicitud` | — | `SolicitudResponse` (`aceptada`) | 401, 403/404 si no es suya, **409 si ya no está pendiente** | Al **locatario**: que se aceptó (US-37) |
+| `PATCH /solicitudes/:id/rechazar` | Bearer + rol `locador` (dueño del inmueble) | pendiente (propuesto) | US-37 | `#rechazarSolicitud` | — (el motivo opcional del diseño se define en la tanda 2) | `SolicitudResponse` (`rechazada`) | 401, 403/404, 409 | — (US-37 solo pide mail al aceptar) |
+| `PATCH /solicitudes/:id/cancelar` | Bearer | pendiente (propuesto) | US-38 | `#cancelarSolicitud` | — | `SolicitudResponse` (`cancelada`) | 401, 403/404, 409 | Al **locatario**: que se canceló (US-38) |
+
+`SolicitudResponse` (propuesto):
+
+```ts
+{
+  id: number
+  estado: 'pendiente' | 'aceptada' | 'rechazada' | 'cancelada'
+  mensaje: string | null
+  fecha_creacion: string            // ISO, con hora
+  inmueble: { id, direccion, numero, piso, barrio, foto_principal: string | null }
+  postulante: { id, nombre, apellido }
+}
+```
+
+Notas:
+
+- **Quién cancela (US-38):** en Jira, US-38 es "como **locador** quiero dar de baja una solicitud tras
+  haberla aceptado"; el diseño hace que el **locatario** cancele una **pendiente**. Se define en la
+  tanda 2 del Sprint 2, antes de implementar la ruta.
+- **Una sola activa por persona e inmueble:** una `pendiente` o `aceptada` impide otra (409). Una
+  `rechazada` o `cancelada` no: se puede volver a solicitar (nada vuelve a `pendiente`; se crea una
+  nueva).
+- **Aceptar no rechaza a las demás** solicitudes del inmueble (Flujo de solicitudes · 02).
+- **Privacidad:** la dirección que ve el postulante es la aproximada hasta que se defina en la tanda
+  2 cuándo se le revela la exacta; el teléfono y el email del postulante no van en el listado.
 
 ## Panel del locador (`/panel`)
 
@@ -83,7 +129,7 @@ pantalla muestra sus estados vacíos; los conteos de propiedades salen de `GET /
 | `GET /panel/cobros` | Bearer | pendiente (propuesto) | US-08, US-09 | `panel.service#getResumenCobros` | `ResumenCobros` |
 | `GET /panel/reclamos` | Bearer | pendiente (propuesto) | US-14 a US-18 | `panel.service#getResumenReclamos` | `ResumenReclamos` |
 | `GET /panel/contratos?dias=60` | Bearer | pendiente (propuesto) | US-05 a US-07 | `panel.service#getEventosContratos` | `EventoContratoPanel[]` |
-| `GET /solicitudes?estado=pendiente` | Bearer | pendiente (propuesto) | US-36 | `panel.service#getSolicitudesPendientes` | `SolicitudPanel[]` |
+| `GET /solicitudes/recibidas?estado=pendiente` | Bearer + rol `locador` | pendiente (propuesto; ver "Solicitudes") | US-36 | `panel.service#getSolicitudesPendientes` | `SolicitudResponse[]` → `SolicitudPanel` |
 
 Cómo se calcula cada cifra (cobrado del mes, vencidos, días de atraso, reclamos sin responder,
 eventos de 60 días): encabezado de `apps/web/src/lib/mocks/panel.mock.ts`. El back puede devolver
