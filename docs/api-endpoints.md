@@ -80,7 +80,8 @@ Búsqueda (US-34), `GET /inmuebles/disponibles`:
 
 ## Problemas de las rutas de inmuebles (tanda 3 del Sprint 2)
 
-Encontrados al revisar `PUT` y `DELETE /inmuebles/:id` para US-03 y US-04. En orden de gravedad;
+Encontrados al revisar `PUT` y `DELETE /inmuebles/:id` para US-03 y US-04 (y el de `/disponibles`, con la
+US-35 actualizada). En orden de gravedad;
 detalle y propuesta en `HANDOFF-BACKEND.md` §10 (y el texto del issue, que abre el PO).
 
 | Gravedad | Problema | Dónde |
@@ -88,6 +89,7 @@ detalle y propuesta en `HANDOFF-BACKEND.md` §10 (y el texto del issue, que abre
 | 🔴 Crítica | `PUT` y `DELETE /inmuebles/:id` **no chequean que el inmueble sea del que llama**: cualquier locador puede modificar o borrar el de otro. Además, `PUT` pasa el body entero a `.update()` (se puede cambiar `id_locador`). | `controllers/inmueble.controller.ts` (update y delete), `repositories/inmueble.repository.ts` |
 | 🔴 Alta | `GET /inmuebles` está **abierto** (sin token) y devuelve todos los inmuebles con la **dirección exacta** y el `id_locador`. El front no la usa. | `routes/v1/inmuebles.routes.ts` (línea 7), `inmueble.repository.ts#findAll` |
 | 🟠 Media | `DELETE` **borra en duro y en cascada** (contrato, reclamos, fotos, tags), **no bloquea con contrato vigente** y **no limpia Storage**. | `services/inmueble.service.ts#delete`, `contrato.repository.ts#deleteByInmuebleId` |
+| 🔴 Alta | `GET /inmuebles/disponibles` y `/disponibles/:id` (públicas) devuelven **calle, altura y piso sin token**: la regla "sin sesión, la aproximada" del front es solo cosmética. Sin token, mandar la calle y la cuadra, nunca el piso. | `routes/v1/inmuebles.routes.ts`, `InmuebleDisponibleResponse` / `InmuebleDetalleResponse` |
 | 🟡 Baja | `PUT` y `DELETE` responden **400 en lugar de 404** si el inmueble no existe (el service tira un `Error` sin status antes del chequeo del controller). | `services/inmueble.service.ts`, `gateway/middlewares/error.middleware.ts` |
 
 ## Solicitudes (Sprint 2)
@@ -100,9 +102,9 @@ existentes (`/inmuebles`, `/mis-alquileres`). Todas con **Bearer**: el usuario s
 
 | Método y ruta | Auth | Estado | US (Jira) | Service | Body / query | Respuesta (`data`) | Errores | Mail que dispara |
 |---|---|---|---|---|---|---|---|---|
-| `POST /solicitudes` | Bearer, cualquier rol | pendiente (propuesto) | US-35 | `solicitudes.service#enviarSolicitud` | `{ id_inmueble: number, mensaje?: string \| null }` (mensaje de hasta 1000 caracteres) | `SolicitudResponse` (201, `estado: 'pendiente'`) | 400 mensaje de más de 1000 o propiedad no disponible (alquilada o pausada); 401; 403 si es su propia publicación; 404 si el inmueble no existe; **409 si ya tiene una solicitud pendiente o aceptada para ese inmueble** | Al **locador**: nombre y apellido del postulante y el mensaje, si lo hay (US-35) |
-| `GET /solicitudes/mias` | Bearer | pendiente (propuesto) | US-36 (y US-35: estado del botón del detalle) | `#listarMisSolicitudes`; con `?inmueble=:id`, `#getMiSolicitudParaPropiedad` | `inmueble` (opcional): id del inmueble | `SolicitudResponse[]` del usuario del token, de la más nueva a la más vieja | 401 | — |
-| `GET /solicitudes/recibidas` | Bearer + rol `locador` | pendiente (propuesto) | US-36 | `#listarSolicitudesRecibidas`; con `?estado=pendiente`, `panel.service#getSolicitudesPendientes` | `estado` (opcional) | `SolicitudResponse[]` de los inmuebles del locador | 401, 403 | — |
+| `POST /solicitudes` | Bearer, cualquier rol | pendiente (propuesto) | US-35 (actualizada, 80dfb8b) | `solicitudes.service#enviarSolicitud` | `CrearSolicitudRequest` (`backend-dtos.ts`): `{ id_inmueble, mensaje?, telefono, email, ocupacion, ingresos, convivientes, mascotas, detalle_mascotas, garantias, acepta_condiciones: true }`. Mensaje hasta **600**; `telefono` en **E.164** (`+` + código de país + número, 10 a 15 dígitos); `email` con formato `nombre@dominio.ext`; `ocupacion` `sin_informar` \| `relacion_dependencia` \| `monotributista` \| `autonoma` \| `estudiante` \| `jubilada`; `ingresos` entero ≥ 0 (0 = no informa); `convivientes` ≥ 1; `detalle_mascotas` hasta 300 (solo si `mascotas`); `garantias` ⊆ `propietaria`, `caucion`, `otra`. Nombre, apellido y DNI salen del token | `SolicitudResponse` (201, `estado: 'pendiente'`) | 400 si un dato no cumple lo anterior, si falta la aceptación, si el inmueble exige garantías y no se ofrece **al menos una**, o si la propiedad no está disponible; 401; 403 si es su propia publicación; 404 si el inmueble no existe; **409 si ya tiene una solicitud pendiente o aceptada para ese inmueble** | Al **locador**: nombre y apellido del postulante y el mensaje, si lo hay (US-35) |
+| `GET /solicitudes/mias` | Bearer | pendiente (propuesto) | US-36 (y US-35: estado del botón del detalle y "N pendientes en otras propiedades") | `#listarMisSolicitudes`; con `?inmueble=:id`, `#getMiSolicitudParaPropiedad`; con `?estado=pendiente`, `#contarMisSolicitudesPendientes` (el front cuenta y excluye la propiedad actual) | `inmueble` y `estado` (opcionales) | `SolicitudResponse[]` del usuario del token, de la más nueva a la más vieja. **Sin** `dni`, `telefono`, `email` ni `legajo` (no los necesita) | 401 | — |
+| `GET /solicitudes/recibidas` | Bearer + rol `locador` | pendiente (propuesto) | US-36 (y US-35: el legajo) | `#listarSolicitudesRecibidas`; con `?estado=pendiente`, `panel.service#getSolicitudesPendientes` | `estado` (opcional) | `SolicitudResponse[]` de los inmuebles del locador, **con** `postulante.dni`, `postulante.telefono`, `postulante.email` y `legajo` (solo para el dueño del inmueble) | 401, 403 | — |
 | `PATCH /solicitudes/:id/aceptar` | Bearer + rol `locador` (dueño del inmueble) | pendiente (propuesto) | US-37 | `#aceptarSolicitud` | — | `SolicitudResponse` (`aceptada`) | 401, 403/404 si no es suya, **409 si ya no está pendiente o si el inmueble ya tiene otra aceptada** | Al **locatario**: que se aceptó (US-37) |
 | `PATCH /solicitudes/:id/rechazar` | Bearer + rol `locador` (dueño del inmueble) | pendiente (propuesto) | US-37 | `#rechazarSolicitud` | — (sin motivo: US-37 no lo pide) | `SolicitudResponse` (`rechazada`) | 401, 403/404, 409 si ya no está pendiente | — (US-37 solo pide mail al aceptar) |
 | `PATCH /solicitudes/:id/cancelar` | Bearer (el dueño del inmueble o el postulante) | pendiente (propuesto) | US-38 (locador) y sin US en Sprint 0 (postulante) | `#cancelarSolicitud` | — | `SolicitudResponse` (`cancelada`) | 401; 403/404 si no es ni el dueño ni el postulante; **409 si el estado no corresponde a quien llama** (ver "Quién cancela") | Al **locatario**, si cancela el locador (US-38) |
@@ -117,7 +119,10 @@ existentes (`/inmuebles`, `/mis-alquileres`). Todas con **Bearer**: el usuario s
   fecha_creacion: string            // ISO, con hora
   fecha_respuesta: string | null    // ISO, con hora: cuándo dejó de estar pendiente; null si sigue pendiente
   inmueble: { id, direccion, numero, piso, barrio, foto_principal: string | null }
-  postulante: { id, nombre, apellido }
+  postulante: { id, nombre, apellido, dni?, telefono?, email? }   // dni, telefono y email: solo en /recibidas
+  legajo?: {                                                       // solo en /recibidas; null si es anterior
+    ocupacion, ingresos, convivientes, mascotas, detalle_mascotas, garantias
+  } | null
 }
 ```
 
@@ -141,11 +146,15 @@ Notas:
   `rechazada` o `cancelada` no: se puede volver a solicitar (nada vuelve a `pendiente`; se crea una
   nueva).
 - **Aceptar no rechaza a las demás** solicitudes del inmueble (Flujo de solicitudes · 02).
-- **Dirección según quién mira (decidido por el PO):** el back puede mandar siempre `direccion`,
-  `numero` y `piso`; el front muestra la **exacta** en `/recibidas` (son los inmuebles del locador) y
-  la **aproximada** ("Rondeau al 400") en `/mias`, en cualquier estado.
-- **Privacidad:** el teléfono y el email del postulante no van en el listado (tampoco se muestran en
-  el detalle: US-35 no los pide).
+- **Dirección con sesión (decidido por el PO con la US-35 actualizada):** quien inició sesión ve la
+  **exacta** con el piso, en `/recibidas`, en `/mias`, en el modal y en el detalle de
+  `/propiedad/[id]`. Un visitante sin sesión ve la aproximada en el detalle, y las tarjetas de
+  `/buscar` son aproximadas para todos. Reemplaza la regla de las tandas 1 y 2.
+- **Privacidad del legajo:** el DNI, el teléfono, el email, los ingresos y el resto del legajo los ve
+  solo el dueño del inmueble, en el detalle del postulante; nunca en un listado. `/mias` no los manda.
+- **Garantías exigidas:** el inmueble puede exigir garantías (`requiredGuarantees` en el front);
+  alcanza con que el postulante ofrezca **al menos una**. **El back no tiene el dato** (ni el alta ni
+  la edición lo cargan): queda para el Sprint 3 (HANDOFF §7).
 
 ## Panel del locador (`/panel`)
 

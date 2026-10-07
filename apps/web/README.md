@@ -64,8 +64,8 @@ Cuentas de prueba del modo mock (contraseña `Rentar2026`):
 |---|---|---|
 | `nicolas.arrieta@rentar.test` | locador | Panel con datos, Mis propiedades (7), alta. Detalle, edición y eliminar (US-03, US-04): Obispo Trejo 1250 tiene contrato vigente (precio y ajuste bloqueados, no se puede eliminar); Rondeau 480 se puede eliminar y cancela 2 solicitudes. Solicitudes recibidas (US-36 a US-38): 5 en Rondeau 480 y Fructuoso Rivera 785, con una aceptada (Diego) para probar cancelarla y la regla de una sola aceptada |
 | `sofia.ledesma@rentar.test` | locador y locatario | Cambio de rol ("Viendo como") |
-| `julieta.peralta@rentar.test` | locatario | Login de locatario (va a `/panel`, la versión mínima: buscar o publicar). Solicitar alquiler (US-35): ya solicitó Rondeau 480 (`/propiedad/prop-rondeau-480` muestra "Tu solicitud · Pendiente"); el envío completo se prueba con Fructuoso Rivera 785 (`/propiedad/prop-rivera-785`). Mis solicitudes: los cuatro estados; cancela la pendiente de Rondeau 480 |
-| `matias.quiroga@rentar.test`, `diego.ferreyra@rentar.test` | locatario | Postulantes del elenco (Sprint 2, no están en el mapa). Ver `src/lib/mocks/README.md` |
+| `julieta.peralta@rentar.test` | locatario | Login de locatario (va a `/panel`, la versión mínima: buscar o publicar). Solicitar alquiler (US-35 actualizada): ya solicitó Rondeau 480 (`/propiedad/prop-rondeau-480` muestra "Tu solicitud · Pendiente"); el envío completo se prueba con Fructuoso Rivera 785 (`/propiedad/prop-rivera-785`), con el aviso "Tenés 1 solicitud pendiente en otra propiedad". Mis solicitudes: los cuatro estados; cancela la pendiente de Rondeau 480 |
+| `matias.quiroga@rentar.test`, `diego.ferreyra@rentar.test` | locatario | Postulantes del elenco (Sprint 2, no están en el mapa). Con Diego se prueban las garantías que exige Rondeau 480 (su solicitud anterior está rechazada, así que puede volver a solicitar). Ver `src/lib/mocks/README.md` |
 
 Un locador recién registrado en `/registro` ve el panel vacío (onboarding). Lo creado se guarda en
 el navegador; el botón flotante de desarrollo "Reiniciar datos de prueba" lo borra.
