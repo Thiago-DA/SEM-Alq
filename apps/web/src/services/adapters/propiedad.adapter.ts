@@ -273,7 +273,9 @@ export function tituloDePropiedadNueva(nueva: Pick<PropiedadNueva, 'type' | 'roo
  * Campo por campo, lo que el back todavía no devuelve (brechas en
  * `docs/HANDOFF-BACKEND.md`):
  * - `title`: el back no tiene título; se arma con tipo + dormitorios + barrio
- *   (`titulo.ts#tituloDePublicacion`), igual que en el detalle. Nunca la dirección.
+ *   (`titulo.ts#tituloDePublicacion`), igual que en el detalle pero sin el
+ *   barrio (`conBarrio: false`): la tarjeta ya muestra "barrio · título".
+ *   Nunca la dirección.
  * - `address`: aproximada ("calle al 400"), ver la NOTA de privacidad en direccion.ts.
  * - `priceMonthly`, `expenses` y `adjustmentIndex`: del contrato del inmueble
  *   (`precio`, `expensas`, `indice_ajuste`). CAC → `null` (el front no lo ofrece).
@@ -302,7 +304,7 @@ export function inmuebleDisponibleToPropiedadResumen(item: InmuebleDisponibleRes
 
   return {
     id: String(item.id),
-    title: tituloDePublicacion({ type, bedrooms: item.dormitorios, neighborhoodName: barrio.name }),
+    title: tituloDePublicacion({ type, bedrooms: item.dormitorios, neighborhoodName: barrio.name }, { conBarrio: false }),
     address: formatApproxAddress(item.direccion, item.numero),
     province: item.provincia,
     city: normalizarCiudad(item.ciudad),

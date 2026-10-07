@@ -4,7 +4,8 @@
  * Qué es: el back no guarda un título de la publicación, así que el front lo
  * arma con tipo + dormitorios + barrio ("Departamento de 1 dormitorio en
  * Nueva Córdoba"). Vive en un solo lugar para que la tarjeta de `/buscar`
- * (US-34) y el detalle (US-41) digan lo mismo de la misma propiedad.
+ * (US-34) y el detalle (US-41) digan lo mismo de la misma propiedad (la
+ * tarjeta, sin el barrio: ver `OpcionesTitulo.conBarrio`).
  *
  * NOTA de privacidad: el título nunca lleva la dirección. Se ve en la
  * tarjeta, en las migas y en el subtítulo del detalle, y la zona pública no
@@ -25,14 +26,30 @@ interface DatosTitulo {
   neighborhoodName: string
 }
 
+/** Opciones de {@link tituloDePublicacion}. */
+interface OpcionesTitulo {
+  /**
+   * Si el título termina con "en <barrio>". Por defecto `true`.
+   *
+   * NOTA: existe por la tarjeta de `/buscar` (US-34), que ya muestra
+   * "barrio · título": con el barrio dentro del título diría "Nueva Córdoba ·
+   * Departamento de 1 dormitorio en Nueva Córdoba". La tarjeta lo pide con
+   * `conBarrio: false` y el detalle (US-41), que no muestra el barrio al
+   * lado, con el valor por defecto. Las dos variantes salen de la misma base
+   * (tipo + dormitorios), así que la tarjeta y el detalle no se separan.
+   */
+  conBarrio?: boolean
+}
+
 /**
  * Título de una publicación: tipo + dormitorios + barrio.
  * Ej.: "Departamento de 1 dormitorio en Nueva Córdoba", "Casa de 2
  * dormitorios en Güemes", "Monoambiente en Centro" (un monoambiente no
- * nombra dormitorios), "PH de 2 dormitorios" (sin barrio conocido).
+ * nombra dormitorios), "PH de 2 dormitorios" (sin barrio conocido o con
+ * `conBarrio: false`).
  */
-export function tituloDePublicacion({ type, bedrooms, neighborhoodName }: DatosTitulo): string {
+export function tituloDePublicacion({ type, bedrooms, neighborhoodName }: DatosTitulo, { conBarrio = true }: OpcionesTitulo = {}): string {
   const tipo = PROPERTY_TYPE_LABEL[type]
   const base = type === 'monoambiente' ? tipo : `${tipo} de ${bedrooms} ${bedrooms === 1 ? 'dormitorio' : 'dormitorios'}`
-  return neighborhoodName ? `${base} en ${neighborhoodName}` : base
+  return conBarrio && neighborhoodName ? `${base} en ${neighborhoodName}` : base
 }
