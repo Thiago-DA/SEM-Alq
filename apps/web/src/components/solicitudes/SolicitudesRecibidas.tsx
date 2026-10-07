@@ -174,7 +174,7 @@ export function SolicitudesRecibidas() {
   const [seleccionadaId, setSeleccionadaId] = useState<string | null>(null)
   const [drawerAbierto, setDrawerAbierto] = useState(false)
   /** Aviso del 409 (la solicitud cambió mientras se miraba). */
-  const [conflicto, setConflicto] = useState<string | null>(null)
+  const [conflicto, setConflicto] = useState<{ titulo: string; detalle: string } | null>(null)
 
   const datos = carga.status === 'listo' ? carga.data : null
   const todas = useMemo(() => aplicarCambios(datos ?? [], cambios), [datos, cambios])
@@ -193,9 +193,9 @@ export function SolicitudesRecibidas() {
       setConflicto(null)
       setCambios((actual) => ({ ...actual, [actualizada.id]: { status: actualizada.status, respondedAt: actualizada.respondedAt } }))
     },
-    onConflicto: (message) => {
+    onConflicto: (message, pedida) => {
       // · 06: el error dice qué pasó y la lista se refresca sola.
-      setConflicto(message)
+      setConflicto({ titulo: `La solicitud de ${pedida.solicitud.applicant.fullName} cambió mientras la mirabas`, detalle: message })
       setCambios({})
       setDrawerAbierto(false)
       carga.reintentar()
@@ -253,7 +253,15 @@ export function SolicitudesRecibidas() {
       <PageHeader title="Solicitudes" subtitle={cargando || todas.length === 0 ? undefined : subtitulo(todas)} breadcrumb={MIGA} />
 
       {conflicto && (
-        <Alert type="warning" showIcon closable={{ 'aria-label': 'Cerrar el aviso' }} onClose={() => setConflicto(null)} title={conflicto} description="Actualizamos la lista con el estado de ahora." data-testid="solicitudes-conflicto" />
+        <Alert
+          type="warning"
+          showIcon
+          closable={{ 'aria-label': 'Cerrar el aviso' }}
+          onClose={() => setConflicto(null)}
+          title={conflicto.titulo}
+          description={`${conflicto.detalle} Actualizamos la lista con el estado de ahora.`}
+          data-testid="solicitudes-conflicto"
+        />
       )}
 
       {!cargando && todas.length === 0 ? (

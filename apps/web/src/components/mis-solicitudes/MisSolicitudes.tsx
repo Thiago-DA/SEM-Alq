@@ -81,7 +81,7 @@ export function MisSolicitudes() {
   const [cambios, setCambios] = useState<CambiosSolicitudes>({})
   const [pestania, setPestania] = useState<PestaniaSolicitudes>('todas')
   /** Aviso del 409 (la solicitud cambió mientras se miraba, ej. el dueño la aceptó). */
-  const [conflicto, setConflicto] = useState<string | null>(null)
+  const [conflicto, setConflicto] = useState<{ titulo: string; detalle: string } | null>(null)
 
   const datos = carga.status === 'listo' ? carga.data : null
   const todas = useMemo(() => aplicarCambios(datos ?? [], cambios), [datos, cambios])
@@ -94,8 +94,9 @@ export function MisSolicitudes() {
       setConflicto(null)
       setCambios((actual) => ({ ...actual, [actualizada.id]: { status: actualizada.status, respondedAt: actualizada.respondedAt } }))
     },
-    onConflicto: (message) => {
-      setConflicto(message)
+    onConflicto: (message, pedida) => {
+      const direccion = pedida.solicitud.property.address
+      setConflicto({ titulo: `Tu solicitud${direccion ? ` de ${direccion}` : ''} cambió mientras la mirabas`, detalle: message })
       setCambios({})
       carga.reintentar()
     },
@@ -145,8 +146,8 @@ export function MisSolicitudes() {
           showIcon
           closable={{ 'aria-label': 'Cerrar el aviso' }}
           onClose={() => setConflicto(null)}
-          title={conflicto}
-          description="Actualizamos la lista con el estado de ahora."
+          title={conflicto.titulo}
+          description={`${conflicto.detalle} Actualizamos la lista con el estado de ahora.`}
           data-testid="mis-solicitudes-conflicto"
         />
       )}
