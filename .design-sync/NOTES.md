@@ -74,6 +74,22 @@ el 2026-10-07):
   alquiladas o pausadas): "Ninguna de tus propiedades está publicada. Las solicitudes llegan solo a
   las publicadas.", con "Publicar una propiedad" (primario) y "Ver mis propiedades".
 
+Sprint 2, tanda 3 (detalle de la propiedad del locador: US-03 y US-04), **pendiente de subir**
+(aprobado por el PO el 2026-10-07):
+- **`ConfirmActionModal`: prop opcional `hideCancel`.** Saca el botón secundario y deja solo el de
+  confirmar, para avisos sin nada que elegir ("No podés eliminar una propiedad con contrato
+  vigente" · "Entendido"). La cruz y Escape siguen cerrando. Los usos anteriores no cambian. Ejemplo
+  nuevo en `/design-system` ("Aviso sin botón secundario").
+- **Desvío del diseño, "Eliminar" con contrato vigente:** "Detalle de propiedad del locador" · 01 dice
+  que las acciones destructivas bloqueadas van "deshabilitadas con tooltip". En la app, "Eliminar"
+  queda **habilitado** y abre el aviso de bloqueo (· 05, "Bloqueado por contrato vigente"): un botón
+  deshabilitado no recibe foco ni toque, y el tooltip no se ve en móvil. Decisión del PO.
+- **Pendiente de corregir en el template "Detalle de propiedad del locador" (Claude Design), no se
+  tocó:** la numeración (la pestaña Contrato dice US-03 y Cobros/Reclamos US-04; en Jira US-03 es
+  modificar y US-04 es eliminar); en esta tanda solo va la pestaña Resumen; sin "Pausar" (no tiene
+  US ni endpoint); el aviso de bloqueo no ofrece pausar ni "Ver el contrato"; eliminar es lógico y
+  avisa cuántas solicitudes se cancelan; sin "Modificado · antes …" por campo en la edición.
+
 Cambios de la tanda 4 (locador: /panel, US-02 y US-01), también **pendientes de subir** al final del
 Sprint 1. Todas las props son nuevas y opcionales: los usos anteriores no cambian.
 - `WizardLayout` ("Alta de propiedad" · 01, 06, 07 y 09): `status: 'error'` por paso (el Steps lo

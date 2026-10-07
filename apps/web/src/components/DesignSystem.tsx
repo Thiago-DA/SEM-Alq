@@ -462,6 +462,8 @@ export default function DesignSystem() {
   // Demo de `children` + `confirmLoading` (Flujo de solicitudes · 03, "Aceptar").
   const [acceptOpen, setAcceptOpen] = useState(false)
   const [acceptLoading, setAcceptLoading] = useState(false)
+  // Demo de `hideCancel` (Detalle de propiedad del locador · 05, "Bloqueado por contrato vigente").
+  const [blockedOpen, setBlockedOpen] = useState(false)
 
   return (
     <ConfigProvider theme={isDark ? antdThemeDark : antdTheme}>
@@ -1322,6 +1324,9 @@ export default function DesignSystem() {
                   <Button onClick={() => setAcceptOpen(true)} data-testid="design-system-confirm-children-trigger">
                     Aceptar solicitud (cuerpo extra y carga)
                   </Button>
+                  <Button onClick={() => setBlockedOpen(true)} data-testid="design-system-confirm-hide-cancel-trigger">
+                    Aviso sin botón secundario
+                  </Button>
                   <NotificationBell notifications={demoNotifications} />
                   <UserMenu name="Sofía Ledesma" role="locador" items={demoUserMenuItems} roleOptions={demoRoleOptions} />
                 </div>
@@ -1356,6 +1361,17 @@ export default function DesignSystem() {
                   Las otras 2 solicitudes de Rondeau 480 <strong>siguen pendientes</strong>.
                 </p>
               </ConfirmActionModal>
+
+              {/* `hideCancel`: un aviso sin nada que elegir, con un solo botón. */}
+              <ConfirmActionModal
+                open={blockedOpen}
+                title="No podés eliminar una propiedad con contrato vigente"
+                description="Obispo Trejo 1250, 7° B está alquilada a Sofía Ledesma hasta el 31/03/2029. Para eliminarla, primero tiene que terminar el contrato."
+                confirmLabel="Entendido"
+                hideCancel
+                onConfirm={() => setBlockedOpen(false)}
+                onCancel={() => setBlockedOpen(false)}
+              />
             </section>
 
             {/* Cómo usar */}

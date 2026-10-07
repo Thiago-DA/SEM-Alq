@@ -31,6 +31,13 @@ interface ConfirmActionModalProps {
    * El modal no se cierra solo: lo cierra quien lo usa cuando la acción termina.
    */
   confirmLoading?: boolean
+  /**
+   * Si es `true`, no se muestra el botón secundario: queda solo el de
+   * confirmar. Para los avisos que no tienen nada que elegir (ej. "No podés
+   * eliminar una propiedad con contrato vigente" · "Entendido"). La cruz y
+   * Escape siguen llamando a `onCancel`.
+   */
+  hideCancel?: boolean
   'data-testid'?: string
 }
 
@@ -50,6 +57,7 @@ export function ConfirmActionModal({
   onCancel,
   children,
   confirmLoading = false,
+  hideCancel = false,
   ...rest
 }: ConfirmActionModalProps) {
   return (
@@ -68,6 +76,8 @@ export function ConfirmActionModal({
       confirmLoading={confirmLoading}
       okButtonProps={{ danger, 'data-testid': 'confirm-action-ok' }}
       cancelButtonProps={{ 'data-testid': 'confirm-action-cancel' }}
+      // Sin botón secundario: el pie queda solo con el de confirmar.
+      footer={hideCancel ? (_, { OkBtn }) => <OkBtn /> : undefined}
       {...rest}
     >
       {description && <p>{description}</p>}
