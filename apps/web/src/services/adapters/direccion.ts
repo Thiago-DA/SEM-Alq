@@ -10,7 +10,8 @@
  * cada propiedad" de US-34 sin exponer dónde vive alguien. La dirección
  * exacta la ven el locador (US-02) y, más adelante, las partes del contrato.
  *
- * Quién lo usa: `propiedad-mock.adapter.ts` y `propiedad.adapter.ts`.
+ * Quién lo usa: `propiedad-mock.adapter.ts`, `propiedad.adapter.ts` y los
+ * adaptadores de solicitudes.
  */
 
 /**
@@ -21,6 +22,15 @@
 export function formatApproxAddress(street: string, streetNumber: number): string {
   const cuadra = Math.floor(streetNumber / 100) * 100
   return cuadra > 0 ? `${street} al ${cuadra}` : `${street} (primera cuadra)`
+}
+
+/**
+ * Dirección exacta: "Rondeau 480, PB". Solo para quien tiene derecho a verla
+ * (el locador, sobre sus propias propiedades); nunca en la zona pública.
+ */
+export function formatExactAddress(street: string, streetNumber: number, floor?: string | null): string {
+  const base = `${street} ${streetNumber}`
+  return floor?.trim() ? `${base}, ${floor.trim()}` : base
 }
 
 /**

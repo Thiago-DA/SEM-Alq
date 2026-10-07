@@ -11,19 +11,25 @@
  * Quién lo usa: la rama real de `services/solicitudes.service.ts`.
  */
 import type { Solicitud, SolicitudNueva } from '@rentar/shared-types'
+import type { ActorSolicitud } from '@/lib/validation/solicitud.rules'
 import { PLACEHOLDER_PHOTO_SRC } from '@/lib/imagenes/fotoConRespaldo'
 import type { CrearSolicitudRequest, SolicitudResponse } from '../shared/backend-dtos'
-import { formatApproxAddress } from './direccion'
+import { formatApproxAddress, formatExactAddress } from './direccion'
 import { barrioDe } from './propiedad.adapter'
 
 /**
  * `SolicitudResponse` → `Solicitud`.
  *
+ * `vista` dice quién la mira: `'locador'` (Solicitudes recibidas) o
+ * `'postulante'` (Mis solicitudes, el detalle de la propiedad).
+ *
  * Campo por campo:
- * - `property.address`: dirección APROXIMADA ("Rondeau al 400"), igual que en
- *   la zona pública. NOTA: el diseño muestra la exacta en Mis solicitudes;
- *   cuándo se le revela al postulante (¿al aceptar?) se define en la tanda 2
- *   con US-36. Mientras tanto no se expone.
+ * - `property.address`: depende de quién mira (decisión del PO, tanda 2 del
+ *   Sprint 2). El locador ve la EXACTA ("Rondeau 480, PB"): son sus propias
+ *   propiedades, igual que en el panel. El postulante ve siempre la
+ *   APROXIMADA ("Rondeau al 400"), como en la zona pública, en cualquier
+ *   estado. NOTA: el diseño muestra la exacta en Mis solicitudes; manda la
+ *   decisión del PO.
  * - `property.neighborhoodSlug` / `neighborhoodName`: `inmueble.barrio` (texto
  *   libre), con el slug del catálogo si lo tiene (`barrioDe`).
  * - `property.imageSrc`: `foto_principal`, o el placeholder si no tiene fotos.
@@ -31,13 +37,14 @@ import { barrioDe } from './propiedad.adapter'
  * - `message`: `null` si vino vacío.
  * - `respondedAt`: `fecha_respuesta` (TODO(backend): la columna no existe).
  */
-export function solicitudResponseToSolicitud(dto: SolicitudResponse): Solicitud {
+export function solicitudResponseToSolicitud(dto: SolicitudResponse, vista: ActorSolicitud): Solicitud {
   const barrio = barrioDe(dto.inmueble.barrio)
+  const { direccion, numero, piso } = dto.inmueble
   return {
     id: String(dto.id),
     property: {
       id: String(dto.inmueble.id),
-      address: formatApproxAddress(dto.inmueble.direccion, dto.inmueble.numero),
+      address: vista === 'locador' ? formatExactAddress(direccion, numero, piso) : formatApproxAddress(direccion, numero),
       neighborhoodSlug: barrio.slug,
       neighborhoodName: barrio.name,
       imageSrc: dto.inmueble.foto_principal ?? PLACEHOLDER_PHOTO_SRC,

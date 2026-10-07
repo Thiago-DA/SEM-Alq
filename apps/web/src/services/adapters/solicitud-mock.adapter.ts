@@ -10,23 +10,27 @@
  */
 import type { Solicitud } from '@rentar/shared-types'
 import type { PropiedadMock, SolicitudMock } from '@/lib/mocks'
+import type { ActorSolicitud } from '@/lib/validation/solicitud.rules'
 import { PLACEHOLDER_PHOTO_SRC } from '@/lib/imagenes/fotoConRespaldo'
 import { formatApproxAddress } from './direccion'
-import { mainPhotoSrc } from './propiedad-mock.adapter'
+import { formatAddress, mainPhotoSrc } from './propiedad-mock.adapter'
 
 /**
  * `SolicitudMock` → `Solicitud`. Con las mismas reglas que la rama real
- * (`solicitud.adapter.ts#solicitudResponseToSolicitud`): dirección
- * aproximada y placeholder si la propiedad no tiene foto.
+ * (`solicitud.adapter.ts#solicitudResponseToSolicitud`): dirección exacta
+ * para el locador y aproximada para el postulante (`vista`), y placeholder si
+ * la propiedad no tiene foto.
  * `propiedad` es `null` si ya no existe (por ejemplo, se reiniciaron los
  * datos de prueba): la solicitud se muestra igual, sin dirección.
  */
-export function solicitudMockToSolicitud(solicitud: SolicitudMock, propiedad: PropiedadMock | null): Solicitud {
+export function solicitudMockToSolicitud(solicitud: SolicitudMock, propiedad: PropiedadMock | null, vista: ActorSolicitud): Solicitud {
+  // La regla de la dirección está explicada en `solicitud.adapter.ts`.
+  const address = !propiedad ? '' : vista === 'locador' ? formatAddress(propiedad) : formatApproxAddress(propiedad.street, propiedad.streetNumber)
   return {
     id: solicitud.id,
     property: {
       id: solicitud.propertyId,
-      address: propiedad ? formatApproxAddress(propiedad.street, propiedad.streetNumber) : '',
+      address,
       neighborhoodSlug: propiedad?.neighborhoodSlug ?? '',
       neighborhoodName: propiedad?.neighborhoodName ?? '',
       imageSrc: (propiedad && mainPhotoSrc(propiedad)) || PLACEHOLDER_PHOTO_SRC,
