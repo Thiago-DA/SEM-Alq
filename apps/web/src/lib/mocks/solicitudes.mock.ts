@@ -131,7 +131,7 @@ export const solicitudes: SolicitudMock[] = [
     createdAt: '2026-09-02T10:15:00',
     respondedAt: '2026-09-04T09:30:00',
     contact: CONTACTO_DIEGO,
-    legajo: { occupation: 'monotributista', monthlyIncome: 900000, residents: 1, hasPets: false, petsDetail: null, guarantees: ['propietaria'] },
+    legajo: { occupation: 'relacion_dependencia', monthlyIncome: 900000, residents: 1, hasPets: false, petsDetail: null, guarantees: ['propietaria'] },
   },
   // Fructuoso Rivera 785: la aceptada de Diego (US-38: Nicolás la puede
   // cancelar; mientras esté, el "Aceptar" de otra pendiente queda
@@ -148,7 +148,7 @@ export const solicitudes: SolicitudMock[] = [
     contact: CONTACTO_DIEGO,
     // Fructuoso Rivera 785 es apta mascotas: Diego declara su perro (la única del elenco con mascotas).
     legajo: {
-      occupation: 'monotributista',
+      occupation: 'relacion_dependencia',
       monthlyIncome: 950000,
       residents: 2,
       hasPets: true,

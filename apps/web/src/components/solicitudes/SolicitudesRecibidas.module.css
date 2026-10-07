@@ -312,6 +312,16 @@
   color: var(--rentar-color-text-primary);
 }
 
+.legajo {
+  padding: 0.75rem;
+  border-radius: var(--rentar-radius-md);
+  background: var(--rentar-color-bg-page);
+}
+
+.legajo :global(.ant-descriptions-item) {
+  padding-bottom: 0.375rem;
+}
+
 .detailEmpty {
   font-size: 0.875rem;
   color: var(--rentar-color-text-secondary);

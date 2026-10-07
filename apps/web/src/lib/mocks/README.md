@@ -108,7 +108,8 @@ reclamos no se escriben en la propiedad: se calculan a partir de los cobros y re
 - **Contacto y legajo (US-35 actualizada, tanda 4 del Sprint 2):** las ocho tienen el contacto de su
   cuenta (teléfono en E.164) y un legajo. Julieta (0031 y 0036 a 0038): relación de dependencia,
   $1.250.000, 2 personas, sin mascotas, garantía propietaria. Matías (0032 y 0035): estudiante, no
-  informa ingresos, 1 persona, seguro de caución. Diego: monotributista, garantía propietaria; en
+  informa ingresos, 1 persona, seguro de caución. Diego: relación de dependencia (como dice su mensaje
+  en 0034), garantía propietaria; en
   0033 (Rondeau), $900.000 y 1 persona; en 0034 (Fructuoso Rivera, apta mascotas), $950.000,
   2 personas y **un perro**: la única del elenco con mascotas, para probar ese bloque. Las enviadas
   desde el navegador antes de esta tanda se muestran "Sin datos de legajo".
