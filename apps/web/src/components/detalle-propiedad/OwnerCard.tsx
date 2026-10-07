@@ -24,6 +24,7 @@ import type { ReactNode } from 'react'
 import { Avatar, Button, Card, Tooltip } from 'antd'
 import { MailOutlined } from '@ant-design/icons'
 import type { DuenoPropiedad } from '@rentar/shared-types'
+import { iniciales } from '@/lib/utils/iniciales'
 import styles from './OwnerCard.module.css'
 
 /** Props de {@link OwnerCard}. */
@@ -35,16 +36,6 @@ interface OwnerCardProps {
   /** Secciones extra debajo de las acciones (condiciones, medios de pago). */
   children?: ReactNode
   'data-testid'?: string
-}
-
-/** Iniciales para el avatar: "Nicolás Arrieta" → "NA". */
-function iniciales(nombre: string): string {
-  return nombre
-    .split(/\s+/)
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((parte) => parte[0]?.toUpperCase() ?? '')
-    .join('')
 }
 
 /** Mensaje del tooltip de "Enviar mensaje": Mensajes no es de este sprint. */
