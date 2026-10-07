@@ -12,6 +12,12 @@
  * - Rondeau 480, PB es la publicada de la narrativa y Julieta Peralta, la
  *   postulante: SOL-2026-0031 queda pendiente para mostrar el estado "ya la
  *   solicitaste" del detalle.
+ * - Las demás (tanda 2 del Sprint 2) cubren los cuatro estados: Nicolás
+ *   recibe 3 sobre Rondeau 480 y 2 sobre Fructuoso Rivera 785 (con una
+ *   aceptada, para US-38 y la regla de una sola aceptada por propiedad), y
+ *   Julieta ve los cuatro estados en Mis solicitudes.
+ * - Julieta no tiene ninguna sobre Fructuoso Rivera 785: ahí se prueba el
+ *   envío completo de US-35.
  * - Una propiedad alquilada (sin fecha de disponibilidad) o pausada no recibe
  *   solicitudes: no hay ninguna sobre esas.
  * - Prefijo de id: `SOL-2026-XXXX`.
@@ -61,5 +67,83 @@ export const solicitudes: SolicitudMock[] = [
     status: 'pendiente',
     createdAt: '2026-09-20',
     respondedAt: null,
+  },
+
+  // ─── Tanda 2 del Sprint 2 (datos completados, ver README) ─────────────
+  // Rondeau 480: dos pendientes (Julieta y Matías) y una rechazada.
+  {
+    id: 'SOL-2026-0032',
+    propertyId: 'prop-rondeau-480',
+    applicantUserId: 'usr-matias',
+    applicantName: 'Matías Quiroga',
+    message: 'Hola, soy estudiante de posgrado y trabajo medio tiempo. Me interesa para mudarme en octubre, con contrato por 3 años.',
+    status: 'pendiente',
+    createdAt: '2026-09-19T18:40:00',
+    respondedAt: null,
+  },
+  {
+    id: 'SOL-2026-0033',
+    propertyId: 'prop-rondeau-480',
+    applicantUserId: 'usr-diego',
+    applicantName: 'Diego Ferreyra',
+    message: null,
+    status: 'rechazada',
+    createdAt: '2026-09-02T10:15:00',
+    respondedAt: '2026-09-04T09:30:00',
+  },
+  // Fructuoso Rivera 785: la aceptada de Diego (US-38: Nicolás la puede
+  // cancelar; mientras esté, el "Aceptar" de otra pendiente queda
+  // deshabilitado) y una que Matías canceló.
+  {
+    id: 'SOL-2026-0034',
+    propertyId: 'prop-rivera-785',
+    applicantUserId: 'usr-diego',
+    applicantName: 'Diego Ferreyra',
+    message: 'Buenas, trabajo en relación de dependencia y tengo garantía propietaria. Puedo coordinar una visita cuando te quede cómodo.',
+    status: 'aceptada',
+    createdAt: '2026-09-12T20:05:00',
+    respondedAt: '2026-09-14T11:00:00',
+  },
+  {
+    id: 'SOL-2026-0035',
+    propertyId: 'prop-rivera-785',
+    applicantUserId: 'usr-matias',
+    applicantName: 'Matías Quiroga',
+    message: null,
+    status: 'cancelada',
+    createdAt: '2026-09-08T16:20:00',
+    respondedAt: '2026-09-10T08:45:00',
+  },
+  // Mis solicitudes de Julieta: una de cada estado, sobre publicadas de
+  // otros locadores (no aparecen en el panel de nadie del elenco).
+  {
+    id: 'SOL-2026-0036',
+    propertyId: 'prop-otro-05',
+    applicantUserId: 'usr-julieta',
+    applicantName: 'Julieta Peralta',
+    message: null,
+    status: 'aceptada',
+    createdAt: '2026-09-15T21:10:00',
+    respondedAt: '2026-09-21T12:30:00',
+  },
+  {
+    id: 'SOL-2026-0037',
+    propertyId: 'prop-otro-03',
+    applicantUserId: 'usr-julieta',
+    applicantName: 'Julieta Peralta',
+    message: null,
+    status: 'rechazada',
+    createdAt: '2026-09-05T19:00:00',
+    respondedAt: '2026-09-08T10:00:00',
+  },
+  {
+    id: 'SOL-2026-0038',
+    propertyId: 'prop-otro-07',
+    applicantUserId: 'usr-julieta',
+    applicantName: 'Julieta Peralta',
+    message: null,
+    status: 'cancelada',
+    createdAt: '2026-09-10T22:30:00',
+    respondedAt: '2026-09-12T09:15:00',
   },
 ]

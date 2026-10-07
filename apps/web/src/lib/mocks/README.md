@@ -13,8 +13,10 @@ documentada, también el catálogo `/design-system` (no es una pantalla del prod
 | `usr-nicolas` | Nicolás Arrieta | locador | Dueño de 7 propiedades: 4 alquiladas, 2 publicadas, 1 pausada. |
 | `usr-sofia` | Sofía Ledesma | locador y locatario | Locataria de Obispo Trejo 1250 7° B y locadora de Mariano Moreno 285. Única cuenta con dos roles. |
 | `usr-julieta` | Julieta Peralta | locatario | La que busca: encuentra Rondeau 480 y la solicita. |
+| `usr-matias` | Matías Quiroga | locatario | **No está en el mapa** (Sprint 2, OK del PO). Postulante de Rondeau 480 y Fructuoso Rivera 785. No es inquilino de nada. |
+| `usr-diego` | Diego Ferreyra | locatario | **No está en el mapa** (Sprint 2, OK del PO). Postulante; su solicitud de Fructuoso Rivera 785 está aceptada. No es inquilino de nada. |
 
-Contraseña de las tres en modo mock: `Rentar2026` (`MOCK_PASSWORD`). La cuenta admin del mapa no
+Contraseña de las cinco en modo mock: `Rentar2026` (`MOCK_PASSWORD`). La cuenta admin del mapa no
 está: el panel de administración no es de este sprint.
 
 ## Las propiedades (`propiedades.mock.ts`)
@@ -73,13 +75,32 @@ reclamos no se escriben en la propiedad: se calculan a partir de los cobros y re
 
 ## Las solicitudes (`solicitudes.mock.ts`)
 
-| Id | Postulante | Propiedad | Estado | Fecha | Mensaje |
-|---|---|---|---|---|---|
-| SOL-2026-0031 | Julieta Peralta (`usr-julieta`) | Rondeau 480, PB | pendiente | 20/09/2026 | sin mensaje (el mapa no define uno) |
+| Id | Postulante | Propiedad | Estado | Enviada | Respondida | Mensaje |
+|---|---|---|---|---|---|---|
+| SOL-2026-0031 | Julieta Peralta (`usr-julieta`) | Rondeau 480, PB | pendiente | 20/09/2026 | — | sin mensaje (el mapa no define uno) |
+| SOL-2026-0032 | Matías Quiroga (`usr-matias`) | Rondeau 480, PB | pendiente | 19/09/2026 | — | sí |
+| SOL-2026-0033 | Diego Ferreyra (`usr-diego`) | Rondeau 480, PB | rechazada | 02/09/2026 | 04/09/2026 | no |
+| SOL-2026-0034 | Diego Ferreyra | Fructuoso Rivera 785 | **aceptada** | 12/09/2026 | 14/09/2026 | sí |
+| SOL-2026-0035 | Matías Quiroga | Fructuoso Rivera 785 | cancelada (la canceló él) | 08/09/2026 | 10/09/2026 | no |
+| SOL-2026-0036 | Julieta Peralta | Achával Rodríguez 245 (`prop-otro-05`, Güemes) | aceptada | 15/09/2026 | 21/09/2026 | no |
+| SOL-2026-0037 | Julieta Peralta | 27 de Abril 370 (`prop-otro-03`, Centro) | rechazada | 05/09/2026 | 08/09/2026 | no |
+| SOL-2026-0038 | Julieta Peralta | 24 de Septiembre 1450 (`prop-otro-07`, General Paz) | cancelada (la canceló ella) | 10/09/2026 | 12/09/2026 | no |
 
 - SOL-2026-0031 muestra el estado "ya la solicitaste" del detalle (`/propiedad/prop-rondeau-480`
   con la sesión de Julieta). El envío completo (US-35) se prueba con Julieta sobre **Fructuoso
-  Rivera 785** (`prop-rivera-785`), la otra publicada de Nicolás.
+  Rivera 785** (`prop-rivera-785`), la otra publicada de Nicolás: Julieta no tiene ninguna ahí.
+- **Solicitudes recibidas de Nicolás** (`/panel/solicitudes`): 5, en 2 propiedades. Pendientes 2
+  (Julieta y Matías en Rondeau 480), aceptadas 1 (Diego en Fructuoso Rivera 785), cerradas 2.
+- **Una sola aceptada por propiedad:** como Fructuoso Rivera 785 ya tiene la de Diego, si Julieta
+  le manda una (el recorrido de la tanda 1), su "Aceptar" aparece deshabilitado hasta que Nicolás
+  cancele la de Diego (US-38).
+- **Mis solicitudes de Julieta** (`/panel/mis-solicitudes`): los cuatro estados (0031, 0036, 0037
+  y 0038). Las tres de otros locadores no aparecen en el panel de nadie del elenco.
+- **Postulantes nuevos (no están en el mapa):** Matías Quiroga (`matias.quiroga@rentar.test`) y
+  Diego Ferreyra (`diego.ferreyra@rentar.test`), locatarios, contraseña `Rentar2026`. Se sumaron
+  en la tanda 2 del Sprint 2 con el OK del PO, con nombres del diseño ("Flujo de solicitudes ·
+  02"). No son inquilinos de ninguna propiedad. (Diego no tiene relación con Julián Ferreyra, el
+  inquilino de Belgrano 1120.)
 - Una propiedad alquilada (sin fecha) o pausada no recibe solicitudes.
 - Las nuevas toman el siguiente número libre (`SOL-2026-0032`, …) y la fecha de "hoy" (23/09/2026)
   con la hora del momento.
@@ -109,3 +130,5 @@ otros valores, ganan ellos.
 | Próximos ajustes | Belgrano 01/11/2026 (IPC cada 4 meses), Av. Colón 01/10/2026 (ICL anual), Mariano Moreno 01/12/2026 (IPC cada 4 meses). Laprida (01/03/2027) y Obispo Trejo (01/04/2027) sí vinieron de producto y del mapa. | `rental.nextAdjustmentDate` |
 | Reclamos | "Pérdida de agua en el baño" (abierto, sin responder) y "El termotanque no calienta" (en proceso) → Laprida 340; "Ruido de la bomba de agua" (en proceso) → Av. Colón 2450. Títulos del export del panel; ids RCL-2026-0036/0039/0041 y fechas elegidos acá. | `reclamos` en `panel.mock.ts` |
 | Solicitud de Julieta | SOL-2026-0031, del 20/09/2026 | `solicitudes.mock.ts` |
+| Solicitudes de la tanda 2 (Sprint 2) | SOL-2026-0032 a 0038: postulantes, estados, fechas y los dos mensajes, elegidos para cubrir los cuatro estados y la regla de una sola aceptada | `solicitudes.mock.ts` |
+| Postulantes nuevos (Sprint 2) | Matías Quiroga y Diego Ferreyra, con su email, DNI, teléfono y fecha de nacimiento | `usuarios.mock.ts` |
