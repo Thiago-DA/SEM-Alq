@@ -416,6 +416,9 @@ export function inmuebleDetalleToPropiedadDetalle(dto: InmuebleDetalleResponse):
     owner: null,
     conditions: null,
     paymentMethods: null,
+    addressPrecision: 'aproximada',
+    floor: null,
+    requiredGuarantees: [],
   }
 }
 

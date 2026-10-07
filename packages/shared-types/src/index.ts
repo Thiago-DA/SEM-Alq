@@ -299,7 +299,15 @@ export type {
   StatusDomainMap,
 } from './status';
 export type { UsuarioSesion } from './usuario-sesion';
-export type { EstadoSolicitud, Solicitud, SolicitudNueva } from './solicitud';
+export type {
+  ContactoSolicitud,
+  EstadoSolicitud,
+  GarantiaOfrecida,
+  LegajoSolicitud,
+  OcupacionPostulante,
+  Solicitud,
+  SolicitudNueva,
+} from './solicitud';
 export type {
   CobroPanel,
   ResumenCobros,

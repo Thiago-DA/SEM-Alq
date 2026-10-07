@@ -11,6 +11,7 @@
  * pantallas de la landing, `/buscar` (US-34), `/propiedad/[id]` (US-41),
  * `/panel/propiedades` (US-02) y `/panel/propiedades/nueva` (US-01).
  */
+import type { GarantiaOfrecida } from './solicitud'
 import type { PropertyStatus } from './status'
 
 /**
@@ -163,11 +164,11 @@ export interface CondicionesContrato {
  * características, descripción, fotos y disponibilidad) y suma lo que solo
  * muestra el detalle.
  *
- * NOTA de privacidad: el detalle NUNCA recibe la dirección exacta. `address`
- * es la misma dirección aproximada de la tarjeta de `/buscar` ("Rondeau al
- * 400", ver `services/adapters/direccion.ts`): la altura y el piso los ve
- * solo el dueño, y el postulante recién cuando el dueño acepta la solicitud
- * (Detalle de propiedad · 01, "Ubicación aproximada").
+ * NOTA de privacidad (decisión del PO con la US-35 actualizada): con
+ * sesión, `address` es la EXACTA y `floor` trae el piso; sin sesión, la
+ * aproximada de la tarjeta de `/buscar` ("Rondeau al 400", ver
+ * `services/adapters/direccion.ts`) y `floor` en `null`. `addressPrecision`
+ * dice cuál vino.
  *
  * Adaptadores: `propiedad.adapter.ts#inmuebleDetalleToPropiedadDetalle`
  * (rama real, `GET /inmuebles/disponibles/:id`) y
@@ -192,6 +193,17 @@ export interface PropiedadDetalle extends Omit<PropiedadResumen, 'priceMonthly' 
   conditions: CondicionesContrato | null
   /** `null` si no se conocen: la sección "Cómo se paga" no se muestra. */
   paymentMethods: MedioPagoConRecargo[] | null
+  /** Si `address` es la exacta (con sesión) o la aproximada (visitante sin sesión). */
+  addressPrecision: 'exacta' | 'aproximada'
+  /** Piso y depto ("7° B", "PB"); solo con sesión. `null` sin sesión o si no tiene. */
+  floor: string | null
+  /**
+   * Garantías que exige el locador (US-35: "se deben marcar las garantías
+   * solicitadas explícitamente por el locador"). Alcanza con que el
+   * postulante ofrezca al menos una (decisión del PO). Vacío = no exige
+   * ninguna.
+   */
+  requiredGuarantees: GarantiaOfrecida[]
 }
 
 /**

@@ -141,6 +141,9 @@ export function propiedadMockToDetalle(propiedad: PropiedadMock, owner: DuenoPro
       ? { contractMonths: propiedad.contractMonths, adjustmentEveryMonths: propiedad.adjustmentEveryMonths, depositAmount }
       : null,
     paymentMethods: propiedad.paymentMethods.length > 0 ? propiedad.paymentMethods : null,
+    addressPrecision: 'aproximada',
+    floor: null,
+    requiredGuarantees: [],
   }
 }
 
