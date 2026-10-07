@@ -267,6 +267,9 @@ export type {
   EstadoPublicacionAlta,
   FotoNueva,
   PropiedadNueva,
+  CambiosPropiedad,
+  ContratoVigenteResumen,
+  PropiedadLocadorDetalle,
 } from './propiedad';
 export type { NeighborhoodTier, Neighborhood } from './neighborhood';
 export type {

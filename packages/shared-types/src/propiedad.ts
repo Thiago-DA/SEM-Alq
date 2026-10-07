@@ -329,3 +329,61 @@ export interface PropiedadNueva {
   /** Duración del contrato en meses; `null` si no se cargó. */
   contractMonths: number | null
 }
+
+/**
+ * Lo que se puede modificar de una propiedad (US-03 Modificar mis
+ * propiedades): cualquier dato del alta. La pantalla de edición manda el
+ * formulario completo; el tipo es `Partial` para que el service no exija lo
+ * que no cambió.
+ * Adaptador: `propiedad.adapter.ts#cambiosToUpdateInmueble` (rama real) y
+ * `propiedad-mock.adapter.ts#aplicarCambiosMock` (elenco).
+ */
+export type CambiosPropiedad = Partial<PropiedadNueva>
+
+/** El contrato vigente de una propiedad, para el encabezado del detalle del locador. */
+export interface ContratoVigenteResumen {
+  /** Ej. "CT-2026-0148". */
+  id: string
+  /** Nombre del locatario (US-02). */
+  tenantName: string
+  /** Fecha ISO de fin del contrato. */
+  endDate: string
+  /** Fecha ISO del próximo ajuste por índice; `null` si no se conoce. */
+  nextAdjustmentDate: string | null
+  /** Monto mensual vigente; `null` si no se conoce. */
+  currentAmount: number | null
+}
+
+/**
+ * Una propiedad del locador en sesión, vista en su detalle,
+ * `/panel/propiedades/[id]` (US-03 y US-04, numeración de Jira).
+ *
+ * NOTA: a diferencia del detalle público, acá la dirección es la EXACTA: la
+ * ve solo su dueño.
+ * Adaptador: `propiedad.adapter.ts#misAlquileresDetalleToPropiedadLocadorDetalle`
+ * (rama real, `GET /mis-alquileres/:id`, propuesto) y
+ * `propiedad-mock.adapter.ts#propiedadMockToDetalleLocador` (elenco).
+ */
+export interface PropiedadLocadorDetalle {
+  id: string
+  /** Título de la publicación, ej. "1 dormitorio en planta baja con cochera". */
+  title: string
+  /** Dirección EXACTA, ej. "Rondeau 480, PB". */
+  address: string
+  neighborhoodName: string
+  /** Estado real de la publicación (con `alquilada_publicada`). */
+  status: PropertyStatus
+  /** Fecha ISO de alta; `null` si el back no la manda. */
+  publishedAt: string | null
+  /**
+   * Los datos tal como los carga el alta (US-01). La ficha del detalle y el
+   * formulario de edición (US-03) salen de acá, así nunca se contradicen.
+   */
+  values: PropiedadNueva
+  /**
+   * Contrato vigente, o `null`. Con contrato vigente no se puede modificar el
+   * precio ni el ajuste (los fija el contrato) y no se puede eliminar la
+   * propiedad (decisión del PO, tanda 3 del Sprint 2).
+   */
+  activeContract: ContratoVigenteResumen | null
+}
