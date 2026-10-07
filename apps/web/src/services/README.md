@@ -19,7 +19,7 @@ mocks ni llama a `fetch` directo**: llaman a una función de un service y recibe
 | `solicitudes.service.ts` | `enviarSolicitud`, `getMiSolicitudParaPropiedad` (rutas propuestas, no existen) | US-35 |
 | | `listarMisSolicitudes`, `listarSolicitudesRecibidas` | US-36 |
 | | `aceptarSolicitud`, `rechazarSolicitud` | US-37 |
-| | `cancelarSolicitud` (quién cancela se define en la tanda 2) | US-38 |
+| | `cancelarSolicitud`: el locador una aceptada (US-38) o el postulante una pendiente (sin US en Sprint 0). Una sola aceptada por propiedad: `aceptarSolicitud` da 409 si ya hay otra | US-38 |
 | `panel.service.ts` | `getResumenCobros`, `getResumenReclamos`, `getEventosContratos`, `getSolicitudesPendientes`, `getResumenRoles` | `/panel` (sin US en Sprint 0) |
 
 ## Cómo está armada cada función

@@ -172,7 +172,7 @@ faltan datos o una parte (ver sección 7); **pendiente** = no existe o el front 
 | `GET /usuarios/me/contextos` | "Viendo como" del UserMenu | **Pendiente** (propuesto; hoy se arma en el front con `/mis-alquileres`) |
 | `GET /catalogos/ubicaciones` | Filtros de ubicación | **Pendiente** (propuesto; hoy se arman con los datos) |
 | `GET /panel/cobros`, `/panel/reclamos`, `/panel/contratos`, `/solicitudes/recibidas?estado=pendiente` | `/panel` | **Pendiente** (módulos de sprints futuros; en modo real se muestran vacíos) |
-| `POST /solicitudes`, `GET /solicitudes/mias`, `GET /solicitudes/recibidas`, `PATCH /solicitudes/:id/{aceptar,rechazar,cancelar}` | `/propiedad/[id]` (US-35), `/panel/mis-solicitudes` y `/panel/solicitudes` (US-36 a US-38) | **Pendiente** (propuesto, Sprint 2; el front funciona en modo mock) |
+| `POST /solicitudes`, `GET /solicitudes/mias`, `GET /solicitudes/recibidas`, `PATCH /solicitudes/:id/{aceptar,rechazar,cancelar}` | `/propiedad/[id]` (US-35), `/panel/mis-solicitudes` y `/panel/solicitudes` (US-36 a US-38) | **Pendiente** (propuesto, Sprint 2; las tres pantallas están completas en modo mock, con la rama real lista en el service) |
 | `PUT /inmuebles/:id`, `DELETE /inmuebles/:id` | Detalle del locador (US-03, US-04, tanda 3 del Sprint 2) | Existen (Bearer + rol locador); el front las tiene firmadas, sin usar |
 | `PATCH /inmuebles/:id/publicacion` | Detalle (sprint 2) | **Pendiente** (propuesto; la función del service está lista, sin usar) |
 
@@ -285,8 +285,20 @@ tiene datos no se muestra.
 | **No existe el módulo:** tabla de solicitudes y las 6 rutas de `api-endpoints.md` ("Solicitudes"). | db / backend |
 | **Mail al locador** al crear la solicitud, con el nombre del postulante y el mensaje opcional (US-35, cuarto criterio). El front solo muestra "Le avisamos por mail a <dueño>". | backend |
 | Repetir las validaciones del front (`lib/validation/solicitud.rules.ts`): mensaje de hasta 1000 caracteres, una sola activa por persona e inmueble (409), no a la propia (403), solo publicadas o alquiladas con fecha. | backend |
-| **US-38 contra el diseño:** Jira dice que cancela el locador una aceptada; el diseño, que cancela el locatario una pendiente. Se define en la tanda 2. | PO |
-| **Pregunta para el PO: ¿bloqueo de 30 días después de un rechazo?** El diseño (Flujo de solicitudes · 03) dice "no puede volver a solicitar esta propiedad por 30 días". Ninguna US lo pide: hoy solo bloquean una nueva solicitud las `pendiente` o `aceptada`; una `rechazada` o `cancelada` permite volver a solicitar enseguida. | PO |
+| **Decidido (tanda 2): sin bloqueo de 30 días.** El diseño (Flujo de solicitudes · 03) dice "no puede volver a solicitar esta propiedad por 30 días"; ninguna US lo pide y no va. Solo bloquean una nueva solicitud las `pendiente` o `aceptada`; una `rechazada` o `cancelada` permite volver a solicitar enseguida. | — |
+
+### US-36 a US-38 Consultar, aceptar o rechazar y cancelar solicitudes (Sprint 2)
+
+| Brecha | Dueño |
+|---|---|
+| **No existe el módulo** (misma tabla y rutas que US-35). Las pantallas `/panel/solicitudes` y `/panel/mis-solicitudes` funcionan completas en modo mock. | db / backend |
+| **Decidido (tanda 2): quién cancela (US-38).** Una sola ruta, `PATCH /solicitudes/:id/cancelar`: el locador cancela una `aceptada` (US-38, Jira) y el postulante una `pendiente` (sin US en Sprint 0, mapa US-39). Otra combinación → 409 (o 403 si no es parte). Detalle en `api-endpoints.md`, "Solicitudes". | — |
+| **Decidido (tanda 2): una sola aceptada por inmueble.** `PATCH /aceptar` responde 409 si el inmueble ya tiene otra `aceptada`. El locador la cancela (US-38) y vuelve a poder aceptar a otro. Aceptar no rechaza a los demás: siguen `pendiente`. | backend |
+| **Decidido (tanda 2): sin motivo al rechazar.** El diseño lo propone; US-37 no lo pide. | — |
+| **Columna `fecha_respuesta`** (cuándo dejó de estar pendiente) en la tabla y en `SolicitudResponse`: la usan las dos pantallas ("Aceptada el 14/09", "Te aceptaron el 21/09"). | db / backend |
+| **Mails:** al locatario cuando el locador acepta (US-37) y cuando cancela una aceptada (US-38). Rechazar y la cancelación del postulante no piden mail. El front solo dice "Le avisamos por mail". | backend |
+| **Dirección según quién mira (decidido):** el front muestra la exacta en `/recibidas` y la aproximada en `/mias`; el back puede mandar los mismos campos en las dos. | — |
+| Repetir en el back la tabla de transiciones de `lib/validation/solicitud.rules.ts` (`TRANSICIONES_SOLICITUD`). | backend |
 
 ### `/panel` (inicio del locatario)
 
@@ -385,7 +397,8 @@ Encontradas al integrar. No se tocó `apps/api` (el PR #2 se cerró sin mergear)
 No se arreglaron en el PR del QA; quedan anotados para cuando toque:
 
 1. **Bloqueo por rol de las páginas del locador.** Hoy solo `/panel/propiedades` y
-   `/panel/propiedades/[id]` están envueltas en `RequireRole role="locador"`. Solicitudes, Contratos,
+   `/panel/propiedades/[id]` están envueltas en `RequireRole role="locador"` (y, desde la tanda 2 del
+   Sprint 2, `/panel/solicitudes`). Contratos,
    Cobros, Reclamos, Mensajes, Reportes y Suscripción son placeholders sin bloqueo: un locatario no
    las ve en el menú (`navConfig.tsx`), pero entra si escribe la URL. Cuando cada una se implemente,
    envolverla en `RequireRole` (y que el back responda 403 a un locatario, ver §6), salvo las que
@@ -448,7 +461,9 @@ sesión dura hasta cerrarla).
 | Alta | `alta-<campo>` (ej. `alta-calle`, `alta-precio`), `alta-fotos-dropzone`, `alta-foto`, `alta-foto-principal`, `alta-foto-quitar`, `alta-medio-<medio>-check` / `-recargo`, `alta-indice-<ICL\|IPC>`, `wizard-next-button`, `wizard-prev-button`, `wizard-finish-button`, `alta-mobile-volver`, `alta-mobile-salir`, `alta-errores`, `alta-publicando`, `alta-error-publicar`, `alta-reintentar`, `alta-error-login`, `alta-exito`, `alta-exito-mis-propiedades` (solo si la cuenta ya es locadora), `alta-exito-ver`, `alta-exito-panel` (locatario y no publicada), `alta-exito-otra` |
 | `/propiedad/[id]` (US-41, Sprint 2) | `detalle-propiedad`, `detalle-propiedad-cargando`, `detalle-propiedad-galeria` (adentro, `photo-gallery-main` y `photo-gallery-thumbnail`), `detalle-propiedad-precio`, `detalle-propiedad-disponible-desde`, `detalle-propiedad-caracteristicas`, `detalle-propiedad-dueno-card`, `detalle-propiedad-dueno`, `detalle-propiedad-condiciones`, `detalle-propiedad-medios-pago`, `detalle-propiedad-enviar-mensaje-button` (deshabilitado), `detalle-propiedad-similares`, `detalle-propiedad-similares-cargando`, `detalle-propiedad-similar`, `detalle-propiedad-similares-ver-todas`, `detalle-propiedad-no-encontrada`, `detalle-propiedad-error`, `detalle-propiedad-reintentar-button`, `detalle-propiedad-buscar-button`, `detalle-propiedad-volver-button`. Botón según el estado (tarjeta del dueño): `detalle-propiedad-solicitar-login-button` (sin sesión), `detalle-propiedad-solicitar-button` (puede solicitar), `detalle-propiedad-solicitud-estado` + `detalle-propiedad-solicitud-tag` + `detalle-propiedad-ver-solicitudes-link` (ya la solicitó), `detalle-propiedad-propia`, `detalle-propiedad-no-disponible` + `detalle-propiedad-ver-similares-button`. La barra fija de móvil (`detalle-propiedad-barra-movil`) repite el botón con el prefijo `detalle-propiedad-barra-` (ej. `detalle-propiedad-barra-solicitar-button`) |
 | Modal "Solicitar alquiler" (US-35, sobre `/propiedad/[id]`) | `solicitar-modal`, `solicitar-mensaje` (contador "N / 1000" de antd al lado), `solicitar-enviar-button`, `solicitar-cancelar-button`, `solicitar-error`; 409: `solicitar-duplicada`, `solicitar-ver-mi-solicitud-button`, `solicitar-cerrar-button`; 401 con mensaje escrito: `solicitar-sesion-vencida`, `solicitar-reingresar-button`, `solicitar-volver-button`; éxito: `solicitar-exito`, `solicitar-exito-mail`, `solicitar-ver-solicitudes-button`, `solicitar-seguir-buscando-button` |
-| `/panel/mis-solicitudes` (placeholder hasta la tanda 2) | `placeholder-screen` |
+| `/panel` (locador), tanda 2 | `panel-solicitudes-link` ("N solicitudes nuevas" dentro de `panel-pendientes`, lleva a `/panel/solicitudes`) |
+| `/panel/solicitudes` (US-36 a US-38, Sprint 2) | `solicitudes`, `solicitudes-tab-<pendientes\|aceptadas\|cerradas\|todas>`, `solicitudes-filtro-propiedad`, `solicitudes-orden`, `solicitudes-grupo`, `solicitudes-fila`, `solicitudes-aceptar-button`, `solicitudes-aceptar-bloqueado` (envuelve al "Aceptar" deshabilitado cuando la propiedad ya tiene una aceptada; el motivo va en el tooltip), `solicitudes-rechazar-button`, `solicitudes-cancelar-button` (aceptada, US-38), `solicitudes-ver-detalle` (rechazada o cancelada), `solicitudes-aviso-aceptar`. Detalle del postulante (panel del costado en escritorio; en móvil, dentro de `solicitudes-detalle-drawer`): `solicitudes-detalle`, `solicitudes-detalle-mensaje`, `solicitudes-detalle-aceptar-button`, `solicitudes-detalle-aceptar-bloqueado`, `solicitudes-detalle-rechazar-button`, `solicitudes-detalle-cancelar-button`. Modales: `solicitudes-aceptar-modal`, `solicitudes-rechazar-modal`, `solicitudes-cancelar-modal`, con `confirm-action-ok` y `confirm-action-cancel` adentro; error de la acción: `solicitudes-accion-error` + `solicitudes-accion-reintentar`; 409: `solicitudes-conflicto`. Estados: `solicitudes-cargando`, `solicitudes-vacio` (+ `solicitudes-vacio-publicar` o `solicitudes-vacio-propiedades`), `solicitudes-sin-resultados`, `solicitudes-error`, `solicitudes-reintentar` |
+| `/panel/mis-solicitudes` (US-36, Sprint 2) | `mis-solicitudes`, `mis-solicitudes-tab-<todas\|pendientes\|aceptadas\|cerradas>`, `mis-solicitudes-fila`, `mis-solicitudes-estado-texto`, `mis-solicitudes-cancelar-button` (pendiente), `mis-solicitudes-ver-button` (pendiente o aceptada), `mis-solicitudes-ver-similares-button` (rechazada o cancelada), `mis-solicitudes-cancelar-modal` (con `confirm-action-ok` y `confirm-action-cancel`), `mis-solicitudes-accion-error` + `mis-solicitudes-accion-reintentar`, `mis-solicitudes-conflicto`, `mis-solicitudes-cargando`, `mis-solicitudes-vacio`, `mis-solicitudes-vacio-buscar`, `mis-solicitudes-sin-resultados`, `mis-solicitudes-error`, `mis-solicitudes-reintentar`. Borrado: `placeholder-screen` en esta ruta |
 | Herramientas de desarrollo | `dev-tools-toggle`, `dev-tools-reset-mock-data` |
 
 Para ver todos: `grep -rn "data-testid" apps/web/src packages/ui/src`.

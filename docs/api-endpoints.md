@@ -90,9 +90,9 @@ existentes (`/inmuebles`, `/mis-alquileres`). Todas con **Bearer**: el usuario s
 | `POST /solicitudes` | Bearer, cualquier rol | pendiente (propuesto) | US-35 | `solicitudes.service#enviarSolicitud` | `{ id_inmueble: number, mensaje?: string \| null }` (mensaje de hasta 1000 caracteres) | `SolicitudResponse` (201, `estado: 'pendiente'`) | 400 mensaje de más de 1000 o propiedad no disponible (alquilada o pausada); 401; 403 si es su propia publicación; 404 si el inmueble no existe; **409 si ya tiene una solicitud pendiente o aceptada para ese inmueble** | Al **locador**: nombre y apellido del postulante y el mensaje, si lo hay (US-35) |
 | `GET /solicitudes/mias` | Bearer | pendiente (propuesto) | US-36 (y US-35: estado del botón del detalle) | `#listarMisSolicitudes`; con `?inmueble=:id`, `#getMiSolicitudParaPropiedad` | `inmueble` (opcional): id del inmueble | `SolicitudResponse[]` del usuario del token, de la más nueva a la más vieja | 401 | — |
 | `GET /solicitudes/recibidas` | Bearer + rol `locador` | pendiente (propuesto) | US-36 | `#listarSolicitudesRecibidas`; con `?estado=pendiente`, `panel.service#getSolicitudesPendientes` | `estado` (opcional) | `SolicitudResponse[]` de los inmuebles del locador | 401, 403 | — |
-| `PATCH /solicitudes/:id/aceptar` | Bearer + rol `locador` (dueño del inmueble) | pendiente (propuesto) | US-37 | `#aceptarSolicitud` | — | `SolicitudResponse` (`aceptada`) | 401, 403/404 si no es suya, **409 si ya no está pendiente** | Al **locatario**: que se aceptó (US-37) |
-| `PATCH /solicitudes/:id/rechazar` | Bearer + rol `locador` (dueño del inmueble) | pendiente (propuesto) | US-37 | `#rechazarSolicitud` | — (el motivo opcional del diseño se define en la tanda 2) | `SolicitudResponse` (`rechazada`) | 401, 403/404, 409 | — (US-37 solo pide mail al aceptar) |
-| `PATCH /solicitudes/:id/cancelar` | Bearer | pendiente (propuesto) | US-38 | `#cancelarSolicitud` | — | `SolicitudResponse` (`cancelada`) | 401, 403/404, 409 | Al **locatario**: que se canceló (US-38) |
+| `PATCH /solicitudes/:id/aceptar` | Bearer + rol `locador` (dueño del inmueble) | pendiente (propuesto) | US-37 | `#aceptarSolicitud` | — | `SolicitudResponse` (`aceptada`) | 401, 403/404 si no es suya, **409 si ya no está pendiente o si el inmueble ya tiene otra aceptada** | Al **locatario**: que se aceptó (US-37) |
+| `PATCH /solicitudes/:id/rechazar` | Bearer + rol `locador` (dueño del inmueble) | pendiente (propuesto) | US-37 | `#rechazarSolicitud` | — (sin motivo: US-37 no lo pide) | `SolicitudResponse` (`rechazada`) | 401, 403/404, 409 si ya no está pendiente | — (US-37 solo pide mail al aceptar) |
+| `PATCH /solicitudes/:id/cancelar` | Bearer (el dueño del inmueble o el postulante) | pendiente (propuesto) | US-38 (locador) y sin US en Sprint 0 (postulante) | `#cancelarSolicitud` | — | `SolicitudResponse` (`cancelada`) | 401; 403/404 si no es ni el dueño ni el postulante; **409 si el estado no corresponde a quien llama** (ver "Quién cancela") | Al **locatario**, si cancela el locador (US-38) |
 
 `SolicitudResponse` (propuesto):
 
@@ -102,6 +102,7 @@ existentes (`/inmuebles`, `/mis-alquileres`). Todas con **Bearer**: el usuario s
   estado: 'pendiente' | 'aceptada' | 'rechazada' | 'cancelada'
   mensaje: string | null
   fecha_creacion: string            // ISO, con hora
+  fecha_respuesta: string | null    // ISO, con hora: cuándo dejó de estar pendiente; null si sigue pendiente
   inmueble: { id, direccion, numero, piso, barrio, foto_principal: string | null }
   postulante: { id, nombre, apellido }
 }
@@ -109,15 +110,29 @@ existentes (`/inmuebles`, `/mis-alquileres`). Todas con **Bearer**: el usuario s
 
 Notas:
 
-- **Quién cancela (US-38):** en Jira, US-38 es "como **locador** quiero dar de baja una solicitud tras
-  haberla aceptado"; el diseño hace que el **locatario** cancele una **pendiente**. Se define en la
-  tanda 2 del Sprint 2, antes de implementar la ruta.
+- **Quién cancela (decidido por el PO, tanda 2 del Sprint 2):** una sola ruta,
+  `PATCH /solicitudes/:id/cancelar`. El back decide según quién llama y el estado:
+  - **dueño del inmueble + `aceptada`** → `cancelada` (US-38: "dar de baja una solicitud tras haberla
+    aceptado"), con mail al locatario;
+  - **postulante + `pendiente`** → `cancelada` (sin US en Sprint 0, mapa US-39);
+  - el dueño o el postulante con cualquier otro estado → **409**; alguien que no es ninguno de los dos
+    → **403** (o 404, para no revelar que existe).
+- **Transiciones permitidas** (las mismas que `TRANSICIONES_SOLICITUD` en
+  `apps/web/src/lib/validation/solicitud.rules.ts`): aceptar y rechazar, del locador desde
+  `pendiente`; cancelar, del locador desde `aceptada` o del postulante desde `pendiente`. Cada una
+  guarda `fecha_respuesta`.
+- **Una sola aceptada por inmueble (decidido por el PO):** `PATCH /aceptar` responde 409 si el
+  inmueble ya tiene otra solicitud `aceptada`. Para aceptar a otro postulante, el locador primero
+  cancela la aceptada (US-38).
 - **Una sola activa por persona e inmueble:** una `pendiente` o `aceptada` impide otra (409). Una
   `rechazada` o `cancelada` no: se puede volver a solicitar (nada vuelve a `pendiente`; se crea una
   nueva).
 - **Aceptar no rechaza a las demás** solicitudes del inmueble (Flujo de solicitudes · 02).
-- **Privacidad:** la dirección que ve el postulante es la aproximada hasta que se defina en la tanda
-  2 cuándo se le revela la exacta; el teléfono y el email del postulante no van en el listado.
+- **Dirección según quién mira (decidido por el PO):** el back puede mandar siempre `direccion`,
+  `numero` y `piso`; el front muestra la **exacta** en `/recibidas` (son los inmuebles del locador) y
+  la **aproximada** ("Rondeau al 400") en `/mias`, en cualquier estado.
+- **Privacidad:** el teléfono y el email del postulante no van en el listado (tampoco se muestran en
+  el detalle: US-35 no los pide).
 
 ## Panel del locador (`/panel`)
 
