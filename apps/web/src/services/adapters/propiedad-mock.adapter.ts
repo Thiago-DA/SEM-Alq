@@ -98,8 +98,12 @@ export function disponibilidadDeEstado(status: PropertyStatus): DisponibilidadPr
 /**
  * `PropiedadMock` → `PropiedadDetalle` (`/propiedad/[id]`, US-41).
  *
- * - `address`: aproximada, como en `/buscar` (ver la NOTA de privacidad de
- *   `PropiedadDetalle`).
+ * - `address` y `floor`: con sesión, la dirección EXACTA y el piso; sin
+ *   sesión, la aproximada de `/buscar` y sin piso (decisión del PO con la
+ *   US-35 actualizada; ver la NOTA de privacidad de `PropiedadDetalle`).
+ *   NOTA: es solo cosmético mientras el back mande la altura y el piso sin
+ *   token (HANDOFF §10).
+ * - `requiredGuarantees`: las que exige el locador, si el elenco las define.
  * - `owner`: lo arma el service con el elenco de cuentas. Los dueños fuera
  *   del elenco (`otros-locadores`) van con `fullName: null` ("el dueño"): no
  *   se inventan locadores.
@@ -107,14 +111,15 @@ export function disponibilidadDeEstado(status: PropertyStatus): DisponibilidadPr
  *   si no se cargó ninguno.
  * - `paymentMethods`: los del alta; `null` si no hay ninguno.
  */
-export function propiedadMockToDetalle(propiedad: PropiedadMock, owner: DuenoPropiedad): PropiedadDetalle {
+export function propiedadMockToDetalle(propiedad: PropiedadMock, owner: DuenoPropiedad, opciones: { conSesion?: boolean } = {}): PropiedadDetalle {
+  const exacta = opciones.conSesion === true
   const depositAmount = propiedad.depositMonths === null ? null : propiedad.depositMonths * propiedad.priceMonthly
   const hayCondiciones = propiedad.contractMonths !== null || propiedad.adjustmentEveryMonths !== null || depositAmount !== null
   return {
     id: propiedad.id,
     title: propiedad.title,
     // Zona pública: dirección aproximada (ver la NOTA de privacidad en direccion.ts).
-    address: formatApproxAddress(propiedad.street, propiedad.streetNumber),
+    address: exacta ? formatAddress(propiedad) : formatApproxAddress(propiedad.street, propiedad.streetNumber),
     province: propiedad.province,
     city: propiedad.city,
     neighborhoodSlug: propiedad.neighborhoodSlug,
@@ -141,9 +146,9 @@ export function propiedadMockToDetalle(propiedad: PropiedadMock, owner: DuenoPro
       ? { contractMonths: propiedad.contractMonths, adjustmentEveryMonths: propiedad.adjustmentEveryMonths, depositAmount }
       : null,
     paymentMethods: propiedad.paymentMethods.length > 0 ? propiedad.paymentMethods : null,
-    addressPrecision: 'aproximada',
-    floor: null,
-    requiredGuarantees: [],
+    addressPrecision: exacta ? 'exacta' : 'aproximada',
+    floor: exacta ? propiedad.floor : null,
+    requiredGuarantees: propiedad.requiredGuarantees ?? [],
   }
 }
 

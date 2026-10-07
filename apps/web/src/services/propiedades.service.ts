@@ -229,7 +229,7 @@ const CANTIDAD_SIMILARES = 3
  * `availability: 'no_disponible'`, "Ya no está disponible"); el back real
  * responde 404 para esas.
  */
-export async function getPropiedad(id: string): Promise<PropiedadDetalle> {
+export async function getPropiedad(id: string, opciones: { conSesion?: boolean } = {}): Promise<PropiedadDetalle> {
   if (USE_MOCKS) {
     await delay()
     const propiedad = readPropiedadesMock().find((item) => item.id === id)
@@ -237,11 +237,11 @@ export async function getPropiedad(id: string): Promise<PropiedadDetalle> {
     // Dueño: nombre solo si está en el elenco de cuentas (Nicolás, Sofía); si no, "el dueño".
     const cuenta = readUsuariosMock().find((usuario) => usuario.id === propiedad.ownerId)
     const fullName = cuenta ? `${cuenta.nombre} ${cuenta.apellido}` : null
-    return propiedadMockToDetalle(propiedad, { id: propiedad.ownerId, fullName })
+    return propiedadMockToDetalle(propiedad, { id: propiedad.ownerId, fullName }, opciones)
   }
   try {
     const dto = await apiRequest<InmuebleDetalleResponse>(`/inmuebles/disponibles/${encodeURIComponent(id)}`)
-    return inmuebleDetalleToPropiedadDetalle(dto)
+    return inmuebleDetalleToPropiedadDetalle(dto, opciones)
   } catch (error) {
     // 400 (id que no es un número, ej. un link viejo de modo mock) y 404 se ven igual: no existe.
     if (error instanceof ServiceError && (error.code === 'not_found' || error.code === 'validation')) {

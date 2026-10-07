@@ -88,7 +88,9 @@ export function readSolicitudesMock(): SolicitudMock[] {
 function aVista(solicitud: SolicitudMock, vista: ActorSolicitud): Solicitud {
   // Con las eliminadas (US-04, borrado lógico): la solicitud cancelada sigue mostrando la dirección.
   const propiedad = readPropiedadesMockConBorradas().find((item) => item.id === solicitud.propertyId) ?? null
-  return solicitudMockToSolicitud(solicitud, propiedad, vista)
+  // La cuenta del postulante, para el DNI que ve el locador (US-35 actualizada).
+  const postulante = vista === 'locador' ? (readUsuariosMock().find((item) => item.id === solicitud.applicantUserId) ?? null) : null
+  return solicitudMockToSolicitud(solicitud, propiedad, vista, postulante)
 }
 
 /** "Ahora" en el elenco: el "hoy" fijo (23/09/2026) con la hora actual, así ordena después de las del día. */
@@ -228,7 +230,7 @@ export async function getMiSolicitudParaPropiedad(propertyId: string): Promise<S
  * US-36 Consultar solicitudes — las que envió el usuario en sesión
  * (`/panel/mis-solicitudes`), de la más nueva a la más vieja.
  * @backend GET /api/v1/solicitudes/mias   (no existe — propuesto) → SolicitudResponse[]
- * @returns Solicitud[] con la dirección APROXIMADA de cada propiedad.
+ * @returns Solicitud[] con la dirección EXACTA (con sesión; decisión del PO con la US-35 actualizada).
  * @throws {ServiceError} `unauthorized` sin sesión (US-36: "se debe haber iniciado sesión").
  */
 export async function listarMisSolicitudes(): Promise<Solicitud[]> {
@@ -265,6 +267,29 @@ export async function listarSolicitudesRecibidas(): Promise<Solicitud[]> {
   }
   const items = await apiRequest<SolicitudResponse[]>('/solicitudes/recibidas')
   return items.map((item) => solicitudResponseToSolicitud(item, 'locador'))
+}
+
+/**
+ * US-35 actualizada — "Se debe indicar cuántas solicitudes pendientes tiene
+ * el locatario en otras propiedades, si es que la cantidad es superior a
+ * cero". Cuenta las `pendiente` del usuario en sesión, sin la propiedad que
+ * está solicitando.
+ * @backend GET /api/v1/solicitudes/mias?estado=pendiente   (no existe — propuesto) → SolicitudResponse[]
+ * @returns cantidad (0 sin sesión)
+ * NOTA: el front cuenta y excluye la propiedad actual (decisión del PO), así
+ * no hace falta una ruta solo para el número.
+ */
+export async function contarMisSolicitudesPendientes(excluirPropiedadId?: string): Promise<number> {
+  if (USE_MOCKS) {
+    await delay(300)
+    const session = readSessionFromDocument()
+    if (!session) return 0
+    return readSolicitudesMock().filter(
+      (item) => item.applicantUserId === session.userId && item.status === 'pendiente' && item.propertyId !== excluirPropiedadId,
+    ).length
+  }
+  const items = await apiRequest<SolicitudResponse[]>('/solicitudes/mias', { query: { estado: 'pendiente' } })
+  return items.filter((item) => String(item.inmueble.id) !== excluirPropiedadId).length
 }
 
 // ─── Aceptar o rechazar (US-37) ─────────────────────────────────────────

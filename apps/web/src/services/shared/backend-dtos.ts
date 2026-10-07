@@ -209,7 +209,28 @@ export interface SolicitudResponse {
     id: number
     nombre: string
     apellido?: string | null
+    /**
+     * Datos de contacto y DNI (US-35 actualizada). Solo en `/recibidas`, y
+     * solo para el dueño del inmueble: `/mias` no los manda.
+     * TODO(db): la tabla `usuario` no tiene DNI (HANDOFF §10).
+     */
+    dni?: string | null
+    telefono?: string | null
+    email?: string | null
   }
+  /**
+   * Legajo de la solicitud (US-35 actualizada). Solo en `/recibidas`; `null`
+   * si la solicitud es anterior y no lo tiene.
+   */
+  legajo?: {
+    ocupacion: 'sin_informar' | 'relacion_dependencia' | 'monotributista' | 'autonoma' | 'estudiante' | 'jubilada'
+    /** Entero; 0 = no informa. */
+    ingresos: number
+    convivientes: number
+    mascotas: boolean
+    detalle_mascotas: string | null
+    garantias: ('propietaria' | 'caucion' | 'otra')[]
+  } | null
 }
 
 // ─── Detalle de la propiedad del locador (US-03, US-04) · PROPUESTO ─────

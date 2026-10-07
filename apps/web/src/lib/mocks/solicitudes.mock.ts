@@ -27,7 +27,7 @@
  *
  * TODO(db): son filas de la tabla de solicitudes, que todavía no existe.
  */
-import type { EstadoSolicitud } from '@rentar/shared-types'
+import type { ContactoSolicitud, EstadoSolicitud, LegajoSolicitud } from '@rentar/shared-types'
 
 // ─── Tipos ──────────────────────────────────────────────────────────────
 
@@ -50,6 +50,13 @@ export interface SolicitudMock {
   createdAt: string
   /** Fecha (o fecha y hora) ISO en que dejó de estar pendiente; `null` si sigue pendiente. */
   respondedAt: string | null
+  /**
+   * Contacto que incluyó en la solicitud (US-35 actualizada). Opcional: las
+   * enviadas desde el navegador antes de esta tanda no lo tienen.
+   */
+  contact?: ContactoSolicitud
+  /** Legajo de la solicitud (US-35 actualizada). Opcional, por lo mismo: sin él, "Sin datos de legajo". */
+  legajo?: LegajoSolicitud
 }
 
 // ─── Solicitudes del elenco ─────────────────────────────────────────────

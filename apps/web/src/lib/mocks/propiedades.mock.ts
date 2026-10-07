@@ -29,6 +29,7 @@ import type {
   AdjustmentIndex,
   CharacteristicKey,
   ContractStatus,
+  GarantiaOfrecida,
   MedioPagoConRecargo,
   PropertyStatus,
   PropertyType,
@@ -147,6 +148,14 @@ export interface PropiedadMock {
    * Opcional: el elenco no tiene ninguna eliminada.
    */
   deletedAt?: string | null
+  /**
+   * Garantías que exige el locador (US-35 actualizada). Alcanza con que el
+   * postulante ofrezca al menos una (decisión del PO). Opcional: sin el dato,
+   * no exige ninguna.
+   * NOTA: el alta y la edición todavía no lo piden (pendiente para el Sprint
+   * 3, toca US-01 y US-03): solo lo trae el elenco.
+   */
+  requiredGuarantees?: GarantiaOfrecida[]
 }
 
 // ─── Helpers de armado ──────────────────────────────────────────────────

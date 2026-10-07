@@ -14,7 +14,7 @@ import type { Solicitud, SolicitudNueva } from '@rentar/shared-types'
 import type { ActorSolicitud } from '@/lib/validation/solicitud.rules'
 import { PLACEHOLDER_PHOTO_SRC } from '@/lib/imagenes/fotoConRespaldo'
 import type { CrearSolicitudRequest, SolicitudResponse } from '../shared/backend-dtos'
-import { formatApproxAddress, formatExactAddress } from './direccion'
+import { formatExactAddress } from './direccion'
 import { barrioDe } from './propiedad.adapter'
 
 /**
@@ -24,12 +24,13 @@ import { barrioDe } from './propiedad.adapter'
  * `'postulante'` (Mis solicitudes, el detalle de la propiedad).
  *
  * Campo por campo:
- * - `property.address`: depende de quién mira (decisión del PO, tanda 2 del
- *   Sprint 2). El locador ve la EXACTA ("Rondeau 480, PB"): son sus propias
- *   propiedades, igual que en el panel. El postulante ve siempre la
- *   APROXIMADA ("Rondeau al 400"), como en la zona pública, en cualquier
- *   estado. NOTA: el diseño muestra la exacta en Mis solicitudes; manda la
- *   decisión del PO.
+ * - `property.address`: la EXACTA ("Rondeau 480, PB") para los dos (decisión
+ *   del PO con la US-35 actualizada: con sesión se ve la exacta; reemplaza la
+ *   regla de las tandas 1 y 2, en la que el postulante veía la aproximada).
+ *   Las dos rutas piden sesión, así que siempre es la exacta.
+ * - `applicant.dni`, `contact` y `legajo` (US-35 actualizada): solo en la
+ *   vista del locador (`/recibidas`); para el postulante quedan sin definir.
+ *   `null` si la solicitud no los trae ("Sin datos de legajo").
  * - `property.neighborhoodSlug` / `neighborhoodName`: `inmueble.barrio` (texto
  *   libre), con el slug del catálogo si lo tiene (`barrioDe`).
  * - `property.imageSrc`: `foto_principal`, o el placeholder si no tiene fotos.
@@ -44,7 +45,7 @@ export function solicitudResponseToSolicitud(dto: SolicitudResponse, vista: Acto
     id: String(dto.id),
     property: {
       id: String(dto.inmueble.id),
-      address: vista === 'locador' ? formatExactAddress(direccion, numero, piso) : formatApproxAddress(direccion, numero),
+      address: formatExactAddress(direccion, numero, piso),
       neighborhoodSlug: barrio.slug,
       neighborhoodName: barrio.name,
       imageSrc: dto.inmueble.foto_principal ?? PLACEHOLDER_PHOTO_SRC,
@@ -52,11 +53,32 @@ export function solicitudResponseToSolicitud(dto: SolicitudResponse, vista: Acto
     applicant: {
       id: String(dto.postulante.id),
       fullName: [dto.postulante.nombre, dto.postulante.apellido].filter(Boolean).join(' '),
+      ...(vista === 'locador' ? { dni: dto.postulante.dni ?? null } : {}),
     },
+    ...(vista === 'locador' ? datosParaElLocador(dto) : {}),
     message: dto.mensaje?.trim() ? dto.mensaje : null,
     status: dto.estado,
     createdAt: dto.fecha_creacion,
     respondedAt: dto.fecha_respuesta ?? null,
+  }
+}
+
+/** Contacto y legajo de la respuesta (solo vista del locador). */
+function datosParaElLocador(dto: SolicitudResponse): Pick<Solicitud, 'contact' | 'legajo'> {
+  const { telefono, email } = dto.postulante
+  const legajo = dto.legajo
+  return {
+    contact: telefono || email ? { phone: telefono ?? '', email: email ?? '' } : null,
+    legajo: legajo
+      ? {
+          occupation: legajo.ocupacion,
+          monthlyIncome: legajo.ingresos,
+          residents: legajo.convivientes,
+          hasPets: legajo.mascotas,
+          petsDetail: legajo.detalle_mascotas,
+          guarantees: legajo.garantias,
+        }
+      : null,
   }
 }
 

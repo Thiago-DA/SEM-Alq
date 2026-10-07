@@ -9,23 +9,31 @@
  * Quién lo usa: la rama mock de `services/solicitudes.service.ts`.
  */
 import type { Solicitud } from '@rentar/shared-types'
-import type { PropiedadMock, SolicitudMock } from '@/lib/mocks'
+import type { PropiedadMock, SolicitudMock, UsuarioMock } from '@/lib/mocks'
 import type { ActorSolicitud } from '@/lib/validation/solicitud.rules'
 import { PLACEHOLDER_PHOTO_SRC } from '@/lib/imagenes/fotoConRespaldo'
-import { formatApproxAddress } from './direccion'
 import { formatAddress, mainPhotoSrc } from './propiedad-mock.adapter'
 
 /**
  * `SolicitudMock` → `Solicitud`. Con las mismas reglas que la rama real
  * (`solicitud.adapter.ts#solicitudResponseToSolicitud`): dirección exacta
- * para el locador y aproximada para el postulante (`vista`), y placeholder si
- * la propiedad no tiene foto.
+ * (con sesión, decisión del PO con la US-35 actualizada), placeholder si la
+ * propiedad no tiene foto, y DNI, contacto y legajo solo en la vista del
+ * locador (`vista`). `postulante` es la cuenta de quien la envió, para el DNI.
+ * Las enviadas antes de esta tanda no tienen legajo: `null` ("Sin datos de
+ * legajo").
  * `propiedad` es `null` si ya no existe (por ejemplo, se reiniciaron los
  * datos de prueba): la solicitud se muestra igual, sin dirección.
  */
-export function solicitudMockToSolicitud(solicitud: SolicitudMock, propiedad: PropiedadMock | null, vista: ActorSolicitud): Solicitud {
+export function solicitudMockToSolicitud(
+  solicitud: SolicitudMock,
+  propiedad: PropiedadMock | null,
+  vista: ActorSolicitud,
+  postulante: UsuarioMock | null = null,
+): Solicitud {
   // La regla de la dirección está explicada en `solicitud.adapter.ts`.
-  const address = !propiedad ? '' : vista === 'locador' ? formatAddress(propiedad) : formatApproxAddress(propiedad.street, propiedad.streetNumber)
+  const address = propiedad ? formatAddress(propiedad) : ''
+  const paraElLocador = vista === 'locador'
   return {
     id: solicitud.id,
     property: {
@@ -35,7 +43,12 @@ export function solicitudMockToSolicitud(solicitud: SolicitudMock, propiedad: Pr
       neighborhoodName: propiedad?.neighborhoodName ?? '',
       imageSrc: (propiedad && mainPhotoSrc(propiedad)) || PLACEHOLDER_PHOTO_SRC,
     },
-    applicant: { id: solicitud.applicantUserId, fullName: solicitud.applicantName },
+    applicant: {
+      id: solicitud.applicantUserId,
+      fullName: solicitud.applicantName,
+      ...(paraElLocador ? { dni: postulante?.dni ?? null } : {}),
+    },
+    ...(paraElLocador ? { contact: solicitud.contact ?? null, legajo: solicitud.legajo ?? null } : {}),
     message: solicitud.message,
     status: solicitud.status,
     createdAt: solicitud.createdAt,

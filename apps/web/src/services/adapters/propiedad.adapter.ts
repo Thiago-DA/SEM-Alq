@@ -375,8 +375,16 @@ function montoONull(valor: number | string | null | undefined): number | null {
  *   `deposito`). Con `null`, la sección "Condiciones del contrato" no se muestra.
  * - `paymentMethods`: TODO(backend): faltan los medios de pago del contrato
  *   (con su recargo). Con `null`, la sección "Cómo se paga" no se muestra.
+ * - `address` y `floor`: con sesión, la EXACTA y el piso; sin sesión, la
+ *   aproximada y sin piso (decisión del PO con la US-35 actualizada).
+ *   NOTA: es solo cosmético: hoy la ruta es pública y ya manda `direccion`,
+ *   `numero` y `piso` sin token (HANDOFF §10, gravedad alta).
+ * - `requiredGuarantees`: TODO(backend): el back no tiene el dato; sin él,
+ *   ninguna propiedad exige garantías (pendiente para el Sprint 3: toca US-01
+ *   y US-03, HANDOFF §7).
  */
-export function inmuebleDetalleToPropiedadDetalle(dto: InmuebleDetalleResponse): PropiedadDetalle {
+export function inmuebleDetalleToPropiedadDetalle(dto: InmuebleDetalleResponse, opciones: { conSesion?: boolean } = {}): PropiedadDetalle {
+  const exacta = opciones.conSesion === true
   const type = propertyTypeFromTipoId(dto.tipo.id)
   const barrio = barrioDe(dto.barrio)
   const characteristics = dto.tags
@@ -391,7 +399,7 @@ export function inmuebleDetalleToPropiedadDetalle(dto: InmuebleDetalleResponse):
   return {
     id: String(dto.id),
     title: tituloDePublicacion({ type, bedrooms: dto.dormitorios, neighborhoodName: barrio.name }),
-    address: formatApproxAddress(dto.direccion, dto.numero),
+    address: exacta ? formatExactAddress(dto.direccion, dto.numero, dto.piso) : formatApproxAddress(dto.direccion, dto.numero),
     province: dto.provincia,
     city: normalizarCiudad(dto.ciudad),
     neighborhoodSlug: barrio.slug,
@@ -416,8 +424,8 @@ export function inmuebleDetalleToPropiedadDetalle(dto: InmuebleDetalleResponse):
     owner: null,
     conditions: null,
     paymentMethods: null,
-    addressPrecision: 'aproximada',
-    floor: null,
+    addressPrecision: exacta ? 'exacta' : 'aproximada',
+    floor: exacta ? (dto.piso ?? null) : null,
     requiredGuarantees: [],
   }
 }
