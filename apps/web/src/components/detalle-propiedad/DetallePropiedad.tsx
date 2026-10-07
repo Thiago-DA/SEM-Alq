@@ -41,6 +41,7 @@ import { DetalleCargando, DetalleNoDisponible } from './EstadosDetalle'
 import { estadoAccion, PARAM_SOLICITAR } from './estadoAccion'
 import { OwnerCard } from './OwnerCard'
 import { PropiedadesSimilares } from './PropiedadesSimilares'
+import { SolicitarAlquilerModal } from './SolicitarAlquilerModal'
 import styles from './DetallePropiedad.module.css'
 
 // ─── Tipos y helpers ────────────────────────────────────────────────────
@@ -162,6 +163,12 @@ export function DetallePropiedad({ id }: DetallePropiedadProps) {
   // ─── Handlers ───────────────────────────────────────────────────────────
 
   const abrirModal = () => setModalPedido('click')
+
+  /** Al cerrar el modal: si ya hay una solicitud (enviada o 409), se vuelve a pedir para mostrar su estado. */
+  const cerrarModal = (cambioElEstado: boolean) => {
+    setModalPedido(null)
+    if (cambioElEstado) setVersionSolicitud((version) => version + 1)
+  }
 
   // ─── Render ─────────────────────────────────────────────────────────────
 
@@ -354,6 +361,9 @@ export function DetallePropiedad({ id }: DetallePropiedadProps) {
         </div>
         <div className={styles.mobileBarAction}>{accion('barra')}</div>
       </div>
+
+      {/* Se monta solo mientras está abierto: cada vez arranca con el formulario vacío. */}
+      {modalAbierto && <SolicitarAlquilerModal open propiedad={propiedad} onClose={cerrarModal} />}
     </div>
   )
 }
