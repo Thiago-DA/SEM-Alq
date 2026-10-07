@@ -157,3 +157,49 @@ export interface RegistrarUsuarioRequest {
   fecha_nacimiento: string
   acepta_terminos: boolean
 }
+
+// ─── Solicitudes (US-35 a US-38) · PROPUESTOS ───────────────────────────
+// NOTA: el back todavía no tiene el módulo de solicitudes. Estos DTOs son la
+// propuesta del front (ver `docs/api-endpoints.md`, "Solicitudes"): si el
+// back los arma distinto, se cambian acá y en `adapters/solicitud.adapter.ts`,
+// nunca en las pantallas.
+
+/** Estado de una solicitud, como lo guardaría la tabla (propuesto). */
+export type EstadoSolicitudDto = 'pendiente' | 'aceptada' | 'rechazada' | 'cancelada'
+
+/**
+ * Cuerpo de `POST /api/v1/solicitudes` (no existe — propuesto). El
+ * postulante sale del token.
+ */
+export interface CrearSolicitudRequest {
+  id_inmueble: number
+  /** Opcional, hasta 1000 caracteres (US-35). */
+  mensaje?: string | null
+}
+
+/**
+ * Una solicitud, como la devolverían `POST /solicitudes`,
+ * `GET /solicitudes/mias`, `GET /solicitudes/recibidas` y los `PATCH` de
+ * cambio de estado (no existen — propuesto).
+ */
+export interface SolicitudResponse {
+  id: number
+  estado: EstadoSolicitudDto
+  mensaje: string | null
+  /** Fecha y hora ISO de envío. */
+  fecha_creacion: string
+  inmueble: {
+    id: number
+    direccion: string
+    numero: number
+    piso?: string | null
+    barrio: string
+    /** URL de la foto principal; `null` si no tiene fotos. */
+    foto_principal: string | null
+  }
+  postulante: {
+    id: number
+    nombre: string
+    apellido?: string | null
+  }
+}

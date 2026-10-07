@@ -50,8 +50,9 @@ Todas están en Córdoba Capital (provincia "Córdoba", ciudad "Córdoba Capital
 
 ## Lo que se crea en el navegador
 
-Las cuentas creadas en `/registro` y las propiedades creadas en el alta se guardan en
-`localStorage` (claves `rentar:mock:usuarios` y `rentar:mock:propiedades`), encima del elenco. El
+Las cuentas creadas en `/registro`, las propiedades creadas en el alta y las solicitudes enviadas
+desde el detalle de una propiedad se guardan en `localStorage` (claves `rentar:mock:usuarios`,
+`rentar:mock:propiedades` y `rentar:mock:solicitudes`), encima del elenco. El
 botón "Reiniciar datos de prueba" de las herramientas de desarrollo las borra. Ver
 `src/services/shared/mockStore.ts`.
 
@@ -69,7 +70,18 @@ reclamos no se escriben en la propiedad: se calculan a partir de los cobros y re
 | Av. Colón 2450, 3° A | Martín Cabrera | CT-2026-0121 | $440.000, vence el 28/09 (con pago pendiente) | 1 | ICL anual, 01/10/2026 |
 | Mariano Moreno 285 (de Sofía) | Camila Ríos | CT-2026-0133 | $510.000, vencido el 05/09 (retrasada) | 0 | IPC cada 4 meses, 01/12/2026 |
 
-Solicitudes: Julieta Peralta por Rondeau 480 (SOL-2026-0031, pendiente).
+## Las solicitudes (`solicitudes.mock.ts`)
+
+| Id | Postulante | Propiedad | Estado | Fecha | Mensaje |
+|---|---|---|---|---|---|
+| SOL-2026-0031 | Julieta Peralta (`usr-julieta`) | Rondeau 480, PB | pendiente | 20/09/2026 | sin mensaje (el mapa no define uno) |
+
+- SOL-2026-0031 muestra el estado "ya la solicitaste" del detalle (`/propiedad/prop-rondeau-480`
+  con la sesión de Julieta). El envío completo (US-35) se prueba con Julieta sobre **Fructuoso
+  Rivera 785** (`prop-rivera-785`), la otra publicada de Nicolás.
+- Una propiedad alquilada (sin fecha) o pausada no recibe solicitudes.
+- Las nuevas toman el siguiente número libre (`SOL-2026-0032`, …) y la fecha de "hoy" (23/09/2026)
+  con la hora del momento.
 
 Los "vence en N días" y "N días de atraso" se calculan contra "hoy" (`lib/utils/fechas.ts`), que
 en modo mock está FIJO en el **23/09/2026**: Laprida lleva 19 días de atraso y Belgrano 7, siempre.
@@ -95,4 +107,4 @@ otros valores, ganan ellos.
 | Fecha de pago de Obispo Trejo | 03/09 (al día) | `cobros` en `panel.mock.ts` |
 | Próximos ajustes | Belgrano 01/11/2026 (IPC cada 4 meses), Av. Colón 01/10/2026 (ICL anual), Mariano Moreno 01/12/2026 (IPC cada 4 meses). Laprida (01/03/2027) y Obispo Trejo (01/04/2027) sí vinieron de producto y del mapa. | `rental.nextAdjustmentDate` |
 | Reclamos | "Pérdida de agua en el baño" (abierto, sin responder) y "El termotanque no calienta" (en proceso) → Laprida 340; "Ruido de la bomba de agua" (en proceso) → Av. Colón 2450. Títulos del export del panel; ids RCL-2026-0036/0039/0041 y fechas elegidos acá. | `reclamos` en `panel.mock.ts` |
-| Solicitud de Julieta | SOL-2026-0031, del 20/09/2026 | `solicitudes` en `panel.mock.ts` |
+| Solicitud de Julieta | SOL-2026-0031, del 20/09/2026 | `solicitudes.mock.ts` |

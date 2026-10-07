@@ -55,8 +55,9 @@ import { readUsuariosMock } from './usuarios.service'
  * Todas las propiedades mock: el elenco más las creadas en el alta
  * (guardadas en el navegador).
  * NOTA: del lado del servidor devuelve solo el elenco (ver `shared/mockStore.ts`).
+ * La comparte `solicitudes.service.ts` (dueño y disponibilidad de la propiedad solicitada).
  */
-function readPropiedadesMock(): PropiedadMock[] {
+export function readPropiedadesMock(): PropiedadMock[] {
   return readMockCollection('propiedades', propiedadesElenco)
 }
 
