@@ -29,6 +29,9 @@ está: el panel de administración no es de este sprint.
      disponible desde el 01/10/2026 (cuando empieza CT-2026-0207).
    - Fructuoso Rivera 785 (Cofico): "PH de 2 dormitorios con patio".
    - Las alquiladas y la pausada nunca aparecen en `/buscar`.
+   - **Cada una tiene 3 fotos** (US-01 pide al menos 3), para que se puedan editar (US-03) sin
+     subir fotos. Las dos extra salen del mismo banco (`src/assets/properties`): alguna se repite
+     entre propiedades.
 2. **Publicadas por otros locadores** (16, `ownerId: 'otros-locadores'`): las propiedades que antes
    eran de la landing. Conservan título, barrio, precio, dormitorios, m², índice, características y
    foto; se completaron dirección, expensas, descripción y disponibilidad. Todas publicadas, así

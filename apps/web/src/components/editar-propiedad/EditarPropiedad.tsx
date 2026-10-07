@@ -266,7 +266,8 @@ function FormularioEdicion({ detalle }: { detalle: PropiedadLocadorDetalle }) {
             <PasoCaracteristicas estadoFijadoPorContrato={contrato} />
           </section>
           <section id="fotos" className={styles.seccion}>
-            <PasoFotos />
+            {/* El mínimo de 3 fotos se pide solo si se cambian las fotos (ver `reglasFotosEdicion`). */}
+            <PasoFotos fotosOriginales={original.photos} />
           </section>
           <section id="condiciones" className={styles.seccion}>
             <PasoCondiciones fijadosPorContrato={contrato} />

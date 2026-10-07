@@ -208,6 +208,30 @@ export const reglasFotos: FormRule[] = [
   },
 ]
 
+/** Misma lista de fotos (mismas fotos, en el mismo orden). */
+function mismasFotos(a: readonly FotoNueva[] | undefined, b: readonly FotoNueva[]): boolean {
+  const ids = (fotos: readonly FotoNueva[] | undefined) => (fotos ?? []).map((foto) => foto.id).join('|')
+  return ids(a) === ids(b)
+}
+
+/**
+ * Edición (US-03): el mínimo de 3 fotos de US-01 se valida SOLO si el usuario
+ * cambió la sección Fotos (agregó, quitó o reordenó).
+ * Por qué (decisión del PO, tanda 3 del Sprint 2): hay propiedades cargadas
+ * antes de la regla, con 1 a 3 fotos en el back real. Corregir un dato
+ * suelto (por ejemplo, las expensas) no tiene que obligar a subir fotos. Si
+ * se tocan las fotos, la regla del alta vuelve a valer completa.
+ * @param originales Las fotos guardadas, contra las que se compara.
+ */
+export function reglasFotosEdicion(originales: readonly FotoNueva[]): FormRule[] {
+  return [
+    {
+      validator: (_rule, value?: FotoNueva[]) =>
+        mismasFotos(value, originales) || (value?.length ?? 0) >= FOTOS_MINIMO ? Promise.resolve() : Promise.reject(new Error(MENSAJES_ALTA.fotosMinimo)),
+    },
+  ]
+}
+
 /** US-01: "Se debe indicar el monto de alquiler" (prueba: "sin monto (falla)"). */
 export const reglasPrecio: FormRule[] = [
   { required: true, message: MENSAJES_ALTA.precio },

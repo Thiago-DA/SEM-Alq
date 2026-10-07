@@ -159,6 +159,17 @@ function everyMonthsFor(index: AdjustmentIndex): number {
   return index === 'ICL' ? 12 : 4
 }
 
+/**
+ * Fotos de una propiedad del mapa: la principal primero y dos más.
+ * NOTA: US-01 pide al menos 3 fotos; las del mapa (Nicolás y Sofía) tienen
+ * 3 para que se puedan editar (US-03) sin tener que subir fotos. Las extra
+ * salen del mismo banco de imágenes del elenco (`src/assets/properties`), así
+ * que alguna se repite entre propiedades: son datos de prueba.
+ */
+function fotos(...imagenes: { src: string }[]): FotoMock[] {
+  return imagenes.map((imagen) => ({ src: imagen.src }))
+}
+
 /** Medios de pago del elenco, todos sin recargo. */
 const TRANSFERENCIA: MedioPagoConRecargo = { method: 'transferencia', surchargePct: 0 }
 const MP_DEBITO: MedioPagoConRecargo = { method: 'mercadopago_debito', surchargePct: 0 }
@@ -246,7 +257,7 @@ const elenco: PropiedadMock[] = [
     bathrooms: 1,
     ageYears: 15,
     characteristics: ['balcon'],
-    photos: [{ src: nuevaCordoba1.src }],
+    photos: fotos(nuevaCordoba1, centro2, guemes2),
     mainPhotoIndex: 0,
     priceMonthly: 520000,
     expenses: 70000,
@@ -295,7 +306,7 @@ const elenco: PropiedadMock[] = [
     bathrooms: 1,
     ageYears: 12,
     characteristics: ['balcon', 'apto-profesional'],
-    photos: [{ src: nuevaCordoba2.src }],
+    photos: fotos(nuevaCordoba2, nuevaCordoba4, altaCordoba2),
     mainPhotoIndex: 0,
     priceMonthly: 470000,
     expenses: 85000,
@@ -346,7 +357,7 @@ const elenco: PropiedadMock[] = [
     bathrooms: 1,
     ageYears: 20,
     characteristics: ['cochera'],
-    photos: [{ src: guemes1.src }],
+    photos: fotos(guemes1, guemes2, cofico2),
     mainPhotoIndex: 0,
     priceMonthly: 385000,
     expenses: 62000,
@@ -384,7 +395,7 @@ const elenco: PropiedadMock[] = [
     bathrooms: 1,
     ageYears: 30,
     characteristics: ['amoblado'],
-    photos: [{ src: centro1.src }],
+    photos: fotos(centro1, centro3, generalPaz2),
     mainPhotoIndex: 0,
     priceMonthly: 460000,
     expenses: 58000,
@@ -432,7 +443,7 @@ const elenco: PropiedadMock[] = [
     bathrooms: 1,
     ageYears: 25,
     characteristics: ['balcon', 'mascotas'],
-    photos: [{ src: generalPaz1.src }],
+    photos: fotos(generalPaz1, generalPaz2, centro2),
     mainPhotoIndex: 0,
     priceMonthly: 440000,
     expenses: 65000,
@@ -478,7 +489,7 @@ const elenco: PropiedadMock[] = [
     bathrooms: 1,
     ageYears: 40,
     characteristics: ['cochera', 'mascotas'],
-    photos: [{ src: cofico1.src }],
+    photos: fotos(cofico1, cofico2, altaCordoba3),
     mainPhotoIndex: 0,
     priceMonthly: 450000,
     expenses: 15000,
@@ -516,7 +527,7 @@ const elenco: PropiedadMock[] = [
     bathrooms: 1,
     ageYears: null,
     characteristics: ['amoblado'],
-    photos: [{ src: altaCordoba1.src }],
+    photos: fotos(altaCordoba1, altaCordoba2, nuevaCordoba3),
     mainPhotoIndex: 0,
     priceMonthly: 445000,
     expenses: 48000,
@@ -555,7 +566,7 @@ const elenco: PropiedadMock[] = [
     bathrooms: 1,
     ageYears: 45,
     characteristics: ['cochera', 'mascotas'],
-    photos: [{ src: nuevaCordoba3.src }],
+    photos: fotos(nuevaCordoba3, nuevaCordoba4, altaCordoba3),
     mainPhotoIndex: 0,
     priceMonthly: 510000,
     expenses: 0,

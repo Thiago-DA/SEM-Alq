@@ -18,6 +18,7 @@
 import { DatePicker, Form, Grid, Input, InputNumber, Select } from 'antd'
 import dayjs from 'dayjs'
 import type { ReactNode } from 'react'
+import type { FotoNueva } from '@rentar/shared-types'
 import { DetailList, FormSection, PropertyCard } from '@rentar/ui'
 import { formatARS } from '@rentar/ui/src/utils/formatARS'
 import { formatDate } from '@rentar/ui/src/utils/formatDate'
@@ -46,6 +47,7 @@ import {
   reglasEstado,
   reglasExpensas,
   reglasFotos,
+  reglasFotosEdicion,
   reglasMediosPago,
   reglasNumero,
   reglasPrecio,
@@ -254,12 +256,22 @@ export function PasoCaracteristicas({ estadoFijadoPorContrato }: PasoCaracterist
 
 // ─── Paso 3 · Fotos ─────────────────────────────────────────────────────
 
+/** Props de {@link PasoFotos}. */
+interface PasoFotosProps {
+  /**
+   * Solo la edición (US-03): las fotos guardadas. Con esto, el mínimo de 3
+   * se valida solo si se cambian las fotos (`reglasFotosEdicion`). El alta
+   * no lo pasa: ahí el mínimo vale siempre.
+   */
+  fotosOriginales?: FotoNueva[]
+}
+
 /** Alta · 03. US-01: de 3 a 50 fotos JPG o PNG de hasta 350 KB; la primera es la principal. */
-export function PasoFotos() {
+export function PasoFotos({ fotosOriginales }: PasoFotosProps = {}) {
   return (
     <div className={styles.step}>
       <FormSection title="Subí las fotos" description="Con 3 fotos alcanza para publicar, pero con 6 o más se entiende mucho mejor la propiedad.">
-        <Form.Item name="photos" rules={reglasFotos} className={styles.noLabel}>
+        <Form.Item name="photos" rules={fotosOriginales ? reglasFotosEdicion(fotosOriginales) : reglasFotos} className={styles.noLabel}>
           <FotosField />
         </Form.Item>
         {/* La principal se guarda aparte, por id (la maneja FotosField). */}
