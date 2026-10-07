@@ -459,6 +459,9 @@ export default function DesignSystem() {
   const [demoPassword, setDemoPassword] = useState('Rentar2026')
   const [sidebarFilters, setSidebarFilters] = useState(FILTROS_INICIALES)
   const [confirmOpen, setConfirmOpen] = useState(false)
+  // Demo de `children` + `confirmLoading` (Flujo de solicitudes · 03, "Aceptar").
+  const [acceptOpen, setAcceptOpen] = useState(false)
+  const [acceptLoading, setAcceptLoading] = useState(false)
 
   return (
     <ConfigProvider theme={isDark ? antdThemeDark : antdTheme}>
@@ -1316,6 +1319,9 @@ export default function DesignSystem() {
                   <Button danger onClick={() => setConfirmOpen(true)} data-testid="design-system-confirm-trigger">
                     Eliminar propiedad
                   </Button>
+                  <Button onClick={() => setAcceptOpen(true)} data-testid="design-system-confirm-children-trigger">
+                    Aceptar solicitud (cuerpo extra y carga)
+                  </Button>
                   <NotificationBell notifications={demoNotifications} />
                   <UserMenu name="Sofía Ledesma" role="locador" items={demoUserMenuItems} roleOptions={demoRoleOptions} />
                 </div>
@@ -1329,6 +1335,27 @@ export default function DesignSystem() {
                 onConfirm={() => setConfirmOpen(false)}
                 onCancel={() => setConfirmOpen(false)}
               />
+
+              {/* `children` suma un cuerpo extra; `confirmLoading` deja el spinner mientras corre la acción. */}
+              <ConfirmActionModal
+                open={acceptOpen}
+                title="¿Aceptar la solicitud de Julieta Peralta?"
+                description="Le avisamos por mail que aceptaste su solicitud."
+                confirmLabel="Aceptar solicitud"
+                confirmLoading={acceptLoading}
+                onConfirm={() => {
+                  setAcceptLoading(true)
+                  window.setTimeout(() => {
+                    setAcceptLoading(false)
+                    setAcceptOpen(false)
+                  }, 1200)
+                }}
+                onCancel={() => setAcceptOpen(false)}
+              >
+                <p>
+                  Las otras 2 solicitudes de Rondeau 480 <strong>siguen pendientes</strong>.
+                </p>
+              </ConfirmActionModal>
             </section>
 
             {/* Cómo usar */}

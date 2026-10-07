@@ -53,6 +53,21 @@ Candidatos a pasar al design system (necesitan el OK del PO antes de tocar el pa
 - `PhotoGallery` en móvil: el diseño (· 03) pide carrusel con swipe y puntos, sin miniaturas. Hoy
   se usa tal cual (imagen grande + miniaturas en todos los anchos).
 
+Sprint 2, tanda 2 (solicitudes: US-36, US-37 y US-38), **pendiente de subir** (aprobado por el PO
+el 2026-10-07):
+- **`ConfirmActionModal`: props opcionales `children` y `confirmLoading`.** `children` va debajo de
+  `description` (el diseño "Flujo de solicitudes" · 03 lo pide así: "con el cuerpo extra como
+  children"); `confirmLoading` deja el spinner en el botón de confirmar mientras corre la acción.
+  Los usos anteriores no cambian. Ejemplo nuevo en `/design-system` ("Aceptar solicitud").
+- Sin componentes nuevos: la fila de solicitud ("RequestCard") quedó local en
+  `apps/web/src/components/solicitudes/` y `mis-solicitudes/`. Candidata a pasar al design system
+  si se repite en otra pantalla.
+- **Pendiente de corregir en el template "Flujo de solicitudes" (Claude Design), no se tocó:** el
+  dominio `solicitud` de `StatusTag` ya existe (la hoja dice que falta); el motivo al rechazar y el
+  "no puede volver a solicitar por 30 días" no van; el locador cancela una aceptada (US-38); una
+  sola aceptada por propiedad ("Podés aceptar a más de una persona" ya no vale); el locatario ve la
+  dirección aproximada en Mis solicitudes.
+
 Cambios de la tanda 4 (locador: /panel, US-02 y US-01), también **pendientes de subir** al final del
 Sprint 1. Todas las props son nuevas y opcionales: los usos anteriores no cambian.
 - `WizardLayout` ("Alta de propiedad" · 01, 06, 07 y 09): `status: 'error'` por paso (el Steps lo
