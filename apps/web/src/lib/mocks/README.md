@@ -59,6 +59,12 @@ desde el detalle de una propiedad se guardan en `localStorage` (claves `rentar:m
 botón "Reiniciar datos de prueba" de las herramientas de desarrollo las borra. Ver
 `src/services/shared/mockStore.ts`.
 
+Lo mismo con lo que se edita o se elimina (US-03, US-04, Sprint 2): una propiedad editada se guarda
+entera en `rentar:mock:propiedades` y tapa a la del elenco; una eliminada se guarda con `deletedAt`
+(**borrado lógico**: deja de verse en Mis propiedades, en `/buscar` y en su detalle, pero sus
+solicitudes siguen mostrando la dirección) y sus solicitudes `pendiente` y `aceptada` pasan a
+`cancelada`. "Reiniciar datos de prueba" deja todo como en el elenco.
+
 ## Los alquileres (`rental` en `propiedades.mock.ts` + `panel.mock.ts`)
 
 Datos del export del listado del locador, confirmados por producto. El estado del pago y los

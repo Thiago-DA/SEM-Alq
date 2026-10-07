@@ -62,7 +62,7 @@ Cuentas de prueba del modo mock (contraseña `Rentar2026`):
 
 | Email | Roles | Para probar |
 |---|---|---|
-| `nicolas.arrieta@rentar.test` | locador | Panel con datos, Mis propiedades (7), alta. Solicitudes recibidas (US-36 a US-38): 5 en Rondeau 480 y Fructuoso Rivera 785, con una aceptada (Diego) para probar cancelarla y la regla de una sola aceptada |
+| `nicolas.arrieta@rentar.test` | locador | Panel con datos, Mis propiedades (7), alta. Detalle, edición y eliminar (US-03, US-04): Obispo Trejo 1250 tiene contrato vigente (precio y ajuste bloqueados, no se puede eliminar); Rondeau 480 se puede eliminar y cancela 2 solicitudes. Las del elenco tienen 1 foto: para guardar una edición hay que sumar 2 (US-01 pide 3). Solicitudes recibidas (US-36 a US-38): 5 en Rondeau 480 y Fructuoso Rivera 785, con una aceptada (Diego) para probar cancelarla y la regla de una sola aceptada |
 | `sofia.ledesma@rentar.test` | locador y locatario | Cambio de rol ("Viendo como") |
 | `julieta.peralta@rentar.test` | locatario | Login de locatario (va a `/panel`, la versión mínima: buscar o publicar). Solicitar alquiler (US-35): ya solicitó Rondeau 480 (`/propiedad/prop-rondeau-480` muestra "Tu solicitud · Pendiente"); el envío completo se prueba con Fructuoso Rivera 785 (`/propiedad/prop-rivera-785`). Mis solicitudes: los cuatro estados; cancela la pendiente de Rondeau 480 |
 | `matias.quiroga@rentar.test`, `diego.ferreyra@rentar.test` | locatario | Postulantes del elenco (Sprint 2, no están en el mapa). Ver `src/lib/mocks/README.md` |
@@ -84,6 +84,8 @@ el navegador; el botón flotante de desarrollo "Reiniciar datos de prueba" lo bo
 | `/panel` | Inicio del locador (o el mínimo del locatario: buscar o publicar) | sin US en Sprint 0 | `app/(app)/panel/page.tsx` → `components/panel/` |
 | `/panel/propiedades` | Mis propiedades | US-02 | `components/mis-propiedades/` |
 | `/panel/propiedades/nueva` | Alta de propiedad en 5 pasos | US-01 | `components/alta/` |
+| `/panel/propiedades/[id]` | Detalle de una propiedad del locador: Resumen y eliminar (solo locador) | US-03 y US-04 (Jira) | `components/mi-propiedad/` |
+| `/panel/propiedades/[id]/editar` | Editar una propiedad en una sola página (solo locador) | US-03 (Jira) | `components/editar-propiedad/` |
 | `/design-system` | Catálogo vivo de `@rentar/ui` (solo desarrollo) | — | `components/DesignSystem.tsx` |
 
 **Placeholders** ("En construcción", `components/PlaceholderScreen.tsx`): existen solo para que
@@ -91,14 +93,13 @@ ningún botón del Sprint 1 quede roto. Se reemplazan ruta por ruta cuando llega
 
 | Ruta | Llega desde | US |
 |---|---|---|
-| `/panel/propiedades/[id]` | Filas de Mis propiedades | US-03 / US-04 |
 | `/recuperar` | "¿Olvidaste tu contraseña?" del login | US-40 |
 | `/panel/contratos`, `/cobros`, `/reclamos`, `/mensajes`, `/reportes`, `/suscripcion` | Menú del locador | US-05, US-08/09, US-14 a 18, US-24 a 26, US-28, US-30 a 33 |
 | `/panel/perfil`, `/panel/notificaciones` | UserMenu | US-20/21, US-22/23 |
 
 `proxy.ts` protege `/panel/*`: sin sesión manda a `/login?next=…` y, después del login, vuelve ahí
 (US-39). En modo real verifica y renueva la sesión de Supabase; en modo mock, la cookie
-`rentar_session`. Mis propiedades (`/panel/propiedades` y `/panel/propiedades/[id]`) y Solicitudes
+`rentar_session`. Mis propiedades (`/panel/propiedades`, su detalle y su edición) y Solicitudes
 recibidas (`/panel/solicitudes`) además exigen el rol locador (`RequireRole` en cada página). El alta (`/panel/propiedades/nueva`) está abierta
 para cualquier usuario con sesión: al publicar la primera propiedad, la cuenta pasa a ser locadora.
 
@@ -107,7 +108,7 @@ para cualquier usuario con sesión: al publicar la primera propiedad, la cuenta 
 | Carpeta | Qué hay |
 |---|---|
 | `app/` | Rutas. `(public)` con Header y Footer, `(auth)` con `AuthLayout`, `(app)/panel` con `AppShell`. |
-| `components/` | Pantallas y sus piezas, una carpeta por pantalla (`auth/`, `buscar/`, `detalle-propiedad/`, `panel/`, `mis-propiedades/`, `alta/`, `solicitudes/`, `mis-solicitudes/`) más la landing. |
+| `components/` | Pantallas y sus piezas, una carpeta por pantalla (`auth/`, `buscar/`, `detalle-propiedad/`, `panel/`, `mis-propiedades/`, `alta/`, `mi-propiedad/`, `editar-propiedad/`, `solicitudes/`, `mis-solicitudes/`) más la landing. |
 | `services/` | **La única frontera con el backend.** Ver `services/README.md`. |
 | `lib/mocks/` | El elenco de datos de prueba. Solo lo usan los services. Ver su `README.md`. |
 | `lib/auth/` | Sesión: `AuthProvider`, cookie `rentar_session`, redirección después del login y `supabase/` (clientes de Supabase de navegador, servidor y proxy). |

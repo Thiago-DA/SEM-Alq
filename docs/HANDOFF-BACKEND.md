@@ -173,7 +173,8 @@ faltan datos o una parte (ver sección 7); **pendiente** = no existe o el front 
 | `GET /catalogos/ubicaciones` | Filtros de ubicación | **Pendiente** (propuesto; hoy se arman con los datos) |
 | `GET /panel/cobros`, `/panel/reclamos`, `/panel/contratos`, `/solicitudes/recibidas?estado=pendiente` | `/panel` | **Pendiente** (módulos de sprints futuros; en modo real se muestran vacíos) |
 | `POST /solicitudes`, `GET /solicitudes/mias`, `GET /solicitudes/recibidas`, `PATCH /solicitudes/:id/{aceptar,rechazar,cancelar}` | `/propiedad/[id]` (US-35), `/panel/mis-solicitudes` y `/panel/solicitudes` (US-36 a US-38) | **Pendiente** (propuesto, Sprint 2; las tres pantallas están completas en modo mock, con la rama real lista en el service) |
-| `PUT /inmuebles/:id`, `DELETE /inmuebles/:id` | Detalle del locador (US-03, US-04, tanda 3 del Sprint 2) | Existen (Bearer + rol locador); el front las tiene firmadas, sin usar |
+| `PUT /inmuebles/:id`, `DELETE /inmuebles/:id` | `/panel/propiedades/[id]` y `/panel/propiedades/[id]/editar` (US-03, US-04, tanda 3 del Sprint 2) | **Parcial**: existen y el front las usa en modo real, pero `PUT` ignora tags, fotos y condiciones (propuesto ampliado) y `DELETE` borra en duro; ninguna chequea el dueño (§10). El front funciona completo en modo mock |
+| `GET /mis-alquileres/:id` | Detalle y edición del locador (US-03, US-04) | **Pendiente** (propuesto, tanda 3 del Sprint 2; sin esta ruta el detalle no carga en modo real) |
 | `PATCH /inmuebles/:id/publicacion` | Detalle (sprint 2) | **Pendiente** (propuesto; la función del service está lista, sin usar) |
 
 ## 6. Status HTTP y errores
@@ -233,6 +234,22 @@ cuando el back vuelva a respetar los filtros.
 | Ciudades y barrios son texto libre ("Córdoba" vs. "Córdoba Capital"; "Alberdi" no está en el catálogo del front). Hace falta un catálogo de ubicaciones. | db |
 | El tag "Apto profesional" del front no existe en `tags_inmueble`. | db |
 | El índice CAC de la base no está en el front (US-01 habla solo de ICL e IPC): se muestra sin índice. | front / PO |
+
+### US-03 Modificar y US-04 Eliminar mis propiedades (Sprint 2, tanda 3)
+
+**US-03 y US-04 no tienen criterios de aceptación** (ni en `Documentación/md/US/` ni en Jira,
+SCRUM-20 y SCRUM-21): se usó el diseño ("Detalle de propiedad del locador" · 01, 05 y 06) como
+criterio, igual que con US-41. El PO tiene una propuesta de criterios para cargar.
+
+| Brecha | Dueño |
+|---|---|
+| **No existe `GET /mis-alquileres/:id`** (el detalle de una propiedad del dueño, con dirección exacta, condiciones, fotos, tags y contrato vigente; 404 si no es suya). Sin esta ruta, el detalle y la edición no cargan en modo real. Ver `api-endpoints.md`. | backend |
+| **`PUT /inmuebles/:id` ampliado:** el mismo cuerpo que `POST /inmuebles`. Hoy actualiza solo las columnas de `inmueble` e ignora `tags`, `fotos` y `condiciones_contrato`. El front ya manda el cuerpo completo (decisión del PO: no se parte el formulario según lo que soporta el back). | backend |
+| **Con contrato vigente, el precio, el índice y la frecuencia de ajuste no se modifican** (los fija el contrato): el back debería rechazarlo con 400. El front los muestra bloqueados. | backend |
+| **`DELETE /inmuebles/:id` lógico** (decisión del PO): `eliminado_en` o estado `eliminada`; deja de salir en `/mis-alquileres` y `/inmuebles/disponibles`; se conservan contratos y reclamos. **409 con contrato vigente.** | db / backend |
+| **Al eliminar, las solicitudes `pendiente` y `aceptada` del inmueble pasan a `cancelada`**, con un mail a cada postulante (decisión del PO). El modal avisa "Las N solicitudes de esta propiedad se van a cancelar". | backend |
+| **Fotos de la edición:** el front sube las nuevas a Storage antes del `PUT`; si el `PUT` falla, las borra (como el alta). Mientras el `PUT` no guarde fotos, ver §10. | backend |
+| **Decidido (tanda 3):** solo la pestaña Resumen; sin "Pausar" (no tiene US ni endpoint); "Eliminar" con contrato vigente queda habilitado y abre el aviso de bloqueo. | — |
 
 ### US-02 Consultar mis propiedades
 
@@ -392,13 +409,31 @@ Encontradas al integrar. No se tocó `apps/api` (el PR #2 se cerró sin mergear)
    sacaron de ahí para tener una sola copia de Next (la de `apps/web`, 16.3.5 exacta): el próximo
    `npm install` puede volver a traer dos. No se tocó desde el front (lo habla el PO con Thiago).
 
+9. **🔴 Crítico · `PUT` y `DELETE /inmuebles/:id` no chequean que el inmueble sea del que llama**
+   (tanda 3 del Sprint 2). Piden token y rol `locador`, pero el controller no lee el usuario y el
+   repositorio usa la clave secreta: cualquier locador puede modificar o borrar el inmueble de otro.
+   Además, `PUT` pasa el body entero a `.update()`. Filtrar por `id_locador` del token y responder
+   404 si no es suyo.
+10. **🔴 Alto · `GET /inmuebles` está abierto** (sin token) y devuelve todos los inmuebles con la
+    dirección exacta y el `id_locador`. El front no la usa: sacarla o protegerla con rol administrador.
+11. **🟠 Medio · `DELETE /inmuebles/:id` borra en duro y en cascada** contrato, reclamos, fotos y tags,
+    no bloquea con contrato vigente y no limpia Storage. Propuesta (PO): borrado lógico, 409 con
+    contrato vigente y cancelar las solicitudes (§7, US-04).
+12. **🟡 Bajo · 400 en lugar de 404** en `PUT` y `DELETE` cuando el inmueble no existe: el service
+    tira un `Error` sin status antes del chequeo del controller (y `errorHandler` usa 400, punto 4).
+13. **🟠 Fotos huérfanas en el bucket al editar:** hasta que el `PUT` guarde las fotos, cada edición
+    con fotos nuevas las sube a `fotos-propiedades` y quedan sin referencia (si el `PUT` falla, el
+    front sí las borra). Se resuelve con el `PUT` ampliado (§7, US-03).
+
+Los puntos 9 a 12 tienen un texto de issue para GitHub (lo abre el PO).
+
 ### Pendientes del front anotados en el QA de `develop` (30/09)
 
 No se arreglaron en el PR del QA; quedan anotados para cuando toque:
 
 1. **Bloqueo por rol de las páginas del locador.** Hoy solo `/panel/propiedades` y
-   `/panel/propiedades/[id]` están envueltas en `RequireRole role="locador"` (y, desde la tanda 2 del
-   Sprint 2, `/panel/solicitudes`). Contratos,
+   `/panel/propiedades/[id]` están envueltas en `RequireRole role="locador"` (y, desde el Sprint 2,
+   `/panel/solicitudes` y `/panel/propiedades/[id]/editar`). Contratos,
    Cobros, Reclamos, Mensajes, Reportes y Suscripción son placeholders sin bloqueo: un locatario no
    las ve en el menú (`navConfig.tsx`), pero entra si escribe la URL. Cuando cada una se implemente,
    envolverla en `RequireRole` (y que el back responda 403 a un locatario, ver §6), salvo las que
@@ -457,7 +492,9 @@ sesión dura hasta cerrarla).
 | AppShell y UserMenu | `app-shell-logo-link`, `app-shell-menu-toggle`, `app-shell-role-chip`, `app-shell-publicar` ("Publicar propiedad" del encabezado), `app-shell-publicar-drawer` (el mismo, en el menú hamburguesa), `user-menu-trigger`, `user-menu-item-<key>` (`user-menu-item-header-action`: "Publicar propiedad" en la hoja móvil), `user-menu-role-<rol>`, `user-menu-logout`, `role-context-switcher` |
 | `/panel` (locatario) | `panel-locatario`, `panel-locatario-buscar`, `panel-locatario-publicar` |
 | `/panel` (locador) | `panel-publicar`, `panel-registrar-pago`, `panel-pendientes`, `panel-stat-<cifra>`, `panel-cobro`, `panel-reclamo`, `panel-contrato`, `panel-error-<bloque>`, `panel-onboarding`, `panel-onboarding-publicar` |
-| `/panel/propiedades` | `mis-propiedades-tab-<estado>`, `mis-propiedades-buscar`, `mis-propiedades-filtro-<barrio\|tipo\|reclamos>`, `mis-propiedades-orden`, `data-table-row` (escritorio), `data-table-card` (móvil), `mis-propiedades-ver-detalle`, `mis-propiedades-mas`, `mis-propiedades-abrir-filtros`, `mis-propiedades-drawer-aplicar`, `mis-propiedades-limpiar`, `mis-propiedades-vacio`, `mis-propiedades-sin-resultados`, `mis-propiedades-error`, `mis-propiedades-reintentar` |
+| `/panel/propiedades` | `mis-propiedades-tab-<estado>`, `mis-propiedades-buscar`, `mis-propiedades-filtro-<barrio\|tipo\|reclamos>`, `mis-propiedades-orden`, `data-table-row` (escritorio), `data-table-card` (móvil), `mis-propiedades-ver-detalle`, `mis-propiedades-mas` (adentro, `mis-propiedades-editar`, US-03), `mis-propiedades-eliminada` (aviso "Eliminaste <dirección>." que llega con `?eliminada=<id>`), `mis-propiedades-abrir-filtros`, `mis-propiedades-drawer-aplicar`, `mis-propiedades-limpiar`, `mis-propiedades-vacio`, `mis-propiedades-sin-resultados`, `mis-propiedades-error`, `mis-propiedades-reintentar` |
+| `/panel/propiedades/[id]` (US-03, US-04, Sprint 2) | `mi-propiedad`, `mi-propiedad-cargando`, `mi-propiedad-error`, `mi-propiedad-reintentar`, `mi-propiedad-no-encontrada`. Encabezado: `mi-propiedad-ver-fotos` (abre `mi-propiedad-fotos-modal`), `mi-propiedad-editar-button`, `mi-propiedad-mas` (adentro, `mi-propiedad-ver-publica` y `mi-propiedad-menu-eliminar`), `mi-propiedad-precio`, `mi-propiedad-contrato`. Resumen: `mi-propiedad-ficha`, `mi-propiedad-condiciones`, `mi-propiedad-fotos`, `mi-propiedad-editar-fotos`, `mi-propiedad-lo-que-sigue`, `mi-propiedad-ver-publica-acceso`, `mi-propiedad-zona-sensible`, `mi-propiedad-eliminar-button`. Eliminar: `mi-propiedad-eliminar-modal` (con `mi-propiedad-eliminar-solicitudes` y, si falla, `mi-propiedad-eliminar-error`), `mi-propiedad-eliminar-bloqueado-modal` (un solo botón, `confirm-action-ok`). Móvil: `mi-propiedad-editar-movil`, `mi-propiedad-acciones-button`, `mi-propiedad-acciones-movil`, `mi-propiedad-acciones-eliminar` |
+| `/panel/propiedades/[id]/editar` (US-03, Sprint 2) | `editar-propiedad`, `editar-propiedad-cargando`, `editar-propiedad-no-encontrada`, `editar-propiedad-error-carga`, `editar-propiedad-aviso`, `editar-propiedad-indice-<ubicacion\|caracteristicas\|fotos\|condiciones>`, `editar-propiedad-errores`, `editar-propiedad-cambios`, `editar-propiedad-descartar`, `editar-propiedad-guardar`, `editar-propiedad-exito`, `editar-propiedad-error`, `editar-propiedad-salir-modal`, `editar-propiedad-bloqueado-<priceMonthly\|adjustmentIndex\|adjustmentEveryMonths\|status>` (con contrato vigente). Los campos conservan los `data-testid` del alta (`alta-calle`, `alta-precio`, `alta-fotos-dropzone`…), porque son los mismos componentes |
 | Alta | `alta-<campo>` (ej. `alta-calle`, `alta-precio`), `alta-fotos-dropzone`, `alta-foto`, `alta-foto-principal`, `alta-foto-quitar`, `alta-medio-<medio>-check` / `-recargo`, `alta-indice-<ICL\|IPC>`, `wizard-next-button`, `wizard-prev-button`, `wizard-finish-button`, `alta-mobile-volver`, `alta-mobile-salir`, `alta-errores`, `alta-publicando`, `alta-error-publicar`, `alta-reintentar`, `alta-error-login`, `alta-exito`, `alta-exito-mis-propiedades` (solo si la cuenta ya es locadora), `alta-exito-ver`, `alta-exito-panel` (locatario y no publicada), `alta-exito-otra` |
 | `/propiedad/[id]` (US-41, Sprint 2) | `detalle-propiedad`, `detalle-propiedad-cargando`, `detalle-propiedad-galeria` (adentro, `photo-gallery-main` y `photo-gallery-thumbnail`), `detalle-propiedad-precio`, `detalle-propiedad-disponible-desde`, `detalle-propiedad-caracteristicas`, `detalle-propiedad-dueno-card`, `detalle-propiedad-dueno`, `detalle-propiedad-condiciones`, `detalle-propiedad-medios-pago`, `detalle-propiedad-enviar-mensaje-button` (deshabilitado), `detalle-propiedad-similares`, `detalle-propiedad-similares-cargando`, `detalle-propiedad-similar`, `detalle-propiedad-similares-ver-todas`, `detalle-propiedad-no-encontrada`, `detalle-propiedad-error`, `detalle-propiedad-reintentar-button`, `detalle-propiedad-buscar-button`, `detalle-propiedad-volver-button`. Botón según el estado (tarjeta del dueño): `detalle-propiedad-solicitar-login-button` (sin sesión), `detalle-propiedad-solicitar-button` (puede solicitar), `detalle-propiedad-solicitud-estado` + `detalle-propiedad-solicitud-tag` + `detalle-propiedad-ver-solicitudes-link` (ya la solicitó), `detalle-propiedad-propia`, `detalle-propiedad-no-disponible` + `detalle-propiedad-ver-similares-button`. La barra fija de móvil (`detalle-propiedad-barra-movil`) repite el botón con el prefijo `detalle-propiedad-barra-` (ej. `detalle-propiedad-barra-solicitar-button`) |
 | Modal "Solicitar alquiler" (US-35, sobre `/propiedad/[id]`) | `solicitar-modal`, `solicitar-mensaje` (contador "N / 1000" de antd al lado), `solicitar-enviar-button`, `solicitar-cancelar-button`, `solicitar-error`; 409: `solicitar-duplicada`, `solicitar-ver-mi-solicitud-button`, `solicitar-cerrar-button`; 401 con mensaje escrito: `solicitar-sesion-vencida`, `solicitar-reingresar-button`, `solicitar-volver-button`; éxito: `solicitar-exito`, `solicitar-exito-mail`, `solicitar-ver-solicitudes-button`, `solicitar-seguir-buscando-button` |
@@ -484,9 +521,12 @@ Para ver todos: `grep -rn "data-testid" apps/web/src packages/ui/src`.
 ## 14. Qué queda para el sprint 2
 
 - Subida de fotos al bucket y alta completa desde la pantalla (sección 8).
-- Detalle de la propiedad del locador (`/panel/propiedades/[id]`) con editar (US-03), eliminar
-  (US-04) y publicar/pausar (`cambiarEstadoPublicacion` ya está en el service, sin usar).
-- Detalle público (`/propiedad/[id]`) y solicitudes (US-35 a US-38).
+- ~~Detalle de la propiedad del locador con editar (US-03) y eliminar (US-04)~~: hecho en el
+  front (tanda 3, modo mock; en real faltan `GET /mis-alquileres/:id`, el `PUT` ampliado y el
+  `DELETE` lógico, §7). Queda publicar/pausar (sin US ni endpoint; `cambiarEstadoPublicacion` sigue
+  en el service, sin usar).
+- ~~Detalle público (`/propiedad/[id]`) y solicitudes (US-35 a US-38)~~: hecho en el front (tandas 1
+  y 2, modo mock; el back no tiene el módulo de solicitudes).
 - Recuperar contraseña (US-40) y perfil (US-20, US-21).
 - Panel del locatario (hoy un placeholder).
 - Cobros, reclamos, contratos y notificaciones de verdad.
