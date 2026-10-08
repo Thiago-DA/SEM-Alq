@@ -4,7 +4,7 @@
  * SearchFilters.tsx — barra horizontal de filtros de búsqueda (versión de `@rentar/ui` del buscador
  * de la landing).
  *
- * Quién lo usa: el catálogo `/design-system`.
+ * Quién lo usa: el catálogo `/design-system`. Deprecado (ver el JSDoc del componente).
  */
 import { useState } from 'react'
 import { Button, Col, Drawer, InputNumber, Row, Select, Slider, Tag } from 'antd'
@@ -38,6 +38,10 @@ interface SearchFiltersProps {
  * En desktop se ve entera; en mobile los controles avanzados (tipología,
  * dormitorios, precio) quedan detrás de un botón "Filtros" que abre un
  * `Drawer` (ver `docs/MapaDePantallas.pdf`, ficha de `SearchFilters`).
+ *
+ * @deprecated Sin uso desde el PR #10; lo reemplazan `HeroSearch` y `SearchSidebarFilters`.
+ * Se borra cuando se actualicen las vistas de Claude Design que todavía lo usan
+ * (ver `.design-sync/NOTES.md`).
  */
 export function SearchFilters({ neighborhoods, characteristics, value, onChange, resultCount, ...rest }: SearchFiltersProps) {
   const [drawerOpen, setDrawerOpen] = useState(false)

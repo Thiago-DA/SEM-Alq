@@ -248,6 +248,26 @@ Cambios de la landing nueva (2026-10-01, rama `feature/nuevo-landing`), **pendie
   quedaba 48 px corrido respecto de `/buscar` y 24 px respecto de la landing. El `Footer` pone logo y
   links en fila desde 768 px (antes 640). La API no cambia.
 
+Preparación del `/design-sync` del Sprint 2 (2026-10-08, `feature/vistas` con `develop` y el PR #10):
+- **`SearchFilters` deprecado** (decisión del PO, 08/10/2026): JSDoc `@deprecated` ("sin uso desde el
+  PR #10; lo reemplazan `HeroSearch` y `SearchSidebarFilters`"). **No se borra en este sync**: se
+  borra de `@rentar/ui`, de `previews/` y de Claude Design cuando se actualicen las vistas de Claude
+  Design que todavía lo usan (entra en el prompt del Sprint 2 para Claude Design). Leído en Claude
+  Design el 08/10/2026 (16 de las 23 vistas; las 7 sin abrir son de panel sin búsqueda: cambio de
+  rol, detalle de cobro, mensajes, mi perfil, notificaciones, pagar alquiler y suscripción):
+  **ninguna vista monta `RentarUI.SearchFilters`**. Solo lo nombran como texto
+  `templates/busqueda-propiedades/BusquedaPropiedades.dc.html` (recuadro "Componentes nuevos en
+  juego: PropertyCard · SearchFilters") y `templates/mapa-de-pantallas/MapaDePantallas.dc.html`
+  (lista de componentes: "SearchSidebarFilters · SearchFilters"). NOTA: "Búsqueda de propiedades"
+  dibuja los filtros y las tarjetas a mano (solo monta `Header`, `Footer`, `IndexBadge`,
+  `EmptyState` y `ThemeProvider`): al actualizarla, que use `SearchSidebarFilters` y
+  `PropertyCard layout="busqueda"`. La landing no tiene vista en Claude Design.
+- **Previews nuevas o ampliadas:** `previews/HeroSearch.tsx` (`Escritorio`, `Tablet768`,
+  `MovilConHojaAbierta`) y `previews/ConfirmActionModal.tsx` (`ConCuerpoYCarga`, con `children` y
+  `confirmLoading`; `AvisoSinCancelar`, con `hideCancel`). NOTA: en `HeroSearch` la fila única es un
+  container query (sigue al ancho de la historia), pero el panel flotante o la hoja y el lugar de
+  "Dormitorios" siguen al ancho del viewport de la card (media query + `matchMedia`).
+
 ## Tarea aparte: peso del JS común (Lighthouse móvil), para después del merge de la landing
 
 Decisión del PO (01/10/2026): no se resuelve en `feature/nuevo-landing`. Queda acá y en la
@@ -351,6 +371,40 @@ chunks más grandes:
 6. **Objetivo y verificación:** bajar el JS común de ~750 KB a menos de 450 KB transferidos, y
    Performance simulado ≥ 90 en `/`, `/login` y `/buscar` (mediana de 3 corridas), sin romper la
    sesión real (login, `/me`, logout) ni el modo mock.
+
+## Re-sync del Sprint 2 (2026-10-08)
+
+Segundo re-sync desde este repo (camino atómico, anclado en el `_ds_sync.json` del 24/09), con
+`feature/vistas` ya mergeada con `develop` (PR #10, landing nueva).
+
+- **Comando** (desde la raíz, después de `cfg.buildCmd`): `node .ds-sync/resync.mjs --config
+  .design-sync/config.json --node-modules ./node_modules --out ./ds-bundle --remote
+  .design-sync/.cache/remote-sync.json`. `--node-modules` es el de la raíz: con npm workspaces
+  `packages/ui` no tiene `node_modules` propio, y `node_modules/@rentar/ui` es el symlink al paquete
+  (el converter lee `dist-types/`). Sin `--entry`.
+- **Render check con el Chrome instalado:** no hay chromium en la caché de Playwright
+  (`%LOCALAPPDATA%/ms-playwright` solo tiene la carpeta del `playwright-cli`). Se instaló
+  `playwright` dentro de `.ds-sync/` con `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` (sin bajar navegadores)
+  y se corrió todo con `DS_CHROMIUM_PATH="C:/Program Files/Google/Chrome/Application/chrome.exe"`
+  (lo leen `package-validate.mjs` y `package-capture.mjs`). `.ds-sync/` entero está en el
+  `.gitignore`, así que ni `playwright` ni su `package.json` entran al repo: se reinstalan en cada sync.
+- **No correr el driver con la terminal parada adentro de `ds-bundle/`:** el build lo borra y
+  rehace, y en Windows falla con `EPERM` sobre ese directorio.
+- **`HeroSearch`: tarjeta en `cardMode: "column"` con `viewport: "1280x1500"`.** Con el viewport por
+  defecto (900) la celda medía ~650 px y `Escritorio` salía en dos columnas (la fila única es un
+  container query de 70rem). **Truco del iframe en `MovilConHojaAbierta`:** la hoja desde abajo y
+  el lugar de "Dormitorios" dependen del ancho de la PANTALLA (media query + `matchMedia`) y la card
+  tiene un solo viewport, así que con la card ancha la historia se recarga a sí misma
+  (`?story=MovilConHojaAbierta`) dentro de un iframe de 375 px; adentro (`innerWidth < 768`) se
+  dibuja el componente real y se abre el `<details>`. Si algún día el harness permite un viewport
+  por historia, sacar el iframe.
+- **`EmptyState`: `cardMode: "column"`** (lo pidió `[GRID_OVERFLOW]` por `AccionAnchoCompleto`).
+- **`conventions.md`:** la línea de componentes de negocio recomienda `HeroSearch`,
+  `SearchSidebarFilters` y `FilterBar`, y aclara que `SearchFilters` está deprecado (pedido del PO).
+- Resultado: 35 componentes (34 + `HeroSearch`), 0 floor cards, render check sin `bad`, 35 grades
+  `good` (31 cambiados + 4 verificados por la subida anterior). 183 archivos escritos, 0 borrados.
+  No se tocó `templates/`. Verificado después en Claude Design: el README trae el encabezado nuevo y
+  `HeroSearch` aparece en `components/forms/`.
 
 ## Re-sync del Sprint 1 desde SEM-Alq (2026-09-24)
 
@@ -459,7 +513,18 @@ esperado y no bloquea — la familia carga en runtime desde el navegador de quie
 `[RENDER_THIN]` en `StatCard`, `FormSection`, `AuthLayout` — floor cards legítimos (nunca se
 autoró una preview para estos tres), muestran solo el nombre del componente. No es una regresión.
 
+- `EmptyState` · `AccionAnchoCompleto` se ve igual que `Default`: `actionBlock` solo actúa debajo de
+  640 px de PANTALLA, y la card mide más. La historia queda para documentar la prop (08/10/2026).
+- `Header` muestra el link "Sistema de diseño" en las previews: el componente lo esconde solo en
+  producción de `apps/web`. Es esperable.
+
 ## Re-sync risks
+
+- **El índice de componentes del README pierde las letras acentuadas** ("vaco", "ttulo", "pgina"):
+  lo arma el converter desde la primera línea del JSDoc y descarta lo que no es ASCII. Los
+  `.prompt.md` sí llevan los acentos. Visto el 08/10/2026; no se tocó el converter.
+- **El iframe de `previews/HeroSearch.tsx#MovilConHojaAbierta`** depende de que la card responda a
+  `?story=`; si el harness cambia eso, la historia se vería vacía.
 
 - **`design-sync-fonts.css` puede quedar desactualizado** si `tokens/css-vars.css` cambia y nadie
   corre el `cat` de arriba — ver la sección dedicada.
