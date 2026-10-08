@@ -72,7 +72,9 @@ export function AccionSolicitar({ estado, propiedad, onSolicitar, variant }: Acc
 
     case 'ya_solicitada':
       // Ya no es una acción: es el estado de su solicitud y el link para seguirla (Detalle · 02 y 04).
-      // NOTA: sin "Cancelar" en esta tanda: quién cancela se define con US-38 en la tanda 2.
+      // NOTA: sin "Cancelar" acá. El locatario cancela una pendiente desde Mis solicitudes
+      // (sin US en Sprint 0, mapa US-39) y el locador cancela una aceptada desde
+      // Solicitudes recibidas (US-38).
       if (!enTarjeta) {
         return (
           <Button size="large" block href={HREF_MIS_SOLICITUDES} icon={<CheckCircleFilled />} className={styles.action} data-testid={testid('ver-solicitudes-link')}>
