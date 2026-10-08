@@ -372,6 +372,20 @@ chunks más grandes:
    Performance simulado ≥ 90 en `/`, `/login` y `/buscar` (mediana de 3 corridas), sin romper la
    sesión real (login, `/me`, logout) ni el modo mock.
 
+## Pendiente del próximo `/design-sync` (el que borra `SearchFilters`)
+
+Pedido del PO el 08/10/2026. **No hacerlo antes:** va junto con el borrado de `SearchFilters`,
+cuando el PO avise que las vistas de Claude Design ya no lo nombran.
+- **Borrar `SearchFilters`** de `@rentar/ui` (`components/forms/SearchFilters.tsx` y su CSS), de
+  `previews/SearchFilters.tsx`, de `/design-system` (`apps/web/src/components/DesignSystem.tsx`) y
+  del proyecto de Claude Design (`components/forms/SearchFilters/` y `_preview/SearchFilters.js`,
+  que el diff del driver va a listar en `upload.deletePaths`).
+- **Categoría de los 7 tokens `--rentar-motion-*`** (aviso de `check_design_system` en Claude
+  Design: quedaban sin categoría). Sumarles `/* @kind other */` al final de cada línea en el CSS de
+  origen, `packages/ui/src/tokens/css-vars.css` (líneas 128 a 134, igual que los `--rentar-z-*`),
+  **no** en `ds-bundle/`. Después regenerar `design-sync-fonts.css` con el `cat` de la sección
+  "`design-sync-fonts.css` — riesgo de desincronización".
+
 ## Re-sync del Sprint 2 (2026-10-08)
 
 Segundo re-sync desde este repo (camino atómico, anclado en el `_ds_sync.json` del 24/09), con
@@ -515,6 +529,9 @@ autoró una preview para estos tres), muestran solo el nombre del componente. No
 
 - `EmptyState` · `AccionAnchoCompleto` se ve igual que `Default`: `actionBlock` solo actúa debajo de
   640 px de PANTALLA, y la card mide más. La historia queda para documentar la prop (08/10/2026).
+- `check_design_system` avisa por `--hero-search-control: 2.5rem` dentro de `.HeroSearch_form`
+  (`components/forms/HeroSearch.module.css:24`): es una medida interna del componente (el alto de
+  sus controles), no un token del sistema. Se deja donde está (decisión del PO, 08/10/2026).
 - `Header` muestra el link "Sistema de diseño" en las previews: el componente lo esconde solo en
   producción de `apps/web`. Es esperable.
 
