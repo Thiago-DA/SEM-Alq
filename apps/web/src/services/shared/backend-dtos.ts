@@ -81,9 +81,9 @@ export interface InmueblesDisponiblesResponse {
 /**
  * Query params de `GET /api/v1/inmuebles/disponibles`, con los nombres del
  * back. Todos van como texto en la URL.
- * NOTA: hoy el front manda solo `page` y `limit`: el back ignora el resto de
- * los filtros (ver `propiedades.service.ts#buscarPropiedades`). Quedan
- * documentados para cuando los respete.
+ * NOTA: desde ce677a4 (29/09) el back respeta todos (probado el 06/10), pero
+ * hoy el front manda solo `page` y `limit`: `/buscar` todavía filtra en el
+ * cliente (ver el TODO(backend) de `propiedades.service.ts#buscarPropiedades`).
  */
 export interface DisponiblesQuery {
   barrio?: string

@@ -43,7 +43,7 @@ Notas:
 
 | Método y ruta | Auth | Estado | US | Service | Body / query | Respuesta (`data`) |
 |---|---|---|---|---|---|---|
-| `GET /inmuebles/disponibles` | — | parcial (ver notas) | US-34 | `propiedades.service#listarPropiedadesPublicadas`, `#buscarPropiedades`, `#contarPropiedades`, `#listarUbicaciones` | el front manda solo `page=1&limit=1000`. El back documenta `barrio, precioMin, precioMax, tipo, dormitorios, ambientes, superficieMin, superficieMax, tags, indiceAjuste, page, limit, orden, direccion`, pero desde el 29/09 solo aplica `barrio` (igual exacto) y `tipo` | `{ items: InmuebleDisponibleResponse[], total, page, limit, totalPages }` (hoy siempre todas, `page: 1`); cada item con `tipo`, `tags` e `indice_ajuste` como `{ id, descripcion }`, `precio`, `expensas` (0 sin contrato), `foto_principal` y `fecha_disponible` → `inmuebleDisponibleToPropiedadResumen` |
+| `GET /inmuebles/disponibles` | — | parcial (ver notas) | US-34 | `propiedades.service#listarPropiedadesPublicadas`, `#listarPropiedadesRecientes`, `#buscarPropiedades`, `#contarPropiedades`, `#listarUbicaciones` | el front manda solo `page=1&limit=1000` (la landing, `page=1&limit=6`). El back documenta `barrio, precioMin, precioMax, tipo, dormitorios, ambientes, superficieMin, superficieMax, tags, indiceAjuste, page, limit, orden, direccion`, y desde ce677a4 (29/09) filtra, ordena y pagina con todos (probado el 06/10; `barrio` por nombre exacto, `dormitorios`/`ambientes` igual exacto) | `{ items: InmuebleDisponibleResponse[], total, page, limit, totalPages }`, por id descendente; cada item con `tipo`, `tags` e `indice_ajuste` como `{ id, descripcion }`, `precio`, `expensas` (0 sin contrato), `foto_principal` y `fecha_disponible` → `inmuebleDisponibleToPropiedadResumen` |
 | `GET /inmuebles/disponibles/:id` | — | parcial | US-41 (detalle público, Jira) | `propiedades.service#getPropiedad` (antes `GET /inmuebles/:id`, renombrada el 26/09) | — | `InmuebleDetalleResponse`: como el item de arriba más `servicio` y `fotos` → `inmuebleDetalleToPropiedadDetalle`. 400 id inválido, 404 si no existe o no está disponible (el front muestra los dos como "Esta publicación ya no está disponible"). Le faltan dueño, estado, condiciones del contrato, medios de pago y si el usuario ya la solicitó (ver `HANDOFF-BACKEND.md` §7, US-41) |
 | `GET /locadores/:idLocador/barrios` | Bearer + rol `locador` (solo el propio id; otro → 403) | existe, sin usar | US-02 (filtro de barrio) | — | — | `string[]` (barrios de las propiedades del locador) |
 | `GET /mis-alquileres/:id` | Bearer + rol `locador` | **pendiente (propuesto)** | US-03 y US-04 (detalle del locador) | `propiedades.service#getMiPropiedad` | — | `MisAlquileresDetalleResponse` (`apps/web/src/services/shared/backend-dtos.ts`): los mismos campos que el cuerpo de `POST /inmuebles` (dirección **exacta**, `tags`, `fotos` con `orden` y `es_principal`, `condiciones_contrato`), más `fecha_publicacion` y `contrato_vigente: { id, locatario, fecha_fin, proximo_ajuste, monto_actual } \| null`. **404 si el inmueble no existe, está eliminado o no es del que llama** (el front muestra lo mismo en los tres casos). Va en la familia `/mis-alquileres`, que ya filtra por dueño, para no confundirla con el detalle público |
@@ -70,9 +70,11 @@ Mapeos del alta (US-01), documentados en `services/adapters/propiedad.adapter.ts
 
 Búsqueda (US-34), `GET /inmuebles/disponibles`:
 
-- Desde el 29/09 el back ignora casi todos los filtros y la paginación, así que el front trae todas
-  en un pedido (hasta 1000) y filtra, ordena y pagina en el cliente, con las mismas reglas que el
-  modo mock. Sirve para el piloto; no escala. Detalle y brechas en `HANDOFF-BACKEND.md` §7 (US-34).
+- Desde ce677a4 (29/09) el back filtra, ordena y pagina (probado el 06/10). La landing ya le pide
+  `limit=6`; `/buscar`, las opciones de ubicación y "Propiedades similares" todavía traen todas en un
+  pedido (hasta 1000) y filtran, ordenan y paginan en el cliente, con las mismas reglas que el modo
+  mock: pasarlas al back queda para la tanda de conexión. Detalle y brechas en `HANDOFF-BACKEND.md`
+  §7 (US-34).
 - `GET /inmuebles/disponibles/:id` manda `null` en `precio` y `expensas` cuando el inmueble no tiene
   contrato. NOTA: antes del 29/09 mandaba `-1`; el adaptador acepta los dos (y cualquier negativo)
   como "no informado" y la pantalla muestra "Consultar" (`TODO(backend)`: confirmar que ya no
