@@ -49,7 +49,6 @@
   (checklist de pasos — nunca como fila de tarjetas ícono+heading+párrafo, ese patrón está
   rechazado en este sistema), `AppShell` (layout de panel autenticado, con slot `contextSwitcher`
   y `variant="admin"` para header oscuro), `AuthLayout`/`PublicLayout` (layouts de auth/público).
-  `SearchFilters` está deprecado: no usarlo en diseños nuevos.
 
 - **React 18**: los componentes de @rentar/ui no usan APIs exclusivas de React 19
   (`useEffectEvent`, `use`, `ref` como prop común sin `forwardRef`, etc.): las plantillas de

@@ -7,7 +7,7 @@
  * no conocen esas tablas: reciben estos tipos ya armados por los adaptadores
  * de `apps/web/src/services/adapters/propiedad.adapter.ts`.
  *
- * Quién lo usa: `@rentar/ui` (`PropertyCard`, `SearchFilters`) y las
+ * Quién lo usa: `@rentar/ui` (`PropertyCard`, `HeroSearch`, `SearchSidebarFilters`) y las
  * pantallas de la landing, `/buscar` (US-34), `/propiedad/[id]` (US-41),
  * `/panel/propiedades` (US-02) y `/panel/propiedades/nueva` (US-01).
  */

@@ -384,19 +384,19 @@ actualizada en `useLayoutEffect` + `useCallback`. En el mismo componente, `Nativ
 sumar un hook o patrón nuevo, chequear que exista en React 18.3. La regla también está en
 `conventions.md`, para el agente de Claude Design.
 
-## Pendiente del próximo `/design-sync` (el que borra `SearchFilters`)
+## Re-sync del 2026-10-09 (borrado de `SearchFilters` y React 18)
 
-Pedido del PO el 08/10/2026. **No hacerlo antes:** va junto con el borrado de `SearchFilters`,
-cuando el PO avise que las vistas de Claude Design ya no lo nombran.
-- **Borrar `SearchFilters`** de `@rentar/ui` (`components/forms/SearchFilters.tsx` y su CSS), de
-  `previews/SearchFilters.tsx`, de `/design-system` (`apps/web/src/components/DesignSystem.tsx`) y
-  del proyecto de Claude Design (`components/forms/SearchFilters/` y `_preview/SearchFilters.js`,
-  que el diff del driver va a listar en `upload.deletePaths`).
-- **Categoría de los 7 tokens `--rentar-motion-*`** (aviso de `check_design_system` en Claude
-  Design: quedaban sin categoría). Sumarles `/* @kind other */` al final de cada línea en el CSS de
-  origen, `packages/ui/src/tokens/css-vars.css` (líneas 128 a 134, igual que los `--rentar-z-*`),
-  **no** en `ds-bundle/`. Después regenerar `design-sync-fonts.css` con el `cat` de la sección
-  "`design-sync-fonts.css` — riesgo de desincronización".
+- **`SearchFilters` borrado** (pedido del PO, anotado como pendiente el 08/10): componente, CSS,
+  export, `previews/SearchFilters.tsx` y su entrada en `/design-system`; `apps/web` no lo
+  importaba en ningún otro lado. En Claude Design, el diff del driver lo da como `removed` y borra
+  `components/forms/SearchFilters/*` y `_preview/SearchFilters.*`. Quedan 34 componentes.
+- **Los 7 `--rentar-motion-*` con `/* @kind other */`** en `tokens/css-vars.css` (aviso de
+  `check_design_system`), con `design-sync-fonts.css` regenerado. Ojo al hacerlo con una regex: la
+  línea de `--rentar-motion-stagger` va seguida de una línea en blanco y del comentario de la
+  sección siguiente, y un lookahead `(?!\s*/\*)` la saltea.
+- **`HeroSearch` sin `useEffectEvent` ni `ref` como prop común** (ver "Regla: nada exclusivo de
+  React 19"). Probado en la app (Escape y clic afuera, escritorio y 390 px) y en las tarjetas con
+  React 18.3.1 (ver el riesgo de abajo).
 
 ## Re-sync del Sprint 2 (2026-10-08)
 
@@ -548,6 +548,17 @@ autoró una preview para estos tres), muestran solo el nombre del componente. No
   producción de `apps/web`. Es esperable.
 
 ## Re-sync risks
+
+- **El render check corre con React 19.2.8 y las plantillas con React 18.3.1.** Las tarjetas
+  cargan `_vendor/react.js`, que el converter arma desde el `react` del repo; ni el config ni
+  `package-validate.mjs` tienen una opción para cambiar la versión. Por eso el render check pasó
+  con `useEffectEvent` y la landing de Claude Design se rompió. Chequeo manual (09/10/2026, las 34
+  tarjetas dieron bien): servir `ds-bundle/` con `node .ds-sync/storybook/http-serve.mjs
+  ./ds-bundle`, bajar `https://unpkg.com/react@18.3.1/umd/react.development.js` y
+  `https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js`, y en Playwright reemplazar
+  `**/_vendor/react.js` y `**/_vendor/react-dom.js` con esos dos (`page.route` + `route.fulfill`),
+  abrir cada `components/*/*/<Name>.html` y buscar `pageerror`. Hacerlo en cada sync que toque
+  hooks.
 
 - **El índice de componentes del README pierde las letras acentuadas** ("vaco", "ttulo", "pgina"):
   lo arma el converter desde la primera línea del JSDoc y descarta lo que no es ASCII. Los

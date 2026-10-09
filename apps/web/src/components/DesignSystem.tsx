@@ -41,7 +41,6 @@ import {
   PlanCard,
   PropertyCard as PropertyCardUI,
   RoleContextSwitcher,
-  SearchFilters,
   SimulatedFeatureNotice,
   StatCard,
   StatusTag,
@@ -77,7 +76,7 @@ import {
   hrefBuscarDesdeBuscador,
 } from '@/lib/search/buscadorLanding'
 import { isSearchable, propiedadMockToResumen } from '@/services/adapters/propiedad-mock.adapter'
-import { defaultFilters, MAX_PRICE_CEILING } from '@/lib/types/filters'
+import { MAX_PRICE_CEILING } from '@/lib/types/filters'
 import { formatMonthlyPrice } from '@/lib/utils/format'
 import { navItemsByRole } from '@/lib/navigation/navConfig'
 import styles from './DesignSystem.module.css'
@@ -498,7 +497,6 @@ export default function DesignSystem() {
   const [isDark, setIsDark] = useState(false)
   const [demoRole, setDemoRole] = useState<'locador' | 'locatario'>('locador')
   const [wizardStep, setWizardStep] = useState(0)
-  const [searchFiltersValue, setSearchFiltersValue] = useState(defaultFilters)
   const [filterBarSearch, setFilterBarSearch] = useState('')
   const [filterBarStatus, setFilterBarStatus] = useState('todos')
   const [moneyValue, setMoneyValue] = useState(450000)
@@ -1373,23 +1371,6 @@ export default function DesignSystem() {
                 />
               </div>
 
-              <p className={styles.subheading}>SearchFilters</p>
-              <p className={styles.sectionLead} style={{ marginBottom: '0.75rem' }}>
-                Filtros horizontales de <code>@rentar/ui</code>: reciben barrios y características por props.
-                NOTA: hoy no los usa ninguna pantalla (la landing usa <code>HeroSearch</code> y{' '}
-                <code>/buscar</code>, <code>SearchSidebarFilters</code>); candidatos a borrar, ver{' '}
-                <code>.design-sync/NOTES.md</code>. Achicá la ventana para ver el botón &quot;Filtros&quot; (Drawer) de
-                mobile.
-              </p>
-              <div className={styles.liveFramePadded}>
-                <SearchFilters
-                  neighborhoods={neighborhoods}
-                  characteristics={characteristicOptions}
-                  value={searchFiltersValue}
-                  onChange={setSearchFiltersValue}
-                  resultCount={properties.length}
-                />
-              </div>
             </section>
 
             {/* Feedback */}
