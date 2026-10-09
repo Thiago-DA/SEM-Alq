@@ -256,7 +256,17 @@ criterio, igual que con US-41. El PO tiene una propuesta de criterios para carga
 | **`DELETE /inmuebles/:id` lógico** (decisión del PO): `eliminado_en` o estado `eliminada`; deja de salir en `/mis-alquileres` y `/inmuebles/disponibles`; se conservan contratos y reclamos. **409 con contrato vigente.** | db / backend |
 | **Al eliminar, las solicitudes `pendiente` y `aceptada` del inmueble pasan a `cancelada`**, con un mail a cada postulante (decisión del PO). El modal avisa "Las N solicitudes de esta propiedad se van a cancelar". | backend |
 | **Fotos de la edición:** el front sube las nuevas a Storage antes del `PUT`; si el `PUT` falla, las borra (como el alta). Mientras el `PUT` no guarde fotos, ver §10. | backend |
+| **Fotos del seed que no existen:** las del inmueble 1 (y otras cargadas a mano) apuntan a `https://rentar.com/fotos/...`, que da 404. El front muestra la foto de respaldo, pero el navegador registra el 404 en la consola. Reemplazarlas por fotos del bucket o borrarlas. | db |
 | **Decidido (tanda 3):** solo la pestaña Resumen; sin "Pausar" (no tiene US ni endpoint); "Eliminar" con contrato vigente queda habilitado y abre el aviso de bloqueo. | — |
+
+**Probado en real el 09/10** (`locador@rentar.com`, 390 y 1440 px, rama `feature/conexion-detalle`):
+`/mis-alquileres` trae todas las del dueño, también las pausadas (14, 18) y las alquiladas (2, 3), así
+que el puente las encuentra. El 1 (publicada) y el 14 y el 18 (pausadas) salen sin contrato; el 2 y el 3
+(alquiladas) con "Contrato vigente" y el ajuste ICL del 01/03/2027, el 2 con locatario y el 3 con "—".
+La precarga de `/editar` del 1 trae todos los campos. Un id que no es del dueño (999999) muestra
+"No encontramos esta propiedad". En `/propiedad/[id]`, el 14 (pausada) y el 999999 dan 404 del back
+y la pantalla "Esta publicación ya no está disponible". Con sesión, todos los pedidos llevan
+`Authorization: Bearer …`.
 
 ### US-02 Consultar mis propiedades
 
