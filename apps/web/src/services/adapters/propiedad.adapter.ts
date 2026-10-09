@@ -657,7 +657,9 @@ function medioPagoIdFromNombre(nombre: string): number | null {
  * - `tipo`, `tags`, `indice_aumento` y `medios_pago` llegan como TEXTO (la
  *   descripción del catálogo) y se vuelven a ids con los mismos mapeos del
  *   Sprint 1. Un tag o un medio sin equivalente se descarta; CAC queda sin
- *   índice ({@link adjustmentIndexFromDescripcion}).
+ *   índice ({@link adjustmentIndexFromDescripcion}). Lo que se pierde en la
+ *   precarga de `/editar` está en la NOTA de
+ *   {@link misAlquileresDetalleToPropiedadLocadorDetalle}.
  * - `fecha_publicacion`: no existe en la base. TODO(db): guardar la fecha de
  *   alta del inmueble.
  * - `contrato_vigente`: la ruta no manda `contrato.estado`, así que se deduce
@@ -739,6 +741,17 @@ export function misAlquileresItemToDetalleResponse(item: MisAlquileresItem): Mis
  * - Fotos: en orden; cada una con un id local (`foto-<n>`) para el formulario.
  * - `activeContract`: el contrato vigente, si hay. Si no viene, `null`. El
  *   locatario y la fecha de fin pueden venir en `null` (la pantalla los omite).
+ *
+ * NOTA: la precarga de `/editar` (US-03) PIERDE dos datos que el front no
+ * ofrece: el medio de pago "Débito automático" (`medio_pago.id` 4,
+ * {@link medioPagoFromId} lo descarta) y el índice CAC (`tipo_indice.id` 3,
+ * {@link adjustmentIndexFromId} lo deja en `null`). El formulario los muestra
+ * vacíos y, al guardar, el cuerpo del `PUT` ya no los lleva.
+ * TODO(backend): hoy el `PUT /inmuebles/:id` ignora `condiciones_contrato`, así
+ * que no se borra nada; cuando se conecte el `PUT` ampliado, guardar la
+ * edición BORRARÍA esos datos reales. Antes de conectarlo, o el front suma
+ * los dos al catálogo, o el back conserva lo que el cuerpo no trae (ver
+ * HANDOFF §7, US-03).
  * TODO(backend): crear la ruta (`GET /mis-alquileres/:id`, 404 si no es del que llama).
  */
 export function misAlquileresDetalleToPropiedadLocadorDetalle(dto: MisAlquileresDetalleResponse): PropiedadLocadorDetalle {
