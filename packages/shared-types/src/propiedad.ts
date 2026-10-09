@@ -356,10 +356,17 @@ export type CambiosPropiedad = Partial<PropiedadNueva>
 export interface ContratoVigenteResumen {
   /** Ej. "CT-2026-0148". */
   id: string
-  /** Nombre del locatario (US-02). */
-  tenantName: string
-  /** Fecha ISO de fin del contrato. */
-  endDate: string
+  /**
+   * Nombre del locatario (US-02); `null` si el back no lo informa (un
+   * contrato vigente sin locatario cargado en `contrato_x_usuario`).
+   */
+  tenantName: string | null
+  /**
+   * Fecha ISO de fin del contrato; `null` si el back no la manda.
+   * NOTA: hoy `GET /mis-alquileres` no devuelve `fecha_fin_contrato`, así que
+   * con el back real siempre llega `null` (el elenco sí la trae).
+   */
+  endDate: string | null
   /** Fecha ISO del próximo ajuste por índice; `null` si no se conoce. */
   nextAdjustmentDate: string | null
   /** Monto mensual vigente; `null` si no se conoce. */

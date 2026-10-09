@@ -49,8 +49,11 @@ function textoSolicitudes(cantidad: number): string {
 /** Aviso de bloqueo por contrato vigente (· 05), con un solo botón. */
 function AvisoBloqueado({ detalle, onCerrar }: Pick<ModalEliminarProps, 'detalle' | 'onCerrar'>) {
   const contrato = detalle.activeContract
+  // El locatario y la fecha de fin van solo si el back los informa (con el back real, la fecha no llega todavía).
+  const aQuien = contrato?.tenantName ? ` a ${contrato.tenantName}` : ''
+  const hasta = contrato?.endDate ? ` hasta el ${fecha(contrato.endDate)}` : ''
   const descripcion = contrato
-    ? `${detalle.address} está alquilada a ${contrato.tenantName} hasta el ${fecha(contrato.endDate)}. Para eliminarla, primero tiene que terminar el contrato.`
+    ? `${detalle.address} está alquilada${aQuien}${hasta}. Para eliminarla, primero tiene que terminar el contrato.`
     : 'Para eliminarla, primero tiene que terminar el contrato.'
   return (
     <ConfirmActionModal
