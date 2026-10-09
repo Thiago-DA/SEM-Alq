@@ -17,7 +17,7 @@ respuesta: [`api-endpoints.md`](api-endpoints.md).
 | US-34 Consultar propiedades a alquilar | Búsqueda con filtros, orden y paginación, y la landing | `/buscar`, `/` | Parcial (faltan datos en `/disponibles`) |
 | US-02 Consultar mis propiedades | Listado del locador | `/panel/propiedades` | Parcial (faltan locatario, pagos, reclamos) |
 | US-01 Registrar mis propiedades | Alta en 5 pasos, para cualquier usuario con sesión | `/panel/propiedades/nueva` | Parcial (espera el bucket de fotos y el cambio de roles de Thiago) |
-| US-04 Eliminar mis propiedades | Baja lógica de una propiedad (solo back; falta el botón en el detalle) | — | Back sin probar |
+| US-04 Eliminar mis propiedades | Baja lógica de una propiedad desde su detalle | `/panel/propiedades/[id]` | Parcial (conectada el 09/10; el back no mira el contrato vigente ni cancela solicitudes, §7) |
 | — (inicio del locador) | Panel de inicio | `/panel` | Parcial (conteos reales; el resto, vacío) |
 | — (inicio del locatario) | Versión mínima: buscar o publicar | `/panel` | No usa datos del back (solo el nombre) |
 
@@ -174,9 +174,9 @@ faltan datos o una parte (ver sección 7); **pendiente** = no existe o el front 
 | `GET /catalogos/ubicaciones` | Filtros de ubicación | **Pendiente** (propuesto; hoy se arman con los datos) |
 | `GET /panel/cobros`, `/panel/reclamos`, `/panel/contratos`, `/solicitudes/recibidas?estado=pendiente` | `/panel` | **Pendiente** (módulos de sprints futuros; en modo real se muestran vacíos) |
 | `POST /solicitudes`, `GET /solicitudes/mias`, `GET /solicitudes/recibidas`, `PATCH /solicitudes/:id/{aceptar,rechazar,cancelar}` | `/propiedad/[id]` (US-35), `/panel/mis-solicitudes` y `/panel/solicitudes` (US-36 a US-38) | **Pendiente** (propuesto, Sprint 2; las tres pantallas están completas en modo mock, con la rama real lista en el service) |
-| `PUT /inmuebles/:id`, `DELETE /inmuebles/:id` | `/panel/propiedades/[id]` y `/panel/propiedades/[id]/editar` (US-03, US-04, tanda 3 del Sprint 2) | **Parcial**: existen y el front las usa en modo real, pero `PUT` ignora tags, fotos y condiciones (propuesto ampliado) y `DELETE` borra en duro; ninguna chequea el dueño (§10). El front funciona completo en modo mock |
+| `PUT /inmuebles/:id`, `DELETE /inmuebles/:id` | `/panel/propiedades/[id]` y `/panel/propiedades/[id]/editar` (US-03, US-04, tanda 3 del Sprint 2) | **Parcial**: existen y el front las usa en modo real. `PUT` ignora tags, fotos y condiciones (propuesto ampliado) y no chequea el dueño (§10). `DELETE` ver la fila siguiente. El front funciona completo en modo mock |
 | `GET /mis-alquileres/:id` | Detalle y edición del locador (US-03, US-04) | **Pendiente** (propuesto, tanda 3 del Sprint 2). Desde el 09/10 el detalle y la precarga de la edición **cargan en modo real con un puente**: `getMiPropiedad` pide `GET /mis-alquileres` y busca el id (sección 7, US-03 y US-04) |
-| `DELETE /inmuebles/:id` (baja lógica, 09/10) | Detalle del locador (US-04) | **Existe en el back (09/10, `develop` b7ebf48)**: baja lógica (`activo = false`) del inmueble y de sus contratos; 409 si está alquilado. El front lo conecta en `feature/vistas` (ver §7, US-04) |
+| `DELETE /inmuebles/:id` (baja lógica, 09/10) | Detalle del locador (US-04) | **Conectado** (09/10, `develop` b7ebf48): baja lógica (`activo = false`) del inmueble y de sus contratos; valida el dueño; 409 si está alquilado. Errores traducidos en `propiedad.adapter.ts#errorDeEliminarPropiedad` (§7, US-04) |
 | `PATCH /inmuebles/:id/publicacion` | Detalle (sprint 2) | **Pendiente** (propuesto; la función del service está lista, sin usar) |
 
 ## 6. Status HTTP y errores
@@ -255,8 +255,8 @@ criterio, igual que con US-41. El PO tiene una propuesta de criterios para carga
 | No hay fecha de publicación (`publishedAt` va en `null`: el encabezado no dice "publicada el…"). | db |
 | **`PUT /inmuebles/:id` ampliado:** el mismo cuerpo que `POST /inmuebles`. Hoy actualiza solo las columnas de `inmueble` e ignora `tags`, `fotos` y `condiciones_contrato`. El front ya manda el cuerpo completo (decisión del PO: no se parte el formulario según lo que soporta el back). | backend |
 | **Con contrato vigente, el precio, el índice y la frecuencia de ajuste no se modifican** (los fija el contrato): el back debería rechazarlo con 400. El front los muestra bloqueados. | backend |
-| **`DELETE /inmuebles/:id` lógico** (decisión del PO): `eliminado_en` o estado `eliminada`; deja de salir en `/mis-alquileres` y `/inmuebles/disponibles`; se conservan contratos y reclamos. **409 con contrato vigente.** | db / backend |
-| **Al eliminar, las solicitudes `pendiente` y `aceptada` del inmueble pasan a `cancelada`**, con un mail a cada postulante (decisión del PO). El modal avisa "Las N solicitudes de esta propiedad se van a cancelar". | backend |
+| ~~**`DELETE /inmuebles/:id` lógico**~~ **Hecho (09/10, `develop` b7ebf48):** baja lógica con `activo = false` (booleano, no un estado nuevo: el inmueble sigue `publicado` o `pausado`). El 409 sale de `estado_alquiler`, **no del contrato vigente**: ver la sección US-04 de abajo y §10. | — |
+| **Al eliminar, las solicitudes `pendiente` y `aceptada` del inmueble pasan a `cancelada`**, con un mail a cada postulante (decisión del PO). El back no lo hace (no tiene el módulo de solicitudes). En mock el modal avisa "Las N solicitudes de esta propiedad se van a cancelar"; **en real no dice nada** (`contarSolicitudesQueSeCancelan` devuelve 0). | backend |
 | **Fotos de la edición:** el front sube las nuevas a Storage antes del `PUT`; si el `PUT` falla, las borra (como el alta). Mientras el `PUT` no guarde fotos, ver §10. | backend |
 | **La precarga de `/editar` pierde "Débito automático" y el índice CAC.** El front no los ofrece: el medio de pago 4 se descarta y CAC (`tipo_indice` 3) queda sin índice, así que el formulario los muestra vacíos y el cuerpo del `PUT` ya no los lleva. Hoy no pasa nada porque el `PUT` ignora `condiciones_contrato`, pero **cuando se conecte el `PUT` ampliado, guardar la edición borraría esos datos reales**. Antes de conectarlo: o el front suma los dos al catálogo (decisión del PO), o el back conserva lo que el cuerpo no trae. `TODO(backend)` en `propiedad.adapter.ts#misAlquileresDetalleToPropiedadLocadorDetalle`. | backend / PO |
 | **Fotos del seed que no existen:** las del inmueble 1 (y otras cargadas a mano) apuntan a `https://rentar.com/fotos/...`, que da 404. El front muestra la foto de respaldo, pero el navegador registra el 404 en la consola. Reemplazarlas por fotos del bucket o borrarlas. | db |
@@ -286,7 +286,19 @@ y la pantalla "Esta publicación ya no está disponible". Con sesión, todos los
 
 ### US-04 Eliminar mis propiedades
 
-Cambio del back del 09/10 (sin probar contra la API; el front todavía no tiene el botón).
+Cambio del back del 09/10 (`develop` b7ebf48). **Conectado en el front el 09/10** (`feature/vistas`):
+`propiedades.service#eliminarPropiedad` llama al `DELETE` y `propiedad.adapter.ts#errorDeEliminarPropiedad`
+traduce los errores:
+
+| Status del back | Lo que ve el locador (en el modal) |
+|---|---|
+| 403 (no es el dueño o no tiene el rol) y 404 (no existe o ya estaba dada de baja) | "No encontramos esta propiedad." (mismo mensaje, para no revelar que una propiedad ajena existe) |
+| 409 (alquilada) | "No podés eliminar una propiedad con contrato vigente." |
+| 400, 401, 5xx, sin red | Sin traducir (el 400 puede ser un error de la base, §10.4: no se disfraza de "no encontrada") |
+
+El aviso de bloqueo del front ("No podés eliminar una propiedad con contrato vigente", sin llamar al
+back) sigue igual: con el puente del detalle, el contrato vigente se deduce de `estado_alquiler`, la
+misma regla que usa el back para el 409. El 409 solo llega si la pantalla quedó vieja.
 
 | Qué hace | Detalle |
 |---|---|
@@ -300,7 +312,10 @@ Cambio del back del 09/10 (sin probar contra la API; el front todavía no tiene 
 |---|---|
 | ~~Faltaba la columna `activo`~~ **Resuelto (09/10):** la migración `20261009000000_us04_eliminacion_logica_inmueble.sql` ahora agrega `activo BOOLEAN NOT NULL DEFAULT TRUE` a `inmueble` y a `contrato` (con `IF NOT EXISTS`). En la base real las columnas se crearon a mano en el SQL Editor y se verificó con `information_schema.columns`. | — |
 | ~~Un inmueble dado de baja se podía leer y editar~~ **Resuelto (09/10, sin probar):** `inmueble.repository#findById`, `findAll` y `contrato.repository#findByInmuebleId` filtran por `activo`, y `inmueble.service#update` responde 404 si el inmueble no existe o está inactivo. Falta que `PUT /inmuebles/:id` valide que el inmueble sea del locador que lo edita. | backend |
-| El comentario Swagger de `DELETE /inmuebles/:id` en `inmuebles.routes.ts` tiene el formato roto (restos de ``` en cada línea) y no se va a renderizar en `/api/v1/docs`. | backend |
+| ~~El comentario Swagger de `DELETE /inmuebles/:id` tenía el formato roto~~ En `develop` b7ebf48 el bloque `@openapi` está bien formado (revisado el 09/10). | — |
+| **El bloqueo no mira el contrato vigente** (`contrato.estado = 2`), solo `estado_alquiler`. Ver §10, punto 17. | backend |
+| **No cancela solicitudes ni avisa por mail** (el módulo no existe). Ver §10, punto 19. | backend |
+| **Las fotos quedan en el bucket público** después de la baja. Ver §10, punto 20. | backend / PO |
 | La US-04 no tiene archivo en `Documentación/md/US/` (solo está en el Sprint 0): faltan los criterios de aceptación para confirmar la regla de "no eliminar si está alquilado". | PO / backend |
 
 ### US-01 Registrar mis propiedades
@@ -477,17 +492,18 @@ Encontradas al integrar. No se tocó `apps/api` (el PR #2 se cerró sin mergear)
    `react` y `react-dom` en 19.2.8 con `overrides`. **Después de traer el cambio: borrar
    `node_modules` y correr `npm ci`.**
 
-9. **🔴 Crítico · `PUT` y `DELETE /inmuebles/:id` no chequean que el inmueble sea del que llama**
+9. **🔴 Crítico · `PUT /inmuebles/:id` no chequea que el inmueble sea del que llama** (el `DELETE` sí,
+   desde el 09/10)
    (tanda 3 del Sprint 2). Piden token y rol `locador`, pero el controller no lee el usuario y el
    repositorio usa la clave secreta: cualquier locador puede modificar o borrar el inmueble de otro.
    Además, `PUT` pasa el body entero a `.update()`. Filtrar por `id_locador` del token y responder
    404 si no es suyo.
 10. **🔴 Alto · `GET /inmuebles` está abierto** (sin token) y devuelve todos los inmuebles con la
     dirección exacta y el `id_locador`. El front no la usa: sacarla o protegerla con rol administrador.
-11. **🟠 Medio · `DELETE /inmuebles/:id` borra en duro y en cascada** contrato, reclamos, fotos y tags,
-    no bloquea con contrato vigente y no limpia Storage. Propuesta (PO): borrado lógico, 409 con
-    contrato vigente y cancelar las solicitudes (§7, US-04).
-12. **🟡 Bajo · 400 en lugar de 404** en `PUT` y `DELETE` cuando el inmueble no existe: el service
+11. ~~**`DELETE /inmuebles/:id` borra en duro y en cascada**~~ **Resuelto en parte (09/10, b7ebf48):**
+    es una baja lógica y valida el dueño. Sigue sin mirar el contrato vigente, sin cancelar solicitudes
+    y sin limpiar Storage (puntos 17 a 20).
+12. **🟡 Bajo · 400 en lugar de 404** en `PUT` (el `DELETE` ya responde 404 desde el 09/10) cuando el inmueble no existe: el service
     tira un `Error` sin status antes del chequeo del controller (y `errorHandler` usa 400, punto 4).
 13. **🟠 Fotos huérfanas en el bucket al editar:** hasta que el `PUT` guarde las fotos, cada edición
     con fotos nuevas las sube a `fotos-propiedades` y quedan sin referencia (si el `PUT` falla, el
@@ -508,6 +524,26 @@ Encontradas al integrar. No se tocó `apps/api` (el PR #2 se cerró sin mergear)
     contraseña en Supabase Auth, sacarla del `.side` (Selenium IDE la puede leer de una variable o
     pedirla al correr) y tenerla en cuenta en el historial de git. Anotado el 09/10, al conectar el
     detalle.
+
+17. **🟠 Medio · `DELETE /inmuebles/:id` bloquea por `estado_alquiler`, no por contrato vigente**
+    (`eliminar_inmueble_logico`). Un inmueble `publicado` o `pausado` con un contrato en estado 2
+    (dato inconsistente, pero posible) se elimina y **su contrato vigente queda finalizado sin aviso**.
+    Al revés, uno `publicado/alquilado` con el contrato "disponible" (inmueble 13) no se puede
+    eliminar. Propuesta: 409 si existe un contrato con `estado = 2`, además del estado. Para Camila.
+18. **🟡 Bajo · 403 para un inmueble ajeno, chequeado antes de ver si está inactivo:** con distintos
+    ids se puede saber cuáles existen (403) y cuáles no (404). Propuesta: 404 en los tres casos (no
+    existe, ya dado de baja, de otro), como pide el front. El front ya los muestra igual. Para Camila.
+19. **🟠 Medio · No cancela las solicitudes del inmueble ni avisa a los postulantes** (decisión del
+    PO, §7). Queda para cuando exista el módulo de solicitudes. Para Camila.
+20. **🟠 Medio · Fotos en el bucket público después de la baja:** las filas de `foto_inmueble` se
+    conservan (es lógica) y los archivos siguen en `fotos-propiedades`, con sus URLs públicas
+    abriendo. Decidir si se borran, se mueven o se deja el bucket privado. Para Camila / PO.
+21. **🟡 Bajo · Inactiva también los contratos históricos:** todos los del inmueble pasan a
+    `estado = 3` y `activo = false`, y las lecturas filtran por `activo`: el historial no se borra,
+    pero queda oculto. Confirmar con el PO ("se conservan contratos y reclamos"). Para Camila.
+22. **🟡 Bajo · Detalles del `DELETE`:** un error de la RPC cae al 400 por defecto (punto 4); el
+    `if (!eliminado) 404` del controller nunca se ejecuta (el service tira o devuelve `true`); el 403
+    por rol tiene un texto técnico ("Acceso denegado: Se requiere el rol 'locador'…"). Para Camila.
 
 Los puntos 9 a 12 y 14 tienen un texto de issue para GitHub (lo abre el PO).
 

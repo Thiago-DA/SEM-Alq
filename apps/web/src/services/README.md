@@ -15,10 +15,11 @@ mocks ni llama a `fetch` directo**: llaman a una función de un service y recibe
 | | `listarMisPropiedades` | US-02 |
 | | `registrarPropiedad`, `subirFotoPropiedad` (Supabase Storage, bucket `fotos-propiedades`) | US-01 |
 | | `cambiarEstadoPublicacion` (lista pero sin usar: es del sprint del detalle) | — |
-| | `getMiPropiedad` (`GET /mis-alquileres/:id`, propuesto; hoy, puente con `GET /mis-alquileres` + buscar el id), `actualizarPropiedad(id, CambiosPropiedad)` (`PUT /inmuebles/:id`, existe; propuesto ampliado) y `eliminarPropiedad` (`DELETE /inmuebles/:id`, existe; propuesto lógico). En mock, actualizar y eliminar escriben en el mockStore (eliminar es lógico y cancela las solicitudes activas) | US-03, US-04 |
+| | `getMiPropiedad` (`GET /mis-alquileres/:id`, propuesto; hoy, puente con `GET /mis-alquileres` + buscar el id), `actualizarPropiedad(id, CambiosPropiedad)` (`PUT /inmuebles/:id`, existe; propuesto ampliado) y `eliminarPropiedad` (`DELETE /inmuebles/:id`, conectado: baja lógica; errores en `propiedad.adapter.ts#errorDeEliminarPropiedad`). En mock, actualizar y eliminar escriben en el mockStore (eliminar es lógico y cancela las solicitudes activas) | US-03, US-04 |
 | `solicitudes.service.ts` | `enviarSolicitud` (con contacto, legajo y aceptación; valida con `errorDeSolicitudNueva`), `getMiSolicitudParaPropiedad`, `contarMisSolicitudesPendientes` (rutas propuestas, no existen) | US-35 |
 | | `listarMisSolicitudes`, `listarSolicitudesRecibidas` | US-36 |
 | | `aceptarSolicitud`, `rechazarSolicitud` | US-37 |
+| | `contarSolicitudesQueSeCancelan`: para el modal de eliminar (US-04); en real, 0 (el back no tiene el módulo) | US-04 |
 | | `cancelarSolicitud`: el locador una aceptada (US-38) o el postulante una pendiente (sin US en Sprint 0). Una sola aceptada por propiedad: `aceptarSolicitud` da 409 si ya hay otra | US-38 |
 | `panel.service.ts` | `getResumenCobros`, `getResumenReclamos`, `getEventosContratos`, `getSolicitudesPendientes`, `getResumenRoles` | `/panel` (sin US en Sprint 0) |
 
