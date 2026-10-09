@@ -33,6 +33,16 @@ function meses(cantidad: number): string {
   return `${cantidad} ${cantidad === 1 ? 'mes' : 'meses'}`
 }
 
+/** "1 año" / "15 años" (antigüedad). */
+function anios(cantidad: number): string {
+  return `${cantidad} ${cantidad === 1 ? 'año' : 'años'}`
+}
+
+/** "1 día" / "5 días" (días de gracia). */
+function dias(cantidad: number): string {
+  return `${cantidad} ${cantidad === 1 ? 'día' : 'días'}`
+}
+
 /** "58 m²". */
 function m2(valor: number): string {
   return `${valor} m²`
@@ -47,7 +57,7 @@ export function filasPropiedad(values: PropiedadNueva): FilaFicha[] {
     { label: 'Baños', value: String(values.bathrooms) },
     { label: 'Superficie total', value: m2(values.totalAreaM2) },
     { label: 'Superficie cubierta', value: m2(values.coveredAreaM2) },
-    { label: 'Antigüedad', value: values.ageYears === null ? '—' : values.ageYears === 0 ? 'A estrenar' : `${values.ageYears} años` },
+    { label: 'Antigüedad', value: values.ageYears === null ? '—' : values.ageYears === 0 ? 'A estrenar' : anios(values.ageYears) },
     {
       label: 'Características',
       value: values.characteristics.length ? values.characteristics.map((key) => characteristicShortLabel[key]).join(' · ') : 'Ninguna',
@@ -63,7 +73,7 @@ export function filasCondiciones(values: PropiedadNueva): FilaFicha[] {
     : 'Sin ajuste por índice'
   const interes =
     values.dailyInterestPct && values.dailyInterestPct > 0
-      ? `${values.dailyInterestPct} % por día${values.graceDays ? ` · ${values.graceDays} días de gracia` : ''}`
+      ? `${values.dailyInterestPct} % por día${values.graceDays ? ` · ${dias(values.graceDays)} de gracia` : ''}`
       : 'No se cobra'
   return [
     { label: 'Precio mensual', value: formatARS(values.priceMonthly) },

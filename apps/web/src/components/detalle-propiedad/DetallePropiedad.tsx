@@ -332,7 +332,7 @@ export function DetallePropiedad({ id }: DetallePropiedadProps) {
                   title="Condiciones del contrato"
                   data-testid="detalle-propiedad-condiciones"
                   items={[
-                    ...(conditions.contractMonths !== null ? [{ label: 'Plazo', value: `${conditions.contractMonths} meses` }] : []),
+                    ...(conditions.contractMonths !== null ? [{ label: 'Plazo', value: `${conditions.contractMonths} ${conditions.contractMonths === 1 ? 'mes' : 'meses'}` }] : []),
                     ...(conditions.adjustmentEveryMonths !== null
                       ? [{ label: 'Ajuste', value: `${propiedad.adjustmentIndex ?? 'Índice'} ${periodicidad(conditions.adjustmentEveryMonths)}` }]
                       : []),
