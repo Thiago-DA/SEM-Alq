@@ -256,6 +256,7 @@ criterio, igual que con US-41. El PO tiene una propuesta de criterios para carga
 | **`DELETE /inmuebles/:id` lógico** (decisión del PO): `eliminado_en` o estado `eliminada`; deja de salir en `/mis-alquileres` y `/inmuebles/disponibles`; se conservan contratos y reclamos. **409 con contrato vigente.** | db / backend |
 | **Al eliminar, las solicitudes `pendiente` y `aceptada` del inmueble pasan a `cancelada`**, con un mail a cada postulante (decisión del PO). El modal avisa "Las N solicitudes de esta propiedad se van a cancelar". | backend |
 | **Fotos de la edición:** el front sube las nuevas a Storage antes del `PUT`; si el `PUT` falla, las borra (como el alta). Mientras el `PUT` no guarde fotos, ver §10. | backend |
+| **La precarga de `/editar` pierde "Débito automático" y el índice CAC.** El front no los ofrece: el medio de pago 4 se descarta y CAC (`tipo_indice` 3) queda sin índice, así que el formulario los muestra vacíos y el cuerpo del `PUT` ya no los lleva. Hoy no pasa nada porque el `PUT` ignora `condiciones_contrato`, pero **cuando se conecte el `PUT` ampliado, guardar la edición borraría esos datos reales**. Antes de conectarlo: o el front suma los dos al catálogo (decisión del PO), o el back conserva lo que el cuerpo no trae. `TODO(backend)` en `propiedad.adapter.ts#misAlquileresDetalleToPropiedadLocadorDetalle`. | backend / PO |
 | **Fotos del seed que no existen:** las del inmueble 1 (y otras cargadas a mano) apuntan a `https://rentar.com/fotos/...`, que da 404. El front muestra la foto de respaldo, pero el navegador registra el 404 en la consola. Reemplazarlas por fotos del bucket o borrarlas. | db |
 | **Decidido (tanda 3):** solo la pestaña Resumen; sin "Pausar" (no tiene US ni endpoint); "Eliminar" con contrato vigente queda habilitado y abre el aviso de bloqueo. | — |
 
@@ -478,6 +479,13 @@ Encontradas al integrar. No se tocó `apps/api` (el PR #2 se cerró sin mergear)
     columna). La US-35 actualizada lo muestra en la solicitud y al locador: con el back real va "—".
     Sumar la columna y devolverla en `/usuarios/me` (junto con el `telefono`, que sí se guarda pero
     `/me` no lo devuelve).
+
+16. **🔴 Alto · Contraseña de prueba expuesta en el repo (dueño: testing).** El test de Selenium
+    `Tests_Selenium/Sprint 1/US-02 Consultar mis propiedades.side` (commit del 30/09, ya en
+    `develop`) guarda en texto plano la contraseña real de una cuenta de prueba del back. Cambiar esa
+    contraseña en Supabase Auth, sacarla del `.side` (Selenium IDE la puede leer de una variable o
+    pedirla al correr) y tenerla en cuenta en el historial de git. Anotado el 09/10, al conectar el
+    detalle.
 
 Los puntos 9 a 12 y 14 tienen un texto de issue para GitHub (lo abre el PO).
 
