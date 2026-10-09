@@ -18,8 +18,9 @@
  * mock la aplica tal cual, y el back tiene que aplicar la misma.
  *
  * Quién lo usa: el detalle público de la propiedad (`/propiedad/[id]`),
- * `/panel/mis-solicitudes`, `/panel/solicitudes` y `panel.service.ts`
- * (solicitudes pendientes del locador).
+ * `/panel/mis-solicitudes`, `/panel/solicitudes`, `panel.service.ts`
+ * (solicitudes pendientes del locador) y el modal de eliminar del detalle del
+ * locador (US-04, `contarSolicitudesQueSeCancelan`).
  */
 import type { Solicitud, SolicitudNueva } from '@rentar/shared-types'
 import { solicitudes as solicitudesElenco, type SolicitudMock } from '@/lib/mocks'
@@ -304,6 +305,31 @@ export async function contarMisSolicitudesPendientes(excluirPropiedadId?: string
   }
   const items = await apiRequest<SolicitudResponse[]>('/solicitudes/mias', { query: { estado: 'pendiente' } })
   return items.filter((item) => String(item.inmueble.id) !== excluirPropiedadId).length
+}
+
+// ─── Eliminar la propiedad (US-04) ──────────────────────────────────────
+
+/**
+ * US-04 Eliminar mis propiedades — cuántas solicitudes `pendiente` o
+ * `aceptada` de una propiedad del locador se cancelarían al eliminarla. El
+ * modal de eliminar avisa "Las N solicitudes … se van a cancelar" (decisión
+ * del PO) solo si hay alguna.
+ * @backend ninguno: lo resuelve la rama mock. En real devuelve 0.
+ * @returns la cantidad (0 si no hay)
+ *
+ * NOTA: en real es 0 porque el back no tiene el módulo de solicitudes: no
+ * puede haber ninguna que cancelar, y `DELETE /inmuebles/:id` tampoco cancela
+ * nada. Así el modal no promete un mail que nadie manda.
+ * TODO(backend): cuando exista el módulo, el `DELETE` cancela las activas y
+ * avisa a cada postulante; esto pasa a pedirlas (por ejemplo,
+ * `GET /solicitudes/recibidas?inmueble=:id`, ver `docs/api-endpoints.md`).
+ */
+export async function contarSolicitudesQueSeCancelan(propiedadId: string): Promise<number> {
+  if (USE_MOCKS) {
+    const recibidas = await listarSolicitudesRecibidas()
+    return recibidas.filter((item) => item.property.id === propiedadId && esSolicitudActiva(item.status)).length
+  }
+  return 0
 }
 
 // ─── Aceptar o rechazar (US-37) ─────────────────────────────────────────

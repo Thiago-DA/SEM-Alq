@@ -14,9 +14,9 @@
  *   el contrato"; no van (pausar no es de esta tanda y Contratos no existe).
  * Si la acción falla, el error queda dentro del modal y se puede reintentar.
  *
- * De dónde saca los datos: la cantidad de solicitudes, de
- * `listarSolicitudesRecibidas` (las `pendiente` y `aceptada` de esta
- * propiedad); eliminar, de `eliminarPropiedad`.
+ * De dónde saca los datos: la cantidad de solicitudes que se cancelan, de
+ * `contarSolicitudesQueSeCancelan` (con el back real es 0: no tiene el módulo
+ * de solicitudes, así que no se avisa nada); eliminar, de `eliminarPropiedad`.
  * Quién lo usa: `MiPropiedad`.
  */
 import { useCallback, useState } from 'react'
@@ -24,10 +24,9 @@ import { Alert } from 'antd'
 import type { PropiedadLocadorDetalle } from '@rentar/shared-types'
 import { ConfirmActionModal } from '@rentar/ui'
 import { useServiceCall } from '@/lib/hooks/useServiceCall'
-import { esSolicitudActiva } from '@/lib/validation/solicitud.rules'
 import { eliminarPropiedad } from '@/services/propiedades.service'
 import { ServiceError } from '@/services/shared/errors'
-import { listarSolicitudesRecibidas } from '@/services/solicitudes.service'
+import { contarSolicitudesQueSeCancelan } from '@/services/solicitudes.service'
 import { fecha } from './textosPropiedad'
 import styles from './MiPropiedad.module.css'
 
@@ -74,10 +73,7 @@ function ConfirmarEliminar({ detalle, onCerrar, onEliminada }: ModalEliminarProp
   // ─── Estado local ───────────────────────────────────────────────────
   const [enCurso, setEnCurso] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const contarActivas = useCallback(
-    async () => (await listarSolicitudesRecibidas()).filter((item) => item.property.id === detalle.id && esSolicitudActiva(item.status)).length,
-    [detalle.id],
-  )
+  const contarActivas = useCallback(() => contarSolicitudesQueSeCancelan(detalle.id), [detalle.id])
   const activas = useServiceCall(contarActivas)
 
   // ─── Handlers ───────────────────────────────────────────────────────
@@ -106,15 +102,11 @@ function ConfirmarEliminar({ detalle, onCerrar, onEliminada }: ModalEliminarProp
       onCancel={() => !enCurso && onCerrar()}
       data-testid="mi-propiedad-eliminar-modal"
     >
-      {/* Decisión del PO: el modal avisa cuántas solicitudes se cancelan. */}
+      {/* Decisión del PO: el modal avisa cuántas solicitudes se cancelan, solo si hay alguna.
+          Si el conteo falla, no se dice nada: mejor que prometer un mail que quizá no se manda. */}
       {activas.status === 'listo' && activas.data > 0 && (
         <p className={styles.modalNote} data-testid="mi-propiedad-eliminar-solicitudes">
           {textoSolicitudes(activas.data)}
-        </p>
-      )}
-      {activas.status === 'error' && (
-        <p className={styles.modalNote} data-testid="mi-propiedad-eliminar-solicitudes">
-          Si tiene solicitudes pendientes o aceptadas, se van a cancelar y le avisamos por mail a cada postulante.
         </p>
       )}
       {error && <Alert type="error" showIcon className={styles.modalAlert} title="No pudimos eliminar la propiedad" description={error} data-testid="mi-propiedad-eliminar-error" />}
