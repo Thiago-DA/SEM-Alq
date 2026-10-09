@@ -59,6 +59,9 @@ import {
   cambiosToUpdateInmueble,
   misAlquileresDetalleToPropiedadLocadorDetalle,
   misAlquileresItemToDetalleResponse,
+  errorDeEliminarPropiedad,
+  MI_PROPIEDAD_NO_ENCONTRADA_MESSAGE,
+  PROPIEDAD_CON_CONTRATO_MESSAGE,
 } from './adapters/propiedad.adapter'
 import { apiRequest } from './shared/apiClient'
 import type { DisponiblesQuery, InmuebleDetalleResponse, InmueblesDisponiblesResponse } from './shared/backend-dtos'
@@ -568,11 +571,10 @@ export async function cambiarEstadoPublicacion(propiedadId: string, estado: 'pub
 
 // ─── Detalle, modificar y eliminar (US-03, US-04) ───────────────────────
 
-/** 404 del detalle del locador: no existe, se eliminó o no es suya (mismo mensaje, para no revelar cuál). */
-export const MI_PROPIEDAD_NO_ENCONTRADA_MESSAGE = 'No encontramos esta propiedad.'
-
-/** 409 de eliminar: tiene contrato vigente (decisión del PO, tanda 3 del Sprint 2). */
-export const PROPIEDAD_CON_CONTRATO_MESSAGE = 'No podés eliminar una propiedad con contrato vigente.'
+// NOTA: los mensajes del detalle y de eliminar viven en el adaptador (los usa
+// `errorDeEliminarPropiedad`); se re-exportan acá para que las pantallas los
+// sigan tomando del service.
+export { MI_PROPIEDAD_NO_ENCONTRADA_MESSAGE, PROPIEDAD_CON_CONTRATO_MESSAGE }
 
 /** Se intentó cambiar el precio o el ajuste de una propiedad con contrato vigente. */
 export const CAMPOS_FIJADOS_POR_CONTRATO_MESSAGE = 'Con un contrato vigente, el precio y el ajuste los fija el contrato.'
@@ -732,18 +734,28 @@ function cancelarSolicitudesDePropiedadMock(propertyId: string): number {
  * sesión. Borrado LÓGICO (decisión del PO): deja de verse en Mis
  * propiedades, en `/buscar` y en su detalle, pero se conservan contratos y
  * reclamos anteriores.
- * @backend DELETE /api/v1/inmuebles/:id   (existe · token + rol locador; propuesto: borrado
- *          lógico, 409 con contrato vigente y solicitudes canceladas)
+ * @backend DELETE /api/v1/inmuebles/:id   (existe · `develop` b7ebf48, 09/10 · token + rol
+ *          locador; el dueño se valida en la función SQL `eliminar_inmueble_logico`)
+ *          Baja LÓGICA: `inmueble.activo = false` y sus contratos `estado = 3`,
+ *          `activo = false`. 200 sin `data`; 403 si no es suya; 404 si no existe
+ *          o ya estaba dada de baja; 409 si está `alquilado` o `publicado/alquilado`.
  * @returns void
- * @throws {ServiceError} `not_found` si no es suya; `conflict` con
- *   {@link PROPIEDAD_CON_CONTRATO_MESSAGE} si tiene contrato vigente.
+ * @throws {ServiceError} `not_found` con {@link MI_PROPIEDAD_NO_ENCONTRADA_MESSAGE}
+ *   si no es suya o ya no existe; `conflict` con
+ *   {@link PROPIEDAD_CON_CONTRATO_MESSAGE} si está alquilada (ver
+ *   `propiedad.adapter.ts#errorDeEliminarPropiedad`); `unauthorized`,
+ *   `validation`, `network` o `server` sin cambios.
  *
- * NOTA: al eliminar, las solicitudes `pendiente` y `aceptada` de la
- * propiedad pasan a `cancelada` (decisión del PO).
- * TODO(backend): borrado lógico (`eliminado_en` o estado `eliminada`), 409
- * con contrato vigente, cancelar las solicitudes y mandar un mail a cada
- * postulante. Hoy el DELETE borra en duro, en cascada, sin chequear el
- * contrato ni el dueño (HANDOFF §10).
+ * NOTA: en modo mock, al eliminar, las solicitudes `pendiente` y `aceptada`
+ * de la propiedad pasan a `cancelada` (decisión del PO). En real no hay
+ * solicitudes (el back no tiene el módulo).
+ * TODO(backend): el 409 sale de `estado_alquiler`, no del contrato vigente
+ * (`contrato.estado = 2`): una publicada o pausada con un contrato vigente se
+ * eliminaría y su contrato quedaría finalizado (HANDOFF §10).
+ * TODO(backend): cancelar las solicitudes activas y mandar un mail a cada
+ * postulante, cuando exista el módulo de solicitudes.
+ * TODO(backend): las fotos quedan en el bucket público (`fotos-propiedades`)
+ * y sus URLs siguen abriendo; decidir si se borran o se mueven.
  */
 export async function eliminarPropiedad(propiedadId: string): Promise<void> {
   if (USE_MOCKS) {
@@ -754,5 +766,9 @@ export async function eliminarPropiedad(propiedadId: string): Promise<void> {
     cancelarSolicitudesDePropiedadMock(propiedadId)
     return
   }
-  await apiRequest<void>(`/inmuebles/${encodeURIComponent(propiedadId)}`, { method: 'DELETE' })
+  try {
+    await apiRequest<void>(`/inmuebles/${encodeURIComponent(propiedadId)}`, { method: 'DELETE' })
+  } catch (error) {
+    throw errorDeEliminarPropiedad(error)
+  }
 }

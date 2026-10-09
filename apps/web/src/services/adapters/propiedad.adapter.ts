@@ -10,7 +10,7 @@
  * Cubre: US-34 (`PropiedadResumen`), US-41 (`PropiedadDetalle`), US-02
  * (`PropiedadLocador`), US-01 (`PropiedadNueva` → cuerpo de `POST /inmuebles`)
  * y US-03/US-04 (`PropiedadLocadorDetalle`, por ahora con el puente desde
- * `/mis-alquileres`).
+ * `/mis-alquileres`, y los errores de `DELETE /inmuebles/:id`).
  * Quién lo usa: la rama real de `services/propiedades.service.ts`.
  */
 import type {
@@ -35,6 +35,7 @@ import type {
 import { neighborhoods } from '@/lib/catalogs/neighborhoods'
 import { PLACEHOLDER_PHOTO_SRC } from '@/lib/imagenes/fotoConRespaldo'
 import type { InmuebleDetalleResponse, InmuebleDisponibleResponse, MisAlquileresDetalleResponse } from '../shared/backend-dtos'
+import { ServiceError } from '../shared/errors'
 import { formatApproxAddress, formatExactAddress, formatFloorUnit, separarPisoDepto } from './direccion'
 import { tituloDePublicacion } from './titulo'
 
@@ -840,4 +841,37 @@ export function cambiosCompletos(cambios: CambiosPropiedad): cambios is Propieda
     'priceMonthly', 'expenses', 'paymentMethods',
   ]
   return requeridos.every((campo) => cambios[campo] !== undefined)
+}
+
+// ─── Eliminar (US-04) ───────────────────────────────────────────────────
+
+/** 404 del detalle del locador: no existe, se eliminó o no es suya (mismo mensaje, para no revelar cuál). */
+export const MI_PROPIEDAD_NO_ENCONTRADA_MESSAGE = 'No encontramos esta propiedad.'
+
+/** 409 de eliminar: tiene contrato vigente (decisión del PO, tanda 3 del Sprint 2). */
+export const PROPIEDAD_CON_CONTRATO_MESSAGE = 'No podés eliminar una propiedad con contrato vigente.'
+
+/**
+ * Error de `DELETE /api/v1/inmuebles/:id` → el error que muestra el modal de
+ * eliminar (US-04), con el mensaje en español del front en vez del texto del back.
+ *
+ * - 403 y 404 → `not_found` con {@link MI_PROPIEDAD_NO_ENCONTRADA_MESSAGE}.
+ *   NOTA: el back responde 403 si el inmueble es de otro locador (o si el
+ *   usuario no tiene el rol locador) y 404 si no existe o ya estaba dado de
+ *   baja. Se muestran igual para no revelar que una propiedad ajena existe
+ *   (mismo criterio que el detalle del locador).
+ * - 409 → `conflict` con {@link PROPIEDAD_CON_CONTRATO_MESSAGE}. El back lo
+ *   responde si el inmueble está `alquilado` o `publicado/alquilado`
+ *   ("No se puede eliminar un inmueble que está alquilado."), o en un estado
+ *   que no permite eliminarlo. Es la misma regla con la que el front deduce el
+ *   contrato vigente, así que solo llega si la pantalla quedó vieja.
+ * - El resto pasa sin cambios. NOTA: el 400 NO se traduce a "no encontrada":
+ *   un error de la base también sale como 400 (HANDOFF §10.4) y quedaría
+ *   disfrazado. Lo mismo `unauthorized`, `network` y `server`.
+ */
+export function errorDeEliminarPropiedad(error: unknown): unknown {
+  if (!(error instanceof ServiceError)) return error
+  if (error.code === 'forbidden' || error.code === 'not_found') return new ServiceError('not_found', MI_PROPIEDAD_NO_ENCONTRADA_MESSAGE)
+  if (error.code === 'conflict') return new ServiceError('conflict', PROPIEDAD_CON_CONTRATO_MESSAGE)
+  return error
 }
