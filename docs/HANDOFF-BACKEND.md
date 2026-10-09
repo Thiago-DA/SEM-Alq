@@ -318,7 +318,23 @@ misma regla que usa el back para el 409. El 409 solo llega si la pantalla quedó
 | **El bloqueo no mira el contrato vigente** (`contrato.estado = 2`), solo `estado_alquiler`. Ver §10, punto 17. | backend |
 | **No cancela solicitudes ni avisa por mail** (el módulo no existe). Ver §10, punto 19. | backend |
 | **Las fotos quedan en el bucket público** después de la baja. Ver §10, punto 20. | backend / PO |
-| La US-04 no tiene archivo en `Documentación/md/US/` (solo está en el Sprint 0): faltan los criterios de aceptación para confirmar la regla de "no eliminar si está alquilado". | PO / backend |
+| La US-04 no tiene archivo en `Documentación/md/US/` (solo está en el Sprint 0): faltan los criterios de aceptación. La regla "no eliminar si está alquilada" la confirmó backend el 09/10 (arriba); falta que el PO la cargue en la US. | PO |
+
+**Probado en real el 09/10** (`locador@rentar.com`, `dev:api` local contra la base, 390 y 1440 px,
+`feature/vistas`). Con una propiedad de prueba propia (inmueble 24, §9):
+
+| Caso | Resultado |
+|---|---|
+| Modal de confirmar | "¿Eliminar Calle de Prueba Eliminar 999?", sin texto de solicitudes (en real no hay módulo) |
+| Confirmar | `DELETE /inmuebles/24` → 200 con `Authorization: Bearer`; vuelve a Mis propiedades con "Eliminaste Calle de Prueba Eliminar 999." y la lista pasa de 12 a 11 filas. En la base: `activo = false` y el contrato 21 con `estado = 3`, `activo = false` |
+| Confirmar con la pantalla vieja (otra pestaña) | `DELETE` → 404 "Inmueble no encontrado."; el modal muestra "No encontramos esta propiedad." |
+| `/panel/propiedades/24` y `/propiedad/24` después | "No encontramos esta propiedad" y "Esta publicación ya no está disponible" (404 del back) |
+| Alquilada (inmueble 2, de `locador@rentar.com`) | Aviso de bloqueo ("…está alquilada a Ana Inquilina…"), sin ningún `DELETE` |
+| Modo mock | Igual que antes: el modal avisa "La solicitud de esta propiedad se va a cancelar…" y elimina |
+| 409 | No se forzó (habría que alquilar una propiedad entre que se abre la pantalla y se confirma); el mapeo está en `errorDeEliminarPropiedad` |
+
+Consola: solo 404 esperados (el `DELETE` repetido, `/disponibles/24`, `/solicitudes/mias`, que no
+existe, y `favicon.ico`). Capturas en `Desktop/RentAR/Capturas vistas/Sprint2/implementado/eliminar-real/`.
 
 ### US-01 Registrar mis propiedades
 
@@ -461,6 +477,8 @@ Creados durante la conexión del front. Todos los mails de prueba llevan `+test`
 | Sus filas asociadas | `inmueble_x_tag` **5 y 6**; `foto_inmueble` **10, 11 y 12**; `contrato` **4**; `medio_pago_x_contrato` **5 y 6** | cada tabla |
 | Inmuebles con datos que no son verosímiles (vistos en la prueba de la landing, 06/10): **17** ($ 1.000.000.000 por mes, 10 m²) y **13** (PH de 20 ambientes y 15 dormitorios, dirección "bispo Trejo al 1200"). Corregir o borrar | inmuebles **13 y 17** | `inmueble`, `contrato` y asociadas |
 | Fotos repetidas de personas reales: la misma foto (carpeta `3e12c119-…`) es la principal de los inmuebles **12, 13, 15, 16 y 17**. El repo es público y la landing las muestra: reemplazarlas por fotos de ambientes | `foto_inmueble` de esos 5 inmuebles | `foto_inmueble` y `storage.objects` |
+| Inmueble "[TEST] Prueba de eliminar (US-04, 09/10) - no usar" ("Calle de Prueba Eliminar 999", Güemes, monoambiente, `locador@rentar.com`). **Ya eliminado (baja lógica, `activo = false`)** en el recorrido de US-04 | inmueble **24**; `foto_inmueble` **70, 71 y 72**; `contrato` **21** (`estado = 3`, `activo = false`); `medio_pago_x_contrato` **38**; sin tags | cada tabla |
+| Archivos del bucket `fotos-propiedades` del inmueble 24: 3 PNG grises de 1×1 px (67 bytes), sin nada identificable. Siguen públicos después de la baja (§10, punto 20) | `3e12c119-0702-46ec-a9a2-597c2f5c884f/3a0620ed-b680-412d-bf4a-560df0d8c48c.png`, `3e12c119-0702-46ec-a9a2-597c2f5c884f/032451de-b9a9-4d97-a2ce-3a24a3883570.png` y `3e12c119-0702-46ec-a9a2-597c2f5c884f/178df7bc-bfcf-4b76-a186-69e0898f4992.png` | `storage.objects` |
 
 ## 10. Observaciones para backend
 
