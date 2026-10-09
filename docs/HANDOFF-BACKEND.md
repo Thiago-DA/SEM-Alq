@@ -304,7 +304,9 @@ misma regla que usa el back para el 409. El 409 solo llega si la pantalla quedó
 |---|---|
 | `DELETE /inmuebles/:id` | Bearer + rol `locador`. Llama a la función SQL `eliminar_inmueble_logico(p_id_inmueble, p_id_locador)` (migración `20261009000000_us04_eliminacion_logica_inmueble.sql`), que bloquea la fila, valida y actualiza en una sola transacción. |
 | Baja lógica | El inmueble queda `activo = false` y sus contratos `estado = 3` (finalizado) y `activo = false`. No se borra ninguna fila (fotos, tags y reclamos se conservan). |
-| Regla de negocio | Solo se elimina un inmueble `publicado` o `pausado`. Uno `alquilado` o `publicado/alquilado` da 409: "No se puede eliminar un inmueble que está alquilado." |
+| Regla de negocio | **Confirmada por backend (Camila) el 09/10: una propiedad se puede eliminar siempre que NO esté alquilada.** En el código: `alquilado` o `publicado/alquilado` da 409 "No se puede eliminar un inmueble que está alquilado."; `publicado` y `pausado` se eliminan; cualquier otro valor da 409 "El estado del inmueble no permite eliminarlo." (ver §10, punto 23). |
+| Estados en la base (09/10) | `inmueble.estado_alquiler` es `varchar` sin CHECK ni enum. Valores: `publicado`, `pausado`, `alquilado` y `publicado/alquilado` (los cuatro que acepta el alta). `contrato.estado`: 1 disponible, 2 vigente, 3 finalizado. |
+| El front frente a la regla | El aviso de bloqueo sale de `activeContract`, que el puente del detalle deduce de `estado_alquiler` (`alquilado` o `publicado/alquilado`): **bloquea exactamente lo alquilado, ni más ni menos**, para los cuatro valores de la base. Solo difiere con un valor fuera de esos cuatro (§10, punto 23). |
 | Respuestas | 200 éxito, 400 id inválido, 401 sin sesión, 403 si el inmueble es de otro locador, 404 si no existe o ya estaba inactivo, 409 por el estado. El front las trata según la sección 6 (el 409 es `conflict`). |
 | Qué ocultan los listados | Con `activo = false` el inmueble sale de `/inmuebles/disponibles`, del detalle público, de `/mis-alquileres` y de los barrios del locador; y `/inmuebles/disponibles` también descarta inmuebles con contrato inactivo o finalizado. |
 
@@ -544,6 +546,16 @@ Encontradas al integrar. No se tocó `apps/api` (el PR #2 se cerró sin mergear)
 22. **🟡 Bajo · Detalles del `DELETE`:** un error de la RPC cae al 400 por defecto (punto 4); el
     `if (!eliminado) 404` del controller nunca se ejecuta (el service tira o devuelve `true`); el 403
     por rol tiene un texto técnico ("Acceso denegado: Se requiere el rol 'locador'…"). Para Camila.
+
+23. **🟡 Bajo · Un `estado_alquiler` fuera de los cuatro conocidos se bloquea con 409.** La regla
+    confirmada es "se elimina siempre que no esté alquilada", pero `eliminar_inmueble_logico` rechaza
+    cualquier valor que no sea `publicado` ni `pausado` ("El estado del inmueble no permite
+    eliminarlo."). Hoy no hay ninguno en la base, pero la columna es `varchar` sin CHECK y el `PUT`
+    no valida `estado_alquiler`, así que puede aparecer. En ese caso el front (que lo trata como no
+    alquilado) dejaría confirmar y mostraría el 409 como "No podés eliminar una propiedad con
+    contrato vigente.", que no es la causa. Propuesta: un CHECK con los cuatro valores (o un enum) y
+    validar el estado en el `PUT`. Además, con `estado_alquiler` en `NULL` la función lo deja
+    eliminar (`NOT IN` con `NULL` no entra al `IF`). No se corrigió en el front. Para Camila.
 
 Los puntos 9 a 12 y 14 tienen un texto de issue para GitHub (lo abre el PO).
 
