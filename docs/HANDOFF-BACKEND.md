@@ -164,8 +164,8 @@ faltan datos o una parte (ver sección 7); **pendiente** = no existe o el front 
 | `GET /usuarios/me` | Sesión (login y recarga) | **Conectado** |
 | `POST /registrar-usuario` | `/registro` | **Conectado** (sin `rol`: el back registra locatario) |
 | `GET /inmuebles/disponibles` | `/buscar`, landing | **Conectado**: desde ce677a4 (29/09) filtra, ordena y pagina (probado el 06/10). La landing pide `limit=6`; `/buscar` todavía trae todas y filtra en el cliente (sección 7). Tarda 7–10 s |
-| `GET /inmuebles/disponibles/:id` | `/propiedad/[id]` (US-41) | **Parcial** (Sprint 2): la usa `getPropiedad`; le faltan dueño, estado, condiciones, medios de pago y si el usuario ya la solicitó (sección 7, US-41) |
-| `GET /mis-alquileres` | `/panel/propiedades`, conteos de `/panel` | **Parcial**: desde el 29/09 trae locatario, próximo ajuste y si tiene reclamos sin resolver (el front los suma en el próximo PR); siguen faltando pagos y fecha de alta |
+| `GET /inmuebles/disponibles/:id` | `/propiedad/[id]` (US-41) | **Conectado** (09/10, revisado contra la base real): la usa `getPropiedad`, con `Authorization` si hay sesión (la ruta lo ignora). Todavía le faltan dueño, estado, condiciones, medios de pago y si el usuario ya la solicitó: esas secciones no se muestran (sección 7, US-41) |
+| `GET /mis-alquileres` | `/panel/propiedades`, conteos de `/panel`; **puente** del detalle y la edición del locador (US-03, US-04) | **Parcial**: desde el 29/09 trae locatario, próximo ajuste y si tiene reclamos sin resolver (el front los suma en el próximo PR); siguen faltando pagos y fecha de alta |
 | `POST /inmuebles` | Alta | **Conectado** (29/09): alta real de punta a punta desde la pantalla, con fotos en Storage; cualquier rol, y suma el rol locador |
 | Supabase Storage, bucket `fotos-propiedades` | Alta | **Conectado** (29/09): el alta sube las fotos y, si falla, las borra (desde el 30/09, con la política de SELECT; sección 8) |
 | `GET /locadores/:idLocador/barrios` | — | Existe desde el 29/09 (Bearer + rol locador; solo el propio id). El front no la usa: arma los barrios del filtro de US-02 con sus propias propiedades |
@@ -174,7 +174,7 @@ faltan datos o una parte (ver sección 7); **pendiente** = no existe o el front 
 | `GET /panel/cobros`, `/panel/reclamos`, `/panel/contratos`, `/solicitudes/recibidas?estado=pendiente` | `/panel` | **Pendiente** (módulos de sprints futuros; en modo real se muestran vacíos) |
 | `POST /solicitudes`, `GET /solicitudes/mias`, `GET /solicitudes/recibidas`, `PATCH /solicitudes/:id/{aceptar,rechazar,cancelar}` | `/propiedad/[id]` (US-35), `/panel/mis-solicitudes` y `/panel/solicitudes` (US-36 a US-38) | **Pendiente** (propuesto, Sprint 2; las tres pantallas están completas en modo mock, con la rama real lista en el service) |
 | `PUT /inmuebles/:id`, `DELETE /inmuebles/:id` | `/panel/propiedades/[id]` y `/panel/propiedades/[id]/editar` (US-03, US-04, tanda 3 del Sprint 2) | **Parcial**: existen y el front las usa en modo real, pero `PUT` ignora tags, fotos y condiciones (propuesto ampliado) y `DELETE` borra en duro; ninguna chequea el dueño (§10). El front funciona completo en modo mock |
-| `GET /mis-alquileres/:id` | Detalle y edición del locador (US-03, US-04) | **Pendiente** (propuesto, tanda 3 del Sprint 2; sin esta ruta el detalle no carga en modo real) |
+| `GET /mis-alquileres/:id` | Detalle y edición del locador (US-03, US-04) | **Pendiente** (propuesto, tanda 3 del Sprint 2). Desde el 09/10 el detalle y la precarga de la edición **cargan en modo real con un puente**: `getMiPropiedad` pide `GET /mis-alquileres` y busca el id (sección 7, US-03 y US-04) |
 | `PATCH /inmuebles/:id/publicacion` | Detalle (sprint 2) | **Pendiente** (propuesto; la función del service está lista, sin usar) |
 
 ## 6. Status HTTP y errores
@@ -246,7 +246,11 @@ criterio, igual que con US-41. El PO tiene una propuesta de criterios para carga
 
 | Brecha | Dueño |
 |---|---|
-| **No existe `GET /mis-alquileres/:id`** (el detalle de una propiedad del dueño, con dirección exacta, condiciones, fotos, tags y contrato vigente; 404 si no es suya). Sin esta ruta, el detalle y la edición no cargan en modo real. Ver `api-endpoints.md`. | backend |
+| **No existe `GET /mis-alquileres/:id`** (el detalle de una propiedad del dueño, con dirección exacta, condiciones, fotos, tags y contrato vigente; 404 si no es suya). Ver `api-endpoints.md`. **Puente (09/10):** `getMiPropiedad` pide `GET /mis-alquileres` (todas las del dueño) y busca el id; si no está, "No encontramos esta propiedad". No escala: cuando exista la ruta, se borra `propiedad.adapter.ts#misAlquileresItemToDetalleResponse` y se pide solo esa. | backend |
+| **`/mis-alquileres` no manda `contrato.estado` ni `fecha_fin_contrato`.** Con el puente, **el contrato vigente se DEDUCE de `estado_alquiler`** (`alquilado` o `publicado/alquilado` = vigente). Es una aproximación: en la base hay `publicado/alquilado` cuyo contrato está en estado "disponible" (inmueble 13) y el front los toma como vigentes (bloquea precio, ajuste y eliminar); y no se usa el locatario porque hay contratos vigentes sin él (inmueble 3). Además, el contrato va **sin fecha de fin**: el encabezado dice "Contrato vigente" (sin "hasta…"), "Lo que sigue" no muestra el vencimiento y el aviso de eliminar no dice hasta cuándo. Sumar los dos campos al item (o a la ruta nueva). | backend |
+| **Contratos vigentes sin locatario** en los datos de prueba (inmueble 3: contrato 3 vigente, sin fila de locatario en `contrato_x_usuario`). El front muestra "—" en "Locatario". `ContratoVigenteResumen.tenantName` y `endDate` pasaron a admitir `null` (`@rentar/shared-types`). | db |
+| **Catálogos por texto:** `/mis-alquileres` manda tipo, tags, índice y medios de pago como descripción, no como id. El puente los vuelve a ids con los mapeos del Sprint 1 (CAC → sin índice; "Débito automático" no se ofrece en el front y se descarta). La ruta nueva debería mandar ids, como el cuerpo de `POST /inmuebles`. | backend |
+| No hay fecha de publicación (`publishedAt` va en `null`: el encabezado no dice "publicada el…"). | db |
 | **`PUT /inmuebles/:id` ampliado:** el mismo cuerpo que `POST /inmuebles`. Hoy actualiza solo las columnas de `inmueble` e ignora `tags`, `fotos` y `condiciones_contrato`. El front ya manda el cuerpo completo (decisión del PO: no se parte el formulario según lo que soporta el back). | backend |
 | **Con contrato vigente, el precio, el índice y la frecuencia de ajuste no se modifican** (los fija el contrato): el back debería rechazarlo con 400. El front los muestra bloqueados. | backend |
 | **`DELETE /inmuebles/:id` lógico** (decisión del PO): `eliminado_en` o estado `eliminada`; deja de salir en `/mis-alquileres` y `/inmuebles/disponibles`; se conservan contratos y reclamos. **409 con contrato vigente.** | db / backend |
@@ -284,9 +288,14 @@ criterio, igual que con US-41. El PO tiene una propuesta de criterios para carga
 
 ### US-41 Consultar detalle de propiedad (Sprint 2, `/propiedad/[id]`)
 
-El front usa `GET /inmuebles/disponibles/:id` (existe). Lo que le falta lo cubre el adaptador
-(`propiedad.adapter.ts#inmuebleDetalleToPropiedadDetalle`) sin inventar datos: la sección que no
-tiene datos no se muestra.
+El front usa `GET /inmuebles/disponibles/:id` (existe; conectado y revisado contra la base real el
+09/10). Lo que le falta lo cubre el adaptador (`propiedad.adapter.ts#inmuebleDetalleToPropiedadDetalle`)
+sin inventar datos: la sección que no tiene datos no se muestra. Con sesión, el pedido lleva
+`Authorization: Bearer …` (la ruta hoy lo ignora).
+
+NOTA: el back no tiene un detalle del dueño aparte. El dueño que abre su publicación en
+`/propiedad/[id]` ve lo mismo que cualquier usuario con sesión, y una suya pausada o alquilada sin
+fecha le da 404; su detalle completo está en `/panel/propiedades/[id]`.
 
 | Brecha | Dueño |
 |---|---|
@@ -297,6 +306,8 @@ tiene datos no se muestra.
 | **"Ya la solicité":** el botón necesita saber si el usuario en sesión ya tiene una solicitud para ese inmueble. Propuesto `GET /solicitudes/mias?inmueble=:id`; alternativa: que el detalle devuelva `mi_solicitud` cuando llega con token. | backend |
 | **`-1` o `null` en `precio` y `expensas`:** desde el 29/09 manda `null` sin contrato; el adaptador también acepta el `-1` viejo. Confirmar que ya no se manda `-1`. | backend |
 | No hay fecha de publicación (el diseño dice "Publicada hace 6 días"). | db |
+| **Dirección exacta sin token:** la ruta es pública y manda `direccion`, `numero` y `piso` a cualquiera. El adaptador la recorta sin sesión ("Av. Colón al 1500"), pero es solo cosmético (`api-endpoints.md`, observación 🔴). Sin token, mandar calle y cuadra, nunca la altura ni el piso. | backend |
+| `fotos` sale con `select *` (`id_inmueble`, `peso_kb`, `formato`), que el detalle público no necesita. `servicio` tampoco se muestra (US-41 no lo pide). | backend |
 
 ### US-35 Enviar solicitud de alquiler (Sprint 2; actualizada en `develop` 80dfb8b, tanda 4)
 
