@@ -87,7 +87,7 @@ export function ResumenPropiedad({ detalle, hrefPublica, hrefEditar, onEliminar 
 
       <aside className={styles.resumenSide}>
         {/* Lo que sigue (· 01): solo lo que sale del contrato; el próximo cobro es del módulo de cobros. */}
-        {activeContract && (
+        {activeContract && (activeContract.nextAdjustmentDate || activeContract.endDate) && (
           <section className={styles.siguiente} data-testid="mi-propiedad-lo-que-sigue">
             <h3 className={styles.cardTitle}>Lo que sigue en esta propiedad</h3>
             <ul className={styles.eventos}>
@@ -96,9 +96,11 @@ export function ResumenPropiedad({ detalle, hrefPublica, hrefEditar, onEliminar 
                   <strong>{fecha(activeContract.nextAdjustmentDate)}</strong> — ajuste{values.adjustmentIndex ? ` por ${values.adjustmentIndex}` : ''}.
                 </li>
               )}
-              <li>
-                <strong>{fecha(activeContract.endDate)}</strong> — vence el contrato.
-              </li>
+              {activeContract.endDate && (
+                <li>
+                  <strong>{fecha(activeContract.endDate)}</strong> — vence el contrato.
+                </li>
+              )}
             </ul>
           </section>
         )}

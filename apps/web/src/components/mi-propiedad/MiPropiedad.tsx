@@ -197,7 +197,8 @@ export function MiPropiedad({ id }: MiPropiedadProps) {
             <StatusTag domain="propiedad" status={detalle.status} />
             {activeContract && (
               <span className={styles.chipContrato} data-testid="mi-propiedad-contrato">
-                Contrato vigente hasta {fecha(activeContract.endDate)}
+                {/* Sin fecha de fin (el back real no la manda todavía), solo "Contrato vigente". */}
+                {activeContract.endDate ? `Contrato vigente hasta ${fecha(activeContract.endDate)}` : 'Contrato vigente'}
               </span>
             )}
             {activeContract?.nextAdjustmentDate && (
@@ -217,7 +218,7 @@ export function MiPropiedad({ id }: MiPropiedadProps) {
             {activeContract && (
               <div className={styles.dato}>
                 <span className={styles.datoLabel}>Locatario</span>
-                <span className={styles.datoValor}>{activeContract.tenantName}</span>
+                <span className={styles.datoValor}>{activeContract.tenantName ?? '—'}</span>
               </div>
             )}
           </div>
