@@ -372,6 +372,18 @@ chunks más grandes:
    Performance simulado ≥ 90 en `/`, `/login` y `/buscar` (mediana de 3 corridas), sin romper la
    sesión real (login, `/me`, logout) ni el modo mock.
 
+## Regla: nada exclusivo de React 19 en `@rentar/ui` (2026-10-09)
+
+**Los componentes de `@rentar/ui` no usan APIs exclusivas de React 19 (`useEffectEvent`, `use`,
+etc.): las plantillas de Claude Design corren con React 18.3.1.** Las tarjetas de preview cargan
+React 19.2.8 de `_vendor/` (por eso el render check pasaba), pero las plantillas
+(`templates/*/support.js`) cargan React 18.3.1 desde unpkg. Pasó con `HeroSearch`: la landing de
+Claude Design no renderizaba por "useEffectEvent is not a function". Se arregló con una ref
+actualizada en `useLayoutEffect` + `useCallback`. En el mismo componente, `NativeSelect` recibía
+`ref` como prop común (React 19); en React 18 no llega, así que pasó a `forwardRef`. Antes de
+sumar un hook o patrón nuevo, chequear que exista en React 18.3. La regla también está en
+`conventions.md`, para el agente de Claude Design.
+
 ## Pendiente del próximo `/design-sync` (el que borra `SearchFilters`)
 
 Pedido del PO el 08/10/2026. **No hacerlo antes:** va junto con el borrado de `SearchFilters`,

@@ -51,6 +51,10 @@
   y `variant="admin"` para header oscuro), `AuthLayout`/`PublicLayout` (layouts de auth/público).
   `SearchFilters` está deprecado: no usarlo en diseños nuevos.
 
+- **React 18**: los componentes de @rentar/ui no usan APIs exclusivas de React 19
+  (`useEffectEvent`, `use`, `ref` como prop común sin `forwardRef`, etc.): las plantillas de
+  Claude Design corren con React 18.3.1. Lo mismo vale para el código que armes alrededor.
+
 - **Dónde está la verdad**: `styles.css` (importa `_ds_bundle.css`, que ya trae los tokens
   `--rentar-*` embebidos) y el `.prompt.md` de cada componente para su API exacta. Los nombres de
   props siguen siempre una interfaz explícita — nunca `any`.
