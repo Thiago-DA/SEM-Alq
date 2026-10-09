@@ -307,9 +307,17 @@ export interface MisAlquileresDetalleResponse {
   /** El contrato VIGENTE (estado "vigente"), o `null`. */
   contrato_vigente: {
     id: number | string
-    /** Nombre y apellido del locatario. */
-    locatario: string
-    fecha_fin: string
+    /**
+     * Nombre y apellido del locatario; `null` si el contrato no tiene
+     * locatario cargado (pasa en los datos de prueba).
+     */
+    locatario: string | null
+    /**
+     * Fecha ISO de fin. NOTA: el puente desde `GET /mis-alquileres`
+     * (`propiedad.adapter.ts#misAlquileresItemToDetalleResponse`) la manda
+     * en `null` porque esa ruta no la devuelve.
+     */
+    fecha_fin: string | null
     proximo_ajuste: string | null
     monto_actual: NumericDto | null
   } | null

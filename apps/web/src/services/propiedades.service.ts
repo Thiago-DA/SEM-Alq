@@ -58,9 +58,10 @@ import {
   cambiosCompletos,
   cambiosToUpdateInmueble,
   misAlquileresDetalleToPropiedadLocadorDetalle,
+  misAlquileresItemToDetalleResponse,
 } from './adapters/propiedad.adapter'
 import { apiRequest } from './shared/apiClient'
-import type { DisponiblesQuery, InmuebleDetalleResponse, InmueblesDisponiblesResponse, MisAlquileresDetalleResponse } from './shared/backend-dtos'
+import type { DisponiblesQuery, InmuebleDetalleResponse, InmueblesDisponiblesResponse } from './shared/backend-dtos'
 import { USE_MOCKS } from './shared/config'
 import { delay } from './shared/delay'
 import { ServiceError } from './shared/errors'
@@ -256,6 +257,11 @@ const CANTIDAD_SIMILARES = 3
  * pago y "si el usuario ya la solicitó" (ver
  * `propiedad.adapter.ts#inmuebleDetalleToPropiedadDetalle` y
  * `HANDOFF-BACKEND.md` §7, US-41).
+ *
+ * NOTA: con sesión, el request lleva `Authorization: Bearer …` (lo agrega
+ * `apiClient`). Hoy la ruta es pública y lo ignora; queda listo para cuando
+ * el back mande la dirección exacta solo con token. Mientras tanto la manda
+ * siempre, y la aproximada sin sesión la arma el adaptador (`opciones.conSesion`).
  *
  * NOTA: en modo mock también se abre una alquilada sin fecha o pausada (con
  * `availability: 'no_disponible'`, "Ya no está disponible"); el back real
@@ -588,21 +594,31 @@ function ahoraMock(): string {
 /**
  * US-03 y US-04 — una propiedad del locador en sesión, con todo lo que cargó
  * el alta, para su detalle (`/panel/propiedades/[id]`) y su edición.
- * @backend GET /api/v1/mis-alquileres/:id   (no existe — propuesto) → MisAlquileresDetalleResponse
- *          404 si el inmueble no existe, está eliminado o no es del que llama.
+ * @backend GET /api/v1/mis-alquileres   (existe · token + rol locador; el locador sale del token)
+ *          Se usa como PUENTE: trae todas las propiedades del dueño y se busca
+ *          la pedida. La ruta definitiva es GET /api/v1/mis-alquileres/:id
+ *          (no existe — propuesto) → MisAlquileresDetalleResponse, con 404 si
+ *          el inmueble no existe, está eliminado o no es del que llama.
  * @returns PropiedadLocadorDetalle (dirección EXACTA: la ve solo el dueño)
- * @throws {ServiceError} `not_found` con {@link MI_PROPIEDAD_NO_ENCONTRADA_MESSAGE};
- *   `unauthorized` sin sesión.
- * TODO(backend): crear la ruta, en la familia de `/mis-alquileres` (ya filtra
- * por dueño). Ver `docs/api-endpoints.md`, "Detalle de mi propiedad".
+ * @throws {ServiceError} `not_found` con {@link MI_PROPIEDAD_NO_ENCONTRADA_MESSAGE}
+ *   si no está entre las suyas (no existe o es de otro: mismo mensaje, para
+ *   no revelar cuál); `unauthorized` sin sesión; `forbidden` sin rol locador
+ *   (la página ya lo frena con `RequireRole`, como el resto del panel).
+ * NOTA: el puente no escala (trae todas las propiedades del dueño para
+ * mostrar una) y deja sin datos la fecha de fin del contrato y la de
+ * publicación (ver `propiedad.adapter.ts#misAlquileresItemToDetalleResponse`).
+ * TODO(backend): crear `GET /mis-alquileres/:id` y pedir solo esa (ver
+ * `docs/api-endpoints.md`, "Detalle de mi propiedad").
  */
 export async function getMiPropiedad(propiedadId: string): Promise<PropiedadLocadorDetalle> {
   if (USE_MOCKS) {
     await delay()
     return propiedadMockToDetalleLocador(miPropiedadMock(propiedadId))
   }
-  const dto = await apiRequest<MisAlquileresDetalleResponse>(`/mis-alquileres/${encodeURIComponent(propiedadId)}`)
-  return misAlquileresDetalleToPropiedadLocadorDetalle(dto)
+  const items = await apiRequest<MisAlquileresItem[]>('/mis-alquileres')
+  const item = items.find((propiedad) => String(propiedad.id_inmueble) === propiedadId)
+  if (!item) throw new ServiceError('not_found', MI_PROPIEDAD_NO_ENCONTRADA_MESSAGE)
+  return misAlquileresDetalleToPropiedadLocadorDetalle(misAlquileresItemToDetalleResponse(item))
 }
 
 /**
