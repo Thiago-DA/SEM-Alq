@@ -43,6 +43,60 @@ Cambios de la tanda 3 (búsqueda, US-34), también **pendientes de subir** al fi
   si hay más de una foto. Link "estirado" para que las flechas del carrusel sean botones válidos.
   `adjustmentIndex` acepta `null` (sin badge). La API anterior no cambió.
 
+Sprint 2, tanda 1 (detalle público, US-41, y solicitudes, US-35). **Sin cambios en `@rentar/ui`.**
+Candidatos a pasar al design system (necesitan el OK del PO antes de tocar el paquete):
+- **`OwnerCard`** ("Detalle de propiedad" · 01 lo presenta como componente nuevo): hoy es local,
+  `apps/web/src/components/detalle-propiedad/OwnerCard.tsx`, armada con `Card` y `Avatar` de antd.
+  Avatar con iniciales, nombre (o "El dueño" si no se conoce), la acción principal como slot,
+  "Enviar mensaje" deshabilitado con tooltip y secciones extra como `children`. Sin WhatsApp (no hay
+  teléfono del dueño en ninguna fuente).
+- `PhotoGallery` en móvil: el diseño (· 03) pide carrusel con swipe y puntos, sin miniaturas. Hoy
+  se usa tal cual (imagen grande + miniaturas en todos los anchos).
+
+Sprint 2, tanda 2 (solicitudes: US-36, US-37 y US-38), **pendiente de subir** (aprobado por el PO
+el 2026-10-07):
+- **`ConfirmActionModal`: props opcionales `children` y `confirmLoading`.** `children` va debajo de
+  `description` (el diseño "Flujo de solicitudes" · 03 lo pide así: "con el cuerpo extra como
+  children"); `confirmLoading` deja el spinner en el botón de confirmar mientras corre la acción.
+  Los usos anteriores no cambian. Ejemplo nuevo en `/design-system` ("Aceptar solicitud").
+- Sin componentes nuevos: la fila de solicitud ("RequestCard") quedó local en
+  `apps/web/src/components/solicitudes/` y `mis-solicitudes/`. Candidata a pasar al design system
+  si se repite en otra pantalla.
+- **Pendiente de corregir en el template "Flujo de solicitudes" (Claude Design), no se tocó:** el
+  dominio `solicitud` de `StatusTag` ya existe (la hoja dice que falta); el "no puede volver a
+  solicitar por 30 días" no va (el motivo opcional al rechazar sí va, desde la tanda B del testing); el locador cancela una aceptada (US-38); una
+  sola aceptada por propiedad ("Podés aceptar a más de una persona" ya no vale); el locatario ve la
+  dirección aproximada en Mis solicitudes.
+- **Texto nuevo para el template "Flujo de solicitudes" · 06 (vacío del locador), pedido por el PO
+  el 2026-10-07:** el diseño tiene dos casos y la app tres. Con propiedades publicadas: "Todavía no
+  recibiste solicitudes" + "Ver mis propiedades". Sin ninguna propiedad: "Publicá tu primera
+  propiedad" (el del diseño). **Nuevo:** con propiedades pero ninguna publicada (ej. solo
+  alquiladas o pausadas): "Ninguna de tus propiedades está publicada. Las solicitudes llegan solo a
+  las publicadas.", con "Publicar una propiedad" (primario) y "Ver mis propiedades".
+
+Sprint 2, tanda 3 (detalle de la propiedad del locador: US-03 y US-04), **pendiente de subir**
+(aprobado por el PO el 2026-10-07):
+- **`ConfirmActionModal`: prop opcional `hideCancel`.** Saca el botón secundario y deja solo el de
+  confirmar, para avisos sin nada que elegir ("No podés eliminar una propiedad con contrato
+  vigente" · "Entendido"). La cruz y Escape siguen cerrando. Los usos anteriores no cambian. Ejemplo
+  nuevo en `/design-system` ("Aviso sin botón secundario").
+- **Desvío del diseño, "Eliminar" con contrato vigente:** "Detalle de propiedad del locador" · 01 dice
+  que las acciones destructivas bloqueadas van "deshabilitadas con tooltip". En la app, "Eliminar"
+  queda **habilitado** y abre el aviso de bloqueo (· 05, "Bloqueado por contrato vigente"): un botón
+  deshabilitado no recibe foco ni toque, y el tooltip no se ve en móvil. Decisión del PO.
+- **Pendiente de corregir en el template "Detalle de propiedad del locador" (Claude Design), no se
+  tocó:** la numeración (la pestaña Contrato dice US-03 y Cobros/Reclamos US-04; en Jira US-03 es
+  modificar y US-04 es eliminar); en esta tanda solo va la pestaña Resumen; sin "Pausar" (no tiene
+  US ni endpoint); el aviso de bloqueo no ofrece pausar ni "Ver el contrato"; eliminar es lógico y
+  avisa cuántas solicitudes se cancelan; sin "Modificado · antes …" por campo en la edición.
+- **Desvío del diseño, edición (US-03, 11/10):** "Detalle de propiedad del locador" · 06 muestra, con
+  contrato vigente, el formulario con precio, índice y frecuencia bloqueados ("Lo fija el contrato").
+  En la app, una alquilada **no muestra el formulario**: `/editar` da un aviso de bloqueo y el detalle
+  no ofrece "Editar publicación" (el `PUT` rechaza con 409 cualquier cambio de una alquilada). Sin
+  contrato, el estado y las condiciones del alquiler (todo menos el precio) van deshabilitados, sin
+  textos extra: el `PUT` solo modifica datos del inmueble. "Apto profesional" no se ofrece en el alta
+  ni en la edición (no existe en la base). Decisión del PO. No se tocó `@rentar/ui`.
+
 Cambios de la tanda 4 (locador: /panel, US-02 y US-01), también **pendientes de subir** al final del
 Sprint 1. Todas las props son nuevas y opcionales: los usos anteriores no cambian.
 - `WizardLayout` ("Alta de propiedad" · 01, 06, 07 y 09): `status: 'error'` por paso (el Steps lo
@@ -160,6 +214,254 @@ el PO: no cambian nada visual):
 - **`SearchSidebarFilters`: nombre en español del botón de borrar** de Provincia, Ciudad y Barrio
   (`allowClear={{ label: 'Borrar la provincia' }}`, etc.). antd lo dejaba en inglés ("Clear").
 
+Cambios de la landing nueva (2026-10-01, rama `feature/nuevo-landing`), **pendientes de subir**
+(aprobados por el PO en el plan de la landing):
+- **Tokens nuevos** (`tokens/primitives.ts` y `css-vars.css`; `design-sync-fonts.css` regenerado):
+  `spacing['2xl']` (6rem), `breakpoints` (sm 576 · md 768 · lg 992 · xl 1200, los de antd),
+  `layout.containerMax` (1200 px, `--rentar-container-max`), `motion` (duraciones de 160, 240 y
+  400 ms, curvas `out`, `inOut` y `drawer`, escalonado de 60 ms; `--rentar-motion-*`) y los tamaños
+  de `typography` como variables (`--rentar-font-size-display|headline|title|body|label`). Además
+  (aprobado por el PO el 02/10/2026, a partir de la revisión final de impeccable) un escalón nuevo,
+  `typography.displayHero` / `--rentar-font-size-display-hero` (`clamp(2.25rem, 5vw, 4rem)`): el H1
+  de la landing desde 768 px; en móvil sigue en `display`.
+  NOTA: `--rentar-color-sky-rgb` vale el celeste CLARO (#E3F2FB), no #A0D1EF. Quedó solo anotado
+  en `css-vars.css`; no se cambió.
+- **Nuevo: `HeroSearch`** (`components/forms/`): el buscador del hero ("A · La consola"). Controles
+  nativos con la piel de los campos de `/buscar`, dentro de un `<form method="get">` que funciona
+  sin JS; con `onSearch`, el envío lo resuelve la app. "Más filtros" es un `<details>`: panel
+  flotante desde 768 px y hoja desde abajo en móvil (con JS, diálogo modal con el foco atrapado y
+  `aria-expanded` en el resumen). Con JS, cierra animado por donde entró (la hoja baja en 240 ms; el
+  panel se desvanece hacia su botón en 160 ms); con "reducir movimiento", al instante. Una columna en móvil, dos desde 768 px y una sola fila cuando el
+  buscador mide 70rem o más. NOTA: ese corte es un container query (con un corte por pantalla, en
+  992 px, los selects se cortaban entre 992 y 1167 px y en `/design-system`). `data-testid` con el
+  prefijo que se le pase (la landing usa `landing-buscador`). Al subir: sumar
+  `previews/HeroSearch.tsx` con historias de escritorio, de 768 px y de móvil con la hoja abierta.
+- **`PropertyCardBusqueda`: hover nuevo** (también en `/buscar`, decisión del PO): solo con
+  puntero fino, la foto se acerca (`scale(1.04)`) y la sombra pasa a `lifted` con una capa de
+  opacidad. Con "reducir movimiento", sin zoom. La API no cambia.
+- **`Header`: el nav completo aparece desde 992 px** (antes 768) y los links van con `nowrap`:
+  entre 768 y 991 px se partían en dos líneas. En ese rango queda el menú hamburguesa. La API no
+  cambia.
+- **`SearchFilters` (la barra horizontal) quedó sin uso:** la landing usa `HeroSearch` y `/buscar`
+  usa `SearchSidebarFilters`. Candidato a borrar de `@rentar/ui` y de Claude Design en el próximo
+  sync (consultarlo con el PO). Sigue en `/design-system` con esa nota.
+- Quedan en `apps/web` (no en `@rentar/ui`): las secciones de la landing
+  (`components/landing/`), el motivo `ProcessLoopMotif` (mejorado: tokens, ícono de "Postulate",
+  órbita circular y estados `quieto`/`corriendo`/`pausado`) y `RevealAlEntrar`. Se borraron
+  `SearchBar`, la `PropertyCard` de la landing, `HowItWorks` y `useInView`.
+- **`Header` y `Footer`: el mismo contenedor que las páginas públicas** (aprobado por el PO): contenido
+  de hasta 1200 px (`--rentar-container-max`) más el margen lateral, que pasa de 1rem a 1.5rem desde
+  992 px (antes 640), como `/buscar`. Antes medían 72rem con el margen adentro: en 1440 px el logo
+  quedaba 48 px corrido respecto de `/buscar` y 24 px respecto de la landing. El `Footer` pone logo y
+  links en fila desde 768 px (antes 640). La API no cambia.
+
+Preparación del `/design-sync` del Sprint 2 (2026-10-08, `feature/vistas` con `develop` y el PR #10):
+- **`SearchFilters` deprecado** (decisión del PO, 08/10/2026): JSDoc `@deprecated` ("sin uso desde el
+  PR #10; lo reemplazan `HeroSearch` y `SearchSidebarFilters`"). **No se borra en este sync**: se
+  borra de `@rentar/ui`, de `previews/` y de Claude Design cuando se actualicen las vistas de Claude
+  Design que todavía lo usan (entra en el prompt del Sprint 2 para Claude Design). Leído en Claude
+  Design el 08/10/2026 (16 de las 23 vistas; las 7 sin abrir son de panel sin búsqueda: cambio de
+  rol, detalle de cobro, mensajes, mi perfil, notificaciones, pagar alquiler y suscripción):
+  **ninguna vista monta `RentarUI.SearchFilters`**. Solo lo nombran como texto
+  `templates/busqueda-propiedades/BusquedaPropiedades.dc.html` (recuadro "Componentes nuevos en
+  juego: PropertyCard · SearchFilters") y `templates/mapa-de-pantallas/MapaDePantallas.dc.html`
+  (lista de componentes: "SearchSidebarFilters · SearchFilters"). NOTA: "Búsqueda de propiedades"
+  dibuja los filtros y las tarjetas a mano (solo monta `Header`, `Footer`, `IndexBadge`,
+  `EmptyState` y `ThemeProvider`): al actualizarla, que use `SearchSidebarFilters` y
+  `PropertyCard layout="busqueda"`. La landing no tiene vista en Claude Design.
+- **Previews nuevas o ampliadas:** `previews/HeroSearch.tsx` (`Escritorio`, `Tablet768`,
+  `MovilConHojaAbierta`) y `previews/ConfirmActionModal.tsx` (`ConCuerpoYCarga`, con `children` y
+  `confirmLoading`; `AvisoSinCancelar`, con `hideCancel`). NOTA: en `HeroSearch` la fila única es un
+  container query (sigue al ancho de la historia), pero el panel flotante o la hoja y el lugar de
+  "Dormitorios" siguen al ancho del viewport de la card (media query + `matchMedia`).
+
+## Re-sync del 2026-10-16 (`Header#loginHref`): proyecto de la cuenta nueva
+
+- **Desde el 16/10, `config.json` apunta al proyecto de la cuenta nueva:
+  `3dd3f68f-0040-4a31-86ee-6cf1352cc696` ("RentAR Design System", creado en la migración del
+  13/10).** Antes apuntaba a `0f707fbd-bf3d-4fbc-a8f3-74c68d6e4cb7`, de la cuenta vieja, que ya no se
+  usa (hoy da "project not found"). Si `get_project` vuelve a dar 404, no adoptar otro proyecto sin
+  preguntar al PO.
+- **Render check con Edge:** en esta máquina ya no hay Chrome. `DS_CHROMIUM_PATH="C:/Program Files
+  (x86)/Microsoft/Edge/Application/msedge.exe"` anda igual (34/34 limpias); lo leen
+  `package-validate.mjs` y `package-capture.mjs`.
+- Resultado: ningún componente cambió de render (los 34 quedaron verificados por la subida
+  anterior). Se subieron `Header` (`.d.ts` y `.prompt.md` con `loginHref`), el bundle y los estilos:
+  176 archivos más el aviso y el ancla, 0 borrados. Sincronizado desde `develop` en `fd8762e` (PRs
+  #17 y #18). La tanda C (#19, re-merge en #20) no toca `@rentar/ui`.
+
+## (Subido el 2026-10-16) `Header#loginHref` (testing del Sprint 2, 2026-10-15)
+
+- `Header`: prop nueva opcional `loginHref?: string` (por defecto `/login`), que usan los dos
+  botones "Iniciar sesión" (`header-login-button` y `header-drawer-login-button`). `apps/web`
+  (`components/PublicHeader.tsx`) le pasa `/login?next=<página actual>` para volver ahí después
+  del login (US-39, Prueba 6 del testing). Va por prop porque `@rentar/ui` no depende de
+  `next/navigation`. Sin cambios visuales; `PublicLayout` sigue usando `<Header />` sin props.
+
+## Tarea aparte: peso del JS común (Lighthouse móvil), para después del merge de la landing
+
+Decisión del PO (01/10/2026): no se resuelve en `feature/nuevo-landing`. Queda acá y en la
+descripción del PR de la landing.
+
+**Números** (build de producción en modo mock, Lighthouse 12 con el perfil móvil por defecto, Edge
+sin interfaz):
+
+| Página | Performance (simulado) | LCP simulado | Performance (estrangulamiento real) | JS transferido |
+|---|---|---|---|---|
+| `/` (landing) | 76–77 (3 corridas) | 6,0 s | 94 (LCP 1,8 s, CLS 0) | ~750 KB en 20 archivos |
+| `/login` | 76 | 5,9 s | — | ~746 KB |
+| `/buscar` | 72 | 6,9 s | — | ~757 KB |
+
+Accesibilidad, buenas prácticas y SEO dan 100 en la landing.
+
+**En modo real** (06/10/2026, build de producción contra la API local, Lighthouse 12.8.2, perfil
+móvil, Edge sin interfaz, mediana de 3): `/` da Performance 70 (69, 71 y 70), FCP 1,2 s, LCP 6,4 s,
+TBT 340 ms y CLS 0; accesibilidad, buenas prácticas y SEO, 100. Con el hero azul, el LCP pasó a ser
+la ilustración de la ciudad (`/landing/hero/ciudad-750.webp`), no el titular. "Recién publicadas"
+no pesa en el LCP: llega por streaming dentro de `Suspense` (el esqueleto a ~140 ms; las tarjetas
+cuando responde `/disponibles`, 7–10 s). Con estrangulamiento real (devtools, mismo día, mediana de
+3): Performance 87, FCP 2,07 s, LCP 2,08 s (la ilustración), TBT 412 ms y CLS 0.
+
+**Numeración de los RNF (para corregir aparte, 06/10/2026):** `docs/PRODUCT.md` no sigue la
+numeración del Estudio Inicial, que es la que manda para la cátedra. Por ejemplo, `PRODUCT.md` usa
+RNF-12 para "liviano en conexiones móviles" y RNF-10 para usabilidad, pero en el Estudio Inicial
+RNF-12 es "persistencia sobre Supabase" y RNF-10 es eficiencia de desempeño (búsqueda fluida en
+conexiones móviles estándar). El responsive es RNF-02 en los dos. Revisar todas las menciones de RNF
+en `PRODUCT.md` (y en `DESIGN.md`, si las hay) contra el Estudio Inicial.
+
+**Diagnóstico.** El LCP medido es el titular y coincide con el FCP (~0,2 s en local). La diferencia
+viene del método simulado: cuenta como dependencia del LCP todo pedido que no sea imagen y que haya
+empezado antes del pintado, y los ~750 KB de JS empiezan a bajar a los 35–90 ms. Ese JS es del
+armazón común (layout raíz, providers y Header), no de la landing: `/login` pesa lo mismo. Los
+chunks más grandes:
+- antd y sus dependencias (`@ant-design/cssinjs`, `@rc-component/*`, `rc-util`): ~205 KB
+  transferidos en el chunk principal más otros ~100 KB.
+- El cliente de Supabase (`@supabase/ssr`, GoTrueClient, realtime) junto con el store de mocks:
+  ~69 KB transferidos (262 KB sin comprimir). Se carga en todas las páginas, también en modo mock.
+- Las herramientas de desarrollo (`DevTools` → `RoleSwitcher` importado del barril de
+  `@rentar/ui`): ~32 KB. `DevTools` devuelve `null` en producción, pero el import estático lo
+  deja en el bundle.
+- `react-dom`: ~64 KB (no se puede sacar).
+
+**Desglose del LCP de `/`** (Lighthouse 12, perfil móvil, mediana; build de producción en modo mock,
+02/10/2026). El LCP es el H1 ("Alquilá directo con el dueño"):
+- **Observado** (la traza sin estrangular): TTFB 26 ms + retraso de render 195 ms = LCP 221 ms, igual
+  al FCP. Sin "load delay" ni "load time": es texto.
+- **Simulado:** TTFB 456 ms + retraso de render 5.867 ms = LCP 6,3 s (FCP simulado: 1,2 s). El modelo
+  simulado de Lighthouse (Lantern) cuenta como dependencia del LCP todo pedido que no sea imagen y
+  que arranque antes del pintado observado: 26 pedidos y 823 KB (el documento, la fuente, 4 hojas de
+  estilo y 20 scripts, que empiezan a bajar entre los 35 y los 90 ms). El FCP solo cuenta lo que
+  bloquea el render, por eso da 1,2 s. Con estrangulamiento real (devtools) el LCP es 1,9 s y
+  coincide con el FCP.
+- **Qué no lo retrasa (verificado):** la fuente (League Spartan con `next/font`, `display: 'swap'`,
+  precargada por la cabecera HTTP `Link`: sale a los 29 ms con prioridad alta y llega a los 38 ms)
+  y la hidratación (el H1 y el buscador están en el HTML inicial, antes del primer límite de
+  `Suspense`, y el H1 se pinta antes del DOMContentLoaded; no tiene animación de entrada).
+- **Qué marca el piso del pintado:** 4 hojas de estilo que bloquean el render (21 KB; Lighthouse
+  estima 456 ms de ahorro) y el CSS de antd en línea que mete el registry SSR (`AntdRegistry`) en el
+  `<head>`, antes del titular: 55 KB en `/`, 183 KB en `/login` y 201 KB en `/buscar` (el HTML de
+  `/` pesa 183 KB sin comprimir).
+- **Conclusión:** la landing y `HeroSearch` no demoran el titular; lo que pesa es del armazón común.
+
+**Propuesta de arreglo** (una rama aparte, con mediciones antes y después; los comandos y opciones están en la documentación de Next 16 instalada, `node_modules/next/dist/docs/01-app/02-guides/package-bundling.md`):
+1. **Supabase solo cuando hace falta.** En `lib/auth/AuthProvider.tsx`, `services/auth.service.ts`
+   y `services/propiedades.service.ts`, cambiar el import estático de `getSupabaseBrowserClient`
+   (y el de `isAuthApiError`/`isAuthRetryableFetchError` de `@supabase/supabase-js`) por
+   `await import('@/lib/auth/supabase/client')` dentro de las ramas reales (`USE_MOCKS === false`).
+   En modo mock no se baja nunca; en modo real sale del bundle inicial y llega después de hidratar.
+   Ahorro esperado: ~69 KB por página.
+2. **Herramientas de desarrollo fuera del bundle de producción.** En `lib/AppProviders.tsx`,
+   montar `DevTools` con `next/dynamic(() => import('@/components/dev/DevTools'), { ssr: false })`
+   y solo si `process.env.NODE_ENV !== 'production'`. En `DevTools.tsx`, importar `RoleSwitcher`
+   desde su archivo y no desde el barril. Ahorro esperado: ~32 KB.
+3. **antd en las páginas públicas.** Medir con el analizador de bundles (`next experimental-analyze`
+   en Next 16, o `@next/bundle-analyzer`). Después: en las páginas públicas, importar los componentes
+   de `@rentar/ui` desde sus archivos (el barril, con sus CSS modules, impide descartar lo que no se
+   usa), cargar el Drawer del menú móvil del Header recién al abrirlo y probar
+   `experimental.optimizePackageImports` con `antd`, `@ant-design/icons` y `@rentar/ui`.
+4. **CSS que bloquea el render.** Medir `experimental.inlineCss` (Next 16, documentado en
+   `node_modules/next/dist/docs/01-app/03-api-reference/05-config/01-next-config-js/inlineCss.md`):
+   cambia las 4 hojas por `<style>` en el `<head>`, a costa de que los que vuelven no las tengan en
+   caché. Y evaluar la extracción estática de los estilos de antd (`@ant-design/static-style-extract`,
+   documentada por antd 6) para servir un CSS cacheable de los componentes que usan las páginas
+   públicas, en vez de 55 a 201 KB de CSS en línea por página.
+5. **Precarga de la ilustración del hero, solo en `/`** (sumado el 02/10/2026, decisión del PO).
+   Con el hero azul, el LCP de `/` pasó a ser la ciudad ilustrada (`LandingHero`, ver
+   `apps/web/public/landing/IMAGES.md`): 2,35 s con estrangulamiento real (mediana de 3; antes, con
+   el titular, 2,25 s). Desglose con estrangulamiento real: TTFB ~40 ms, **load delay ~630 ms**,
+   load time 1,3–1,5 s (16 KB, compitiendo por la red con el CSS y el JS del armazón) y render delay
+   200–400 ms. El load delay viene de dónde está la `<img>`: en el **byte 61 K** de un HTML de
+   150 KB, justo después de un `<head>` de ~59 KB (casi todo CSS de antd en línea del registry SSR),
+   así que el escáner la encuentra tarde. Probar un `<link rel="preload" as="image" imagesrcset
+   media fetchpriority="high">` (uno por recorte: 1200/1600 desde 768 px y 480/750 por debajo) al
+   principio del `<head>`, solo para `/`, sin tocar el layout común. `preload()` de `react-dom`
+   desde el componente **no sirve**: la página es dinámica y esa precarga sale solo en el payload
+   RSC, después del `<head>` (probado). Bajar el CSS en línea (punto 4) también acerca la `<img>`
+   al principio del HTML.
+6. **Objetivo y verificación:** bajar el JS común de ~750 KB a menos de 450 KB transferidos, y
+   Performance simulado ≥ 90 en `/`, `/login` y `/buscar` (mediana de 3 corridas), sin romper la
+   sesión real (login, `/me`, logout) ni el modo mock.
+
+## Regla: nada exclusivo de React 19 en `@rentar/ui` (2026-10-09)
+
+**Los componentes de `@rentar/ui` no usan APIs exclusivas de React 19 (`useEffectEvent`, `use`,
+etc.): las plantillas de Claude Design corren con React 18.3.1.** Las tarjetas de preview cargan
+React 19.2.8 de `_vendor/` (por eso el render check pasaba), pero las plantillas
+(`templates/*/support.js`) cargan React 18.3.1 desde unpkg. Pasó con `HeroSearch`: la landing de
+Claude Design no renderizaba por "useEffectEvent is not a function". Se arregló con una ref
+actualizada en `useLayoutEffect` + `useCallback`. En el mismo componente, `NativeSelect` recibía
+`ref` como prop común (React 19); en React 18 no llega, así que pasó a `forwardRef`. Antes de
+sumar un hook o patrón nuevo, chequear que exista en React 18.3. La regla también está en
+`conventions.md`, para el agente de Claude Design.
+
+## Re-sync del 2026-10-09 (borrado de `SearchFilters` y React 18)
+
+- **`SearchFilters` borrado** (pedido del PO, anotado como pendiente el 08/10): componente, CSS,
+  export, `previews/SearchFilters.tsx` y su entrada en `/design-system`; `apps/web` no lo
+  importaba en ningún otro lado. En Claude Design, el diff del driver lo da como `removed` y borra
+  `components/forms/SearchFilters/*` y `_preview/SearchFilters.*`. Quedan 34 componentes.
+- **Los 7 `--rentar-motion-*` con `/* @kind other */`** en `tokens/css-vars.css` (aviso de
+  `check_design_system`), con `design-sync-fonts.css` regenerado. Ojo al hacerlo con una regex: la
+  línea de `--rentar-motion-stagger` va seguida de una línea en blanco y del comentario de la
+  sección siguiente, y un lookahead `(?!\s*/\*)` la saltea.
+- **`HeroSearch` sin `useEffectEvent` ni `ref` como prop común** (ver "Regla: nada exclusivo de
+  React 19"). Probado en la app (Escape y clic afuera, escritorio y 390 px) y en las tarjetas con
+  React 18.3.1 (ver el riesgo de abajo).
+
+## Re-sync del Sprint 2 (2026-10-08)
+
+Segundo re-sync desde este repo (camino atómico, anclado en el `_ds_sync.json` del 24/09), con
+`feature/vistas` ya mergeada con `develop` (PR #10, landing nueva).
+
+- **Comando** (desde la raíz, después de `cfg.buildCmd`): `node .ds-sync/resync.mjs --config
+  .design-sync/config.json --node-modules ./node_modules --out ./ds-bundle --remote
+  .design-sync/.cache/remote-sync.json`. `--node-modules` es el de la raíz: con npm workspaces
+  `packages/ui` no tiene `node_modules` propio, y `node_modules/@rentar/ui` es el symlink al paquete
+  (el converter lee `dist-types/`). Sin `--entry`.
+- **Render check con el Chrome instalado:** no hay chromium en la caché de Playwright
+  (`%LOCALAPPDATA%/ms-playwright` solo tiene la carpeta del `playwright-cli`). Se instaló
+  `playwright` dentro de `.ds-sync/` con `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` (sin bajar navegadores)
+  y se corrió todo con `DS_CHROMIUM_PATH="C:/Program Files/Google/Chrome/Application/chrome.exe"`
+  (lo leen `package-validate.mjs` y `package-capture.mjs`). `.ds-sync/` entero está en el
+  `.gitignore`, así que ni `playwright` ni su `package.json` entran al repo: se reinstalan en cada sync.
+- **No correr el driver con la terminal parada adentro de `ds-bundle/`:** el build lo borra y
+  rehace, y en Windows falla con `EPERM` sobre ese directorio.
+- **`HeroSearch`: tarjeta en `cardMode: "column"` con `viewport: "1280x1500"`.** Con el viewport por
+  defecto (900) la celda medía ~650 px y `Escritorio` salía en dos columnas (la fila única es un
+  container query de 70rem). **Truco del iframe en `MovilConHojaAbierta`:** la hoja desde abajo y
+  el lugar de "Dormitorios" dependen del ancho de la PANTALLA (media query + `matchMedia`) y la card
+  tiene un solo viewport, así que con la card ancha la historia se recarga a sí misma
+  (`?story=MovilConHojaAbierta`) dentro de un iframe de 375 px; adentro (`innerWidth < 768`) se
+  dibuja el componente real y se abre el `<details>`. Si algún día el harness permite un viewport
+  por historia, sacar el iframe.
+- **`EmptyState`: `cardMode: "column"`** (lo pidió `[GRID_OVERFLOW]` por `AccionAnchoCompleto`).
+- **`conventions.md`:** la línea de componentes de negocio recomienda `HeroSearch`,
+  `SearchSidebarFilters` y `FilterBar`, y aclara que `SearchFilters` está deprecado (pedido del PO).
+- Resultado: 35 componentes (34 + `HeroSearch`), 0 floor cards, render check sin `bad`, 35 grades
+  `good` (31 cambiados + 4 verificados por la subida anterior). 183 archivos escritos, 0 borrados.
+  No se tocó `templates/`. Verificado después en Claude Design: el README trae el encabezado nuevo y
+  `HeroSearch` aparece en `components/forms/`.
+
 ## Re-sync del Sprint 1 desde SEM-Alq (2026-09-24)
 
 Primer re-sync desde este repo (camino atómico, anclado en el `_ds_sync.json` del proyecto).
@@ -267,7 +569,32 @@ esperado y no bloquea — la familia carga en runtime desde el navegador de quie
 `[RENDER_THIN]` en `StatCard`, `FormSection`, `AuthLayout` — floor cards legítimos (nunca se
 autoró una preview para estos tres), muestran solo el nombre del componente. No es una regresión.
 
+- `EmptyState` · `AccionAnchoCompleto` se ve igual que `Default`: `actionBlock` solo actúa debajo de
+  640 px de PANTALLA, y la card mide más. La historia queda para documentar la prop (08/10/2026).
+- `check_design_system` avisa por `--hero-search-control: 2.5rem` dentro de `.HeroSearch_form`
+  (`components/forms/HeroSearch.module.css:24`): es una medida interna del componente (el alto de
+  sus controles), no un token del sistema. Se deja donde está (decisión del PO, 08/10/2026).
+- `Header` muestra el link "Sistema de diseño" en las previews: el componente lo esconde solo en
+  producción de `apps/web`. Es esperable.
+
 ## Re-sync risks
+
+- **El render check corre con React 19.2.8 y las plantillas con React 18.3.1.** Las tarjetas
+  cargan `_vendor/react.js`, que el converter arma desde el `react` del repo; ni el config ni
+  `package-validate.mjs` tienen una opción para cambiar la versión. Por eso el render check pasó
+  con `useEffectEvent` y la landing de Claude Design se rompió. Chequeo manual (09/10/2026, las 34
+  tarjetas dieron bien): servir `ds-bundle/` con `node .ds-sync/storybook/http-serve.mjs
+  ./ds-bundle`, bajar `https://unpkg.com/react@18.3.1/umd/react.development.js` y
+  `https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js`, y en Playwright reemplazar
+  `**/_vendor/react.js` y `**/_vendor/react-dom.js` con esos dos (`page.route` + `route.fulfill`),
+  abrir cada `components/*/*/<Name>.html` y buscar `pageerror`. Hacerlo en cada sync que toque
+  hooks.
+
+- **El índice de componentes del README pierde las letras acentuadas** ("vaco", "ttulo", "pgina"):
+  lo arma el converter desde la primera línea del JSDoc y descarta lo que no es ASCII. Los
+  `.prompt.md` sí llevan los acentos. Visto el 08/10/2026; no se tocó el converter.
+- **El iframe de `previews/HeroSearch.tsx#MovilConHojaAbierta`** depende de que la card responda a
+  `?story=`; si el harness cambia eso, la historia se vería vacía.
 
 - **`design-sync-fonts.css` puede quedar desactualizado** si `tokens/css-vars.css` cambia y nadie
   corre el `cat` de arriba — ver la sección dedicada.

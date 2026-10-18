@@ -258,11 +258,17 @@ export type {
   MedioPagoConRecargo,
   EstadoPago,
   PropiedadResumen,
+  DisponibilidadPropiedad,
+  DuenoPropiedad,
+  CondicionesContrato,
+  PropiedadDetalle,
   ProximoAjuste,
   PropiedadLocador,
   EstadoPublicacionAlta,
   FotoNueva,
   PropiedadNueva,
+  ContratoVigenteResumen,
+  PropiedadLocadorDetalle,
 } from './propiedad';
 export type { NeighborhoodTier, Neighborhood } from './neighborhood';
 export type {
@@ -292,6 +298,17 @@ export type {
   StatusDomainMap,
 } from './status';
 export type { UsuarioSesion } from './usuario-sesion';
+export type {
+  ContactoSolicitud,
+  EstadoSolicitud,
+  GarantiaOfrecida,
+  LegajoSolicitud,
+  OcupacionPostulante,
+  PreparacionSolicitud,
+  ResumenSolicitud,
+  Solicitud,
+  SolicitudNueva,
+} from './solicitud';
 export type {
   CobroPanel,
   ResumenCobros,

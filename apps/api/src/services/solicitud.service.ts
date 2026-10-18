@@ -1,0 +1,377 @@
+import type {
+  CrearSolicitudRequest,
+  FiltrosMisSolicitudesDTO,
+  RechazarSolicitudRequest,
+  SolicitudPreparacionResponse,
+  SolicitudResponse
+} from '../dtos';
+
+import { AuthenticatedUser } from '../gateway/middlewares/auth.middleware';
+import { IInmuebleRepository, inmuebleRepository } from '../repositories/inmueble.repository';
+import {
+  ISolicitudRepository,
+  solicitudRepository
+} from '../repositories/solicitud.repository';
+import { lookupRepository } from '../repositories/lookup.repository';
+
+export class SolicitudService {
+  constructor(
+    private readonly solicitudRepo: ISolicitudRepository = solicitudRepository,
+    private readonly inmuebleRepo: Pick<IInmuebleRepository, 'findById'> = inmuebleRepository
+  ) {}
+
+  private throwValidationError(message: string, statusCode = 400): never {
+    const error = new Error(message);
+    (error as any).statusCode = statusCode;
+    throw error;
+  }
+
+  async prepare(
+    user: AuthenticatedUser,
+    idInmueble: number
+  ): Promise<SolicitudPreparacionResponse> {
+    if (!user?.id) {
+      this.throwValidationError('Debe iniciar sesión para solicitar una propiedad.', 401);
+    }
+
+    const inmueble = await this.inmuebleRepo.findById(idInmueble);
+
+    if (!inmueble) {
+      this.throwValidationError('La propiedad indicada no existe.', 404);
+    }
+
+    if (inmueble.id_locador === user.id) {
+      this.throwValidationError('No puedes solicitar una propiedad propia.', 403);
+    }
+
+    if (!['publicado', 'publicado/alquilado'].includes(inmueble.estado_alquiler)) {
+      this.throwValidationError('Esta propiedad ya no recibe solicitudes.', 409);
+    }
+
+    const [usuario, situaciones, garantias] = await Promise.all([
+      lookupRepository.getUsuarioById(user.id),
+      this.solicitudRepo.getSituaciones(),
+      this.solicitudRepo.getGarantias()
+    ]);
+
+    if (!usuario) {
+      this.throwValidationError('No se encontró el perfil del usuario autenticado.', 401);
+    }
+
+    const ocupacionCodigo: Record<string, SolicitudPreparacionResponse['situaciones_ocupacionales'][number]['codigo']> = {
+      '-': 'sin_informar',
+      'relación de dependencia': 'relacion_dependencia',
+      monotributista: 'monotributista',
+      autónoma: 'autonoma',
+      estudiante: 'estudiante',
+      jubilada: 'jubilada'
+    };
+    const garantiaCodigo: Record<string, SolicitudPreparacionResponse['garantias'][number]['codigo']> = {
+      'garantía propietaria': 'propietaria',
+      'seguro de caución': 'caucion',
+      otra: 'otra'
+    };
+
+    return {
+      usuario: {
+        id: usuario.id,
+        nombre: usuario.nombre,
+        apellido: usuario.apellido,
+        dni: usuario.numero_documento,
+        telefono: usuario.telefono,
+        email: usuario.email
+      },
+      situaciones_ocupacionales: situaciones.map(situacion => ({
+        id: situacion.id,
+        codigo: ocupacionCodigo[situacion.nombre] ?? 'sin_informar',
+        nombre: situacion.nombre
+      })),
+      garantias: garantias.map(garantia => ({
+        id: garantia.id,
+        codigo: garantiaCodigo[garantia.nombre] ?? 'otra',
+        nombre: garantia.nombre
+      })),
+      // NOTA: el esquema actual todavía no persiste garantías exigidas por inmueble.
+      garantias_exigidas: [],
+      valores_iniciales: {
+        telefono: usuario.telefono ?? '',
+        email: usuario.email,
+        ocupacion: 'sin_informar',
+        ingresos: null,
+        convivientes: 1,
+        mascotas: false,
+        detalle_mascotas: null,
+        garantias: [],
+        acepto: false
+      }
+    };
+  }
+
+  async create(
+    user: AuthenticatedUser,
+    payload: CrearSolicitudRequest
+  ): Promise<SolicitudResponse> {
+    if (!user?.id) {
+      this.throwValidationError('Debe iniciar sesión para enviar una solicitud.', 401);
+    }
+
+    const inmueble = await this.inmuebleRepo.findById(payload.id_inmueble);
+
+    if (!inmueble) {
+      this.throwValidationError('La propiedad indicada no existe.', 404);
+    }
+
+    if (inmueble.id_locador === user.id) {
+      this.throwValidationError('No puedes enviar una solicitud a una propiedad propia.', 403);
+    }
+
+    const solicitudActiva = await this.solicitudRepo.findActiveByInmuebleAndLocatario(
+      payload.id_inmueble,
+      user.id
+    );
+
+    if (solicitudActiva) {
+      this.throwValidationError(
+        'Ya tenés una solicitud activa para esta propiedad.',
+        409
+      );
+    }
+
+    const mensaje = payload.mensaje?.trim() ?? '';
+
+    if (mensaje.length > 600) {
+      this.throwValidationError('El mensaje no puede superar los 600 caracteres.', 400);
+    }
+
+    const telefonoCanonico = payload.telefono?.trim() ?? '';
+
+    if (!/^\+[1-9]\d{9,14}$/.test(telefonoCanonico)) {
+      this.throwValidationError(
+        'El teléfono debe tener formato internacional válido, por ejemplo +5493511234567.',
+        400
+      );
+    }
+
+    if (!payload.email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.email.trim())) {
+      this.throwValidationError('El email ingresado no tiene un formato válido.', 400);
+    }
+
+    const ingresos = payload.ingresos === 0 ? null : payload.ingresos;
+
+    if (ingresos !== null && (!Number.isInteger(ingresos) || ingresos <= 0)) {
+      this.throwValidationError('Los ingresos aproximados deben ser un número entero mayor a 0 o nulo.', 400);
+    }
+
+    if (!Number.isInteger(payload.convivientes) || payload.convivientes < 1) {
+      this.throwValidationError('La cantidad de personas debe ser un número entero mayor o igual a 1.', 400);
+    }
+
+    if (payload.mascotas) {
+      const detalle = payload.detalle_mascotas?.trim() ?? '';
+
+      if (!detalle) {
+        this.throwValidationError('Debés indicar información sobre las mascotas si marcaste que poseés mascotas.', 400);
+      }
+
+      if (detalle.length > 300) {
+        this.throwValidationError('El detalle de mascotas no puede superar los 300 caracteres.', 400);
+      }
+    }
+
+    if (!payload.acepta_condiciones) {
+      this.throwValidationError('Debés aceptar lo que implica el envío de la solicitud.', 400);
+    }
+
+    const garantiaNombres: Record<string, string> = {
+      propietaria: 'garantía propietaria',
+      caucion: 'seguro de caución',
+      otra: 'otra'
+    };
+    const garantias = [...new Set(payload.garantias ?? [])];
+    const nombresGarantias = garantias.map(garantia => garantiaNombres[garantia]);
+    const garantiasExistentes = await this.solicitudRepo.findGarantiasByNames(nombresGarantias);
+
+    if (garantias.length !== garantiasExistentes.length) {
+      this.throwValidationError('Al menos una garantía indicada no existe.', 400);
+    }
+
+    const nombresOcupacion: Record<string, string> = {
+      sin_informar: '-',
+      relacion_dependencia: 'relación de dependencia',
+      monotributista: 'monotributista',
+      autonoma: 'autónoma',
+      estudiante: 'estudiante',
+      jubilada: 'jubilada'
+    };
+    const situacion = await this.solicitudRepo.getSituacionByNombre(nombresOcupacion[payload.ocupacion]);
+
+    if (!situacion) {
+      this.throwValidationError('La situación ocupacional indicada no existe.', 400);
+    }
+
+    const estadoInicial = await this.solicitudRepo.getEstadoById(1);
+
+    if (!estadoInicial) {
+      this.throwValidationError('No existe un estado inicial de solicitud configurado.', 500);
+    }
+
+    const nuevaSolicitud = await this.solicitudRepo.create({
+      id_inmueble: payload.id_inmueble,
+      id_locador: inmueble.id_locador,
+      id_locatario: user.id,
+      id_estado_solicitud: estadoInicial.id,
+      id_situacion_ocupacional: situacion.id,
+      mensaje: mensaje || null,
+      telefono: telefonoCanonico.slice(1),
+      email: payload.email.trim().toLowerCase(),
+      ingresos_aprox: ingresos,
+      cantidad_personas: payload.convivientes,
+      posee_mascotas: payload.mascotas,
+      detalles_mascotas: payload.mascotas ? (payload.detalle_mascotas?.trim() ?? null) : null,
+      acepta_condiciones: payload.acepta_condiciones
+    });
+
+    await this.solicitudRepo.addGarantias(
+      nuevaSolicitud.id,
+      garantiasExistentes.map(garantia => garantia.id)
+    );
+
+    const solicitudCompleta = await this.solicitudRepo.findByIdWithRelations(nuevaSolicitud.id);
+
+    if (!solicitudCompleta) {
+      this.throwValidationError('No se pudo recuperar la solicitud creada.', 500);
+    }
+
+    return solicitudCompleta;
+  }
+
+  async getMisSolicitudes(
+    user: AuthenticatedUser,
+    filtros: FiltrosMisSolicitudesDTO = {}
+  ): Promise<SolicitudResponse[]> {
+    if (!user?.id) {
+      this.throwValidationError('Debe iniciar sesión para consultar sus solicitudes.', 401);
+    }
+
+    if (filtros.inmueble !== undefined && (!Number.isInteger(filtros.inmueble) || filtros.inmueble < 1)) {
+      this.throwValidationError('El filtro inmueble debe ser un entero positivo.', 400);
+    }
+
+    return this.solicitudRepo.findByLocatarioId(user.id, filtros);
+  }
+
+  async getSolicitudesRecibidas(
+    user: AuthenticatedUser,
+    filtros: FiltrosMisSolicitudesDTO = {}
+  ): Promise<SolicitudResponse[]> {
+    if (!user?.id) {
+      this.throwValidationError('Debe iniciar sesión para consultar las solicitudes recibidas.', 401);
+    }
+
+    if (!user.roles.includes('locador')) {
+      this.throwValidationError('Se requiere el rol locador para consultar las solicitudes recibidas.', 403);
+    }
+
+    if (filtros.inmueble !== undefined && (!Number.isInteger(filtros.inmueble) || filtros.inmueble < 1)) {
+      this.throwValidationError('El filtro inmueble debe ser un entero positivo.', 400);
+    }
+
+    return this.solicitudRepo.findByLocadorId(user.id, filtros);
+  }
+
+  async aceptarSolicitud(
+    user: AuthenticatedUser,
+    idSolicitud: number
+  ): Promise<SolicitudResponse> {
+    return this.cambiarEstadoPorLocador(user, idSolicitud, 2);
+  }
+
+  async rechazarSolicitud(
+    user: AuthenticatedUser,
+    idSolicitud: number,
+    payload: RechazarSolicitudRequest
+  ): Promise<SolicitudResponse> {
+    const mensajeRechazo = payload.mensaje_rechazo?.trim() ?? null;
+
+    if (mensajeRechazo && mensajeRechazo.length > 200) {
+      this.throwValidationError('El mensaje de rechazo no puede superar los 200 caracteres.', 400);
+    }
+
+    return this.cambiarEstadoPorLocador(user, idSolicitud, 3, mensajeRechazo);
+  }
+
+  async cancelarSolicitud(
+    user: AuthenticatedUser,
+    idSolicitud: number
+  ): Promise<SolicitudResponse> {
+    if (!user?.id) {
+      this.throwValidationError('Debe iniciar sesión para cancelar la solicitud.', 401);
+    }
+
+    if (!Number.isInteger(idSolicitud) || idSolicitud < 1) {
+      this.throwValidationError('El identificador de la solicitud no es válido.', 400);
+    }
+
+    const solicitud = await this.solicitudRepo.findById(idSolicitud);
+
+    if (!solicitud || solicitud.id_locatario !== user.id) {
+      this.throwValidationError('La solicitud no existe o no pertenece al locatario.', 404);
+    }
+
+    if (solicitud.id_estado_solicitud !== 1) {
+      this.throwValidationError('Solo se pueden cancelar solicitudes pendientes.', 409);
+    }
+
+    const cancelada = await this.solicitudRepo.cancelarPorLocatario(idSolicitud, user.id);
+
+    if (!cancelada) {
+      this.throwValidationError('La solicitud ya no está pendiente.', 409);
+    }
+
+    return cancelada;
+  }
+
+  private async cambiarEstadoPorLocador(
+    user: AuthenticatedUser,
+    idSolicitud: number,
+    idEstadoSolicitud: 2 | 3,
+    mensajeRechazo: string | null = null
+  ): Promise<SolicitudResponse> {
+    if (!user?.id) {
+      this.throwValidationError('Debe iniciar sesión para modificar la solicitud.', 401);
+    }
+
+    if (!user.roles.includes('locador')) {
+      this.throwValidationError('Se requiere el rol locador para modificar solicitudes.', 403);
+    }
+
+    if (!Number.isInteger(idSolicitud) || idSolicitud < 1) {
+      this.throwValidationError('El identificador de la solicitud no es válido.', 400);
+    }
+
+    const solicitud = await this.solicitudRepo.findById(idSolicitud);
+
+    if (!solicitud || solicitud.id_locador !== user.id) {
+      this.throwValidationError('La solicitud no existe o no pertenece al locador.', 404);
+    }
+
+    if (solicitud.id_estado_solicitud !== 1) {
+      this.throwValidationError('Solo se pueden modificar solicitudes pendientes.', 409);
+    }
+
+    const actualizada = await this.solicitudRepo.updateEstado(
+      idSolicitud,
+      user.id,
+      idEstadoSolicitud,
+      mensajeRechazo
+    );
+
+    if (!actualizada) {
+      this.throwValidationError('La solicitud dejó de estar pendiente.', 409);
+    }
+
+    return actualizada;
+  }
+}
+
+export const solicitudService = new SolicitudService();

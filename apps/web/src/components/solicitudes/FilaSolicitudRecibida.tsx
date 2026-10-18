@@ -1,0 +1,227 @@
+'use client'
+
+/**
+ * FilaSolicitudRecibida.tsx — una solicitud en la lista del locador, y los
+ * botones de acción que comparte con el detalle del postulante.
+ *
+ * Qué muestra (Claude Design, "Flujo de solicitudes" · 02): avatar con
+ * iniciales, nombre y apellido del postulante (US-36), `StatusTag` del
+ * dominio `solicitud`, cuándo llegó ("hace 3 h", "hace 2 días") o cuándo se
+ * respondió, el resumen de la solicitud (US-36: convivientes, mascotas,
+ * garantías y si declaró ingresos, nunca el monto), un extracto de 2 líneas
+ * del mensaje (P3/P6 del testing: el completo va en el detalle), la línea
+ * que explica el estado, y las acciones según el estado
+ * (`TRANSICIONES_SOLICITUD`):
+ * - Pendiente: Aceptar y Rechazar (US-37: "distinguir claramente el botón
+ *   de aceptar y el de rechazar": azul lleno con ✓ y blanco con ✕). Si la
+ *   propiedad ya tiene una aceptada, Aceptar queda deshabilitado con el
+ *   motivo en un tooltip (una sola aceptada por propiedad).
+ * - Aceptada: Cancelar solicitud (US-38).
+ * - Rechazada o cancelada: Ver detalle.
+ * Si la rechazó con un motivo (US-37), va debajo de la línea, truncado a 80
+ * caracteres (US-36); el completo está en el detalle del postulante.
+ * Las acciones de la fila (y "Ver detalle") van solo en móvil (`conAcciones`):
+ * en escritorio no entran al lado del resumen (medido a 1280 px en la tanda C)
+ * y están en el detalle del costado, con los `data-testid` `solicitudes-detalle-*`.
+ * NOTA: "Iniciar contrato" y "Mensaje" de la aceptada no van: contratos y
+ * mensajes son de otro sprint.
+ *
+ * Quién lo usa: `GrupoPropiedad` (la fila) y `DetallePostulante` (las acciones).
+ */
+import type { MouseEvent } from 'react'
+import { Avatar, Button, Tooltip } from 'antd'
+import { CheckOutlined, CloseOutlined, StopOutlined } from '@ant-design/icons'
+import type { Solicitud } from '@rentar/shared-types'
+import { StatusTag } from '@rentar/ui'
+import { fechaFilaRecibida, lineaRecibida, textoResumen } from '@/lib/solicitudes/textos'
+import { iniciales } from '@/lib/utils/iniciales'
+import { MENSAJE_RECHAZO_LISTADO_MAX, truncar } from '@/lib/utils/truncar'
+import { puedeHacerAccion, textoYaAceptaste, type AccionSolicitud } from '@/lib/validation/solicitud.rules'
+import { puedeCancelarAceptada } from '@/services/solicitudes.service'
+import styles from './SolicitudesRecibidas.module.css'
+
+// ─── Acciones ───────────────────────────────────────────────────────────
+
+/** Props de {@link AccionesSolicitudRecibida}. */
+interface AccionesSolicitudRecibidaProps {
+  solicitud: Solicitud
+  /** La aceptada de la misma propiedad, si es otra: deshabilita "Aceptar". */
+  otraAceptada: Solicitud | undefined
+  onAccion: (accion: AccionSolicitud, solicitud: Solicitud) => void
+  /** `fila`: botones compactos; `detalle`: ocupan el ancho, con textos largos. */
+  variante: 'fila' | 'detalle'
+  /** Prefijo de los `data-testid`: `solicitudes` (fila) o `solicitudes-detalle`. */
+  testIdPrefix: string
+}
+
+/**
+ * Los botones de una solicitud recibida, según su estado. Devuelve `null` si
+ * no hay ninguna acción posible (rechazada o cancelada).
+ */
+export function AccionesSolicitudRecibida({ solicitud, otraAceptada, onAccion, variante, testIdPrefix }: AccionesSolicitudRecibidaProps) {
+  const largo = variante === 'detalle'
+  const clase = largo ? styles.actionsDetail : styles.actions
+
+  /** Que el click en un botón no abra además el detalle de la fila. */
+  function accion(tipo: AccionSolicitud) {
+    return (event: MouseEvent) => {
+      event.stopPropagation()
+      onAccion(tipo, solicitud)
+    }
+  }
+
+  if (puedeHacerAccion('aceptar', 'locador', solicitud.status)) {
+    const bloqueada = otraAceptada !== undefined
+    const aceptar = (
+      <Button
+        type="primary"
+        size={largo ? 'large' : 'middle'}
+        icon={<CheckOutlined />}
+        disabled={bloqueada}
+        onClick={accion('aceptar')}
+        className={styles.actionButton}
+        aria-label={`Aceptar la solicitud de ${solicitud.applicant.fullName}`}
+        data-testid={`${testIdPrefix}-aceptar-button`}
+      >
+        {largo ? 'Aceptar solicitud' : 'Aceptar'}
+      </Button>
+    )
+    return (
+      <div className={clase}>
+        {bloqueada ? (
+          // Una sola aceptada por propiedad: el motivo, en vez de un botón que no hace nada.
+          <Tooltip title={textoYaAceptaste(otraAceptada.applicant.fullName, puedeCancelarAceptada)}>
+            <span className={styles.tooltipWrap} data-testid={`${testIdPrefix}-aceptar-bloqueado`}>
+              {aceptar}
+            </span>
+          </Tooltip>
+        ) : (
+          aceptar
+        )}
+        <Button
+          size={largo ? 'large' : 'middle'}
+          icon={<CloseOutlined />}
+          onClick={accion('rechazar')}
+          className={styles.actionButton}
+          aria-label={`Rechazar la solicitud de ${solicitud.applicant.fullName}`}
+          data-testid={`${testIdPrefix}-rechazar-button`}
+        >
+          Rechazar
+        </Button>
+      </div>
+    )
+  }
+
+  // US-38: solo si el back deja dar de baja una aceptada (en real, todavía no: brecha 1 de HANDOFF §7).
+  if (puedeCancelarAceptada && puedeHacerAccion('cancelar', 'locador', solicitud.status)) {
+    return (
+      <div className={clase}>
+        <Button
+          size={largo ? 'large' : 'middle'}
+          icon={<StopOutlined />}
+          onClick={accion('cancelar')}
+          className={styles.actionButton}
+          aria-label={`Cancelar la solicitud aceptada de ${solicitud.applicant.fullName}`}
+          data-testid={`${testIdPrefix}-cancelar-button`}
+        >
+          Cancelar solicitud
+        </Button>
+      </div>
+    )
+  }
+
+  return null
+}
+
+// ─── Fila ───────────────────────────────────────────────────────────────
+
+/** Props de {@link FilaSolicitudRecibida}. */
+interface FilaSolicitudRecibidaProps {
+  solicitud: Solicitud
+  otraAceptada: Solicitud | undefined
+  /** Es la que se ve en el panel del costado (borde y fondo azul, `aria-current`). */
+  seleccionada: boolean
+  /**
+   * Si muestra los botones (Aceptar, Rechazar, Cancelar o "Ver detalle").
+   * `true` solo en móvil, donde no hay panel al costado; lo decide el mismo
+   * corte de 768 px que el CSS (`SolicitudesRecibidas#MEDIA_MOVIL`).
+   */
+  conAcciones: boolean
+  onAbrir: (solicitud: Solicitud) => void
+  onAccion: (accion: AccionSolicitud, solicitud: Solicitud) => void
+}
+
+/** Una solicitud recibida dentro del grupo de su propiedad. */
+export function FilaSolicitudRecibida({ solicitud, otraAceptada, seleccionada, conAcciones, onAbrir, onAccion }: FilaSolicitudRecibidaProps) {
+  const cerrada = solicitud.status === 'rechazada' || solicitud.status === 'cancelada'
+
+  return (
+    <div className={`${styles.row} ${seleccionada ? styles.rowSelected : ''}`} onClick={() => onAbrir(solicitud)} data-testid="solicitudes-fila">
+      <Avatar size={42} className={seleccionada ? styles.avatarSelected : styles.avatar} aria-hidden="true">
+        {iniciales(solicitud.applicant.fullName)}
+      </Avatar>
+      <div className={styles.rowBody}>
+        <div className={styles.rowHead}>
+          {/* El nombre es el botón que abre el detalle (teclado y lectores de pantalla). */}
+          <button
+            type="button"
+            className={styles.nameButton}
+            onClick={(event) => {
+              event.stopPropagation()
+              onAbrir(solicitud)
+            }}
+            aria-label={`Ver la solicitud de ${solicitud.applicant.fullName}`}
+            // La que se ve en el panel del costado: los lectores de pantalla la anuncian como "actual".
+            aria-current={seleccionada ? 'true' : undefined}
+          >
+            {solicitud.applicant.fullName}
+          </button>
+          <StatusTag domain="solicitud" status={solicitud.status} />
+          <span className={styles.rowDate} data-testid="solicitudes-fila-tiempo">
+            {fechaFilaRecibida(solicitud)}
+          </span>
+        </div>
+        {/* US-36: el resumen, sin datos sensibles. `undefined` no pasa en esta lista (siempre es la vista del locador). */}
+        {solicitud.summary !== undefined && (
+          <span className={styles.rowSummary} data-testid="solicitudes-fila-resumen">
+            {solicitud.summary ? textoResumen(solicitud.summary) : 'Sin datos de legajo'}
+          </span>
+        )}
+        {/* Extracto de 2 líneas (CSS): el mensaje completo está en el detalle. */}
+        {solicitud.message ? (
+          <span className={styles.rowMessage} data-testid="solicitudes-fila-mensaje">
+            {solicitud.message}
+          </span>
+        ) : (
+          <span className={styles.rowLine} data-testid="solicitudes-fila-mensaje">
+            Sin mensaje.
+          </span>
+        )}
+        <span className={styles.rowLine}>{lineaRecibida(solicitud, otraAceptada, puedeCancelarAceptada)}</span>
+        {solicitud.status === 'rechazada' && solicitud.rejectionMessage && (
+          <span className={styles.rejectionNote} data-testid="solicitudes-motivo-rechazo">
+            <span className={styles.rejectionLabel}>Tu motivo: </span>
+            {truncar(solicitud.rejectionMessage, MENSAJE_RECHAZO_LISTADO_MAX)}
+          </span>
+        )}
+      </div>
+      {!conAcciones ? null : cerrada ? (
+        <div className={styles.actions}>
+          <Button
+            type="link"
+            className={styles.linkAction}
+            onClick={(event) => {
+              event.stopPropagation()
+              onAbrir(solicitud)
+            }}
+            data-testid="solicitudes-ver-detalle"
+          >
+            Ver detalle
+          </Button>
+        </div>
+      ) : (
+        <AccionesSolicitudRecibida solicitud={solicitud} otraAceptada={otraAceptada} onAccion={onAccion} variante="fila" testIdPrefix="solicitudes" />
+      )}
+    </div>
+  )
+}

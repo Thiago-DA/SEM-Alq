@@ -16,16 +16,16 @@
  * | `m2Min`, `m2Max` | `40` | superficie total |
  * | `tag` (se repite) | `mascotas` | características |
  * | `indice` | `ICL` | índice de ajuste |
- * | `orden` | `precio_asc` | orden |
+ * | `orden` | `precio_asc` | orden (`precio_`, `dormitorios_`, `m2_` + `asc`/`desc`, o `recientes`; otro valor = sin orden) |
  * | `pagina` | `2` | página (desde 1) |
  *
  * Quién lo usa: `components/buscar/BuscarPropiedades.tsx`,
- * `services/propiedades.service.ts` (rama real, para mandar los filtros al back)
- * y la landing (`Landing.tsx`, para "Buscar más propiedades").
+ * `services/propiedades.service.ts` (rama real, para mandar los filtros al back),
+ * el buscador de la landing (`lib/search/buscadorLanding.ts`) y el detalle
+ * de la propiedad (`components/detalle-propiedad/`, links a `/buscar?barrio=`).
  */
-import type { AdjustmentIndex, BusquedaFiltros, CharacteristicKey, FilterState, OrdenBusqueda, PropertyType } from '@rentar/shared-types'
-import type { RangoPrecio } from '@/lib/types/filters'
-import { FILTROS_INICIALES, ORDEN_OPCIONES } from './busqueda'
+import type { AdjustmentIndex, BusquedaFiltros, CharacteristicKey, OrdenBusqueda, PropertyType } from '@rentar/shared-types'
+import { esOrdenBusqueda, FILTROS_INICIALES } from './busqueda'
 
 const TIPOS: PropertyType[] = ['departamento', 'casa', 'ph', 'monoambiente']
 const INDICES: AdjustmentIndex[] = ['IPC', 'ICL']
@@ -59,17 +59,24 @@ function permitidos<T extends string>(params: URLSearchParams, key: string, vali
   return [...new Set(params.getAll(key))].filter((valor): valor is T => (validos as readonly string[]).includes(valor))
 }
 
-/** Lee la búsqueda de los query params. Lo que falte o no sea válido queda en su valor inicial. */
+/**
+ * Lee la búsqueda de los query params. Lo que falte o no sea válido queda en su valor inicial.
+ *
+ * NOTA: un param vacío (`barrio=`, `provincia=`) cuenta como si no estuviera.
+ * Lo manda el buscador de la landing cuando se usa sin JS: un `<form>` nativo
+ * envía todos sus campos, también los que quedaron en "Todos". Sin este
+ * filtro, `barrio=` buscaba el barrio "" y no encontraba nada.
+ */
 export function leerBusqueda(params: URLSearchParams): EstadoBusqueda {
-  const provincia = params.get('provincia')
-  const ciudad = params.get('ciudad')
+  const provincia = params.get('provincia') || null
+  const ciudad = params.get('ciudad') || null
   const orden = params.get('orden')
   const indice = params.get('indice')
   return {
     filtros: {
       province: provincia === TODAS ? null : (provincia ?? FILTROS_INICIALES.province),
       city: ciudad === TODAS ? null : (ciudad ?? (provincia && provincia !== FILTROS_INICIALES.province ? null : FILTROS_INICIALES.city)),
-      neighborhoodSlugs: [...new Set(params.getAll('barrio'))],
+      neighborhoodSlugs: [...new Set(params.getAll('barrio'))].filter(Boolean),
       minPrice: numero(params, 'precioMin'),
       maxPrice: numero(params, 'precioMax'),
       types: permitidos(params, 'tipo', TIPOS),
@@ -80,7 +87,7 @@ export function leerBusqueda(params: URLSearchParams): EstadoBusqueda {
       characteristics: permitidos(params, 'tag', CARACTERISTICAS),
       adjustmentIndex: INDICES.includes(indice as AdjustmentIndex) ? (indice as AdjustmentIndex) : null,
     },
-    orden: ORDEN_OPCIONES.some((opcion) => opcion.value === orden) ? (orden as OrdenBusqueda) : 'predeterminado',
+    orden: esOrdenBusqueda(orden) ? orden : 'predeterminado',
     pagina: Math.max(1, Math.floor(numero(params, 'pagina') ?? 1)),
   }
 }
@@ -110,31 +117,18 @@ export function escribirBusqueda({ filtros, orden, pagina }: EstadoBusqueda): UR
   return params
 }
 
-// ─── Desde la landing ───────────────────────────────────────────────────
-
 /**
- * Link a `/buscar` con los filtros elegidos en el buscador de la landing
- * (barrio, tipo, dormitorios, precio y características), con el mismo
- * formato que lee {@link leerBusqueda}.
- *
- * Equivalencias:
- * - "Todos" (barrio, tipo, dormitorios) no se escribe.
- * - Dormitorios "3 o más" de la landing = `dorm=3&dorm=4` (en `/buscar`, el 4
- *   es "4 o más").
- * - El precio solo se escribe si se aleja del borde del slider: el mínimo en
- *   el borde inferior y el máximo en el superior son "sin límite".
- * - La ubicación queda en la del piloto (Córdoba Capital), como en la landing.
+ * `/buscar` filtrado por un barrio (`/buscar?barrio=guemes`), o `/buscar` si
+ * no hay barrio. Lo usan el detalle de la propiedad (US-41: "Ver propiedades
+ * en Güemes", migas) y la pantalla de éxito de la solicitud (US-35: "Seguir
+ * buscando").
  */
-export function hrefBuscarDesdeLanding(filters: FilterState, rango: RangoPrecio): string {
-  const filtros: BusquedaFiltros = {
-    ...FILTROS_INICIALES,
-    neighborhoodSlugs: filters.neighborhoodSlug === 'todos' ? [] : [filters.neighborhoodSlug],
-    minPrice: filters.minPrice > rango.min ? filters.minPrice : null,
-    maxPrice: filters.maxPrice < rango.max ? filters.maxPrice : null,
-    types: filters.type === 'todos' ? [] : [filters.type],
-    bedrooms: filters.bedrooms === 'todos' ? [] : filters.bedrooms >= 3 ? [3, 4] : [filters.bedrooms],
-    characteristics: filters.characteristics,
-  }
-  const query = escribirBusqueda({ filtros, orden: 'predeterminado', pagina: 1 }).toString()
-  return query ? `/buscar?${query}` : '/buscar'
+export function hrefBuscarEnBarrio(neighborhoodSlug: string | null | undefined): string {
+  if (!neighborhoodSlug) return '/buscar'
+  const params = escribirBusqueda({
+    filtros: { ...FILTROS_INICIALES, neighborhoodSlugs: [neighborhoodSlug] },
+    orden: 'predeterminado',
+    pagina: 1,
+  })
+  return `/buscar?${params.toString()}`
 }

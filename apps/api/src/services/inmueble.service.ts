@@ -26,11 +26,11 @@ export class InmuebleService {
 
   async getById(id: number): Promise<InmuebleDetalleDTO | null> {
     const inmueble = await this.inmRepo.findDisponibleById(id);
-  
+
     if (!inmueble) return null;
-  
+
     const tipoObj = await lookupRepository.getTipoById(inmueble.tipo);
-  
+
     const servicioObj = inmueble.servicios ? await lookupRepository.getServicioById(inmueble.servicios): null;
 
     const contrato = await this.contRepo.findByInmuebleId(inmueble.id);
@@ -38,8 +38,8 @@ export class InmuebleService {
     const tags = await this.inmRepo.getTagsByInmuebleId(inmueble.id);
 
     const indiceAjuste = contrato?.indice_aumento ? await lookupRepository.getTipoIndiceById(contrato.indice_aumento): null;
-   
-  
+
+
     return {
       id: inmueble.id,
 
@@ -192,21 +192,57 @@ export class InmuebleService {
     };
   }
 
-  async update(id: number, data: UpdateInmuebleDTO): Promise<InmuebleDTO | null> {
+  async update(
+    id: number,
+    idLocador: number,
+    data: UpdateInmuebleDTO
+  ): Promise<InmuebleDTO | null> {
     const existing = await this.inmRepo.findById(id);
+
     if (!existing) {
-      throw new Error(`Inmueble con ID ${id} no encontrado.`);
+      const error = new Error(`Inmueble con ID ${id} no encontrado.`);
+      Object.assign(error, { statusCode: 404 });
+      throw error;
     }
-    return await this.inmRepo.update(id, data);
+
+    if (existing.id_locador !== idLocador) {
+      const error = new Error(
+        'No tenés permiso para modificar este inmueble.'
+      );
+      Object.assign(error, { statusCode: 403 });
+      throw error;
+    }
+
+    if (
+      existing.estado_alquiler === 'alquilado' ||
+      existing.estado_alquiler === 'publicado/alquilado'
+    ) {
+      const error = new Error(
+        'No se puede modificar una propiedad que está alquilada.'
+      );
+      Object.assign(error, { statusCode: 409 });
+      throw error;
+    }
+
+    const datosActualizables = data;
+
+    return await this.inmRepo.actualizarPropiedadCompleta(
+      id,
+      idLocador,
+      datosActualizables
+    );
   }
 
-  async delete(id: number): Promise<boolean> {
-    const existing = await this.inmRepo.findById(id);
-    if (!existing) {
-      throw new Error(`Inmueble con ID ${id} no encontrado.`);
+  async delete(id: number, idLocador: number): Promise<boolean> {
+    const resultado = await this.inmRepo.eliminarLogicamente(id, idLocador);
+
+    if (!resultado.success) {
+      const error = new Error(resultado.message);
+      Object.assign(error, { statusCode: resultado.statusCode });
+      throw error;
     }
-    await this.contRepo.deleteByInmuebleId(id);
-    return await this.inmRepo.delete(id);
+
+    return true;
   }
 
   /**

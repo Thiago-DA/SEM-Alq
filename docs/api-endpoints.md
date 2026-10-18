@@ -1,4 +1,4 @@
-# Endpoints que usa el frontend — Sprint 1
+# Endpoints que usa el frontend — Sprints 1 y 2
 
 Lista de las rutas de `apps/api` (y de Supabase) que llama `apps/web`, sacada de los bloques
 `@backend` de `apps/web/src/services/*.service.ts` y verificada contra la API de `develop` el
@@ -43,13 +43,16 @@ Notas:
 
 | Método y ruta | Auth | Estado | US | Service | Body / query | Respuesta (`data`) |
 |---|---|---|---|---|---|---|
-| `GET /inmuebles/disponibles` | — | parcial (ver notas) | US-34 | `propiedades.service#listarPropiedadesPublicadas`, `#buscarPropiedades`, `#contarPropiedades`, `#listarUbicaciones` | el front manda solo `page=1&limit=1000`. El back documenta `barrio, precioMin, precioMax, tipo, dormitorios, ambientes, superficieMin, superficieMax, tags, indiceAjuste, page, limit, orden, direccion`, pero desde el 29/09 solo aplica `barrio` (igual exacto) y `tipo` | `{ items: InmuebleDisponibleResponse[], total, page, limit, totalPages }` (hoy siempre todas, `page: 1`); cada item con `tipo`, `tags` e `indice_ajuste` como `{ id, descripcion }`, `precio`, `expensas` (0 sin contrato), `foto_principal` y `fecha_disponible` → `inmuebleDisponibleToPropiedadResumen` |
-| `GET /inmuebles/disponibles/:id` | — | existe, sin usar | US-34 (detalle) | — (antes `GET /inmuebles/:id`, renombrada el 26/09) | — | `InmuebleDetalleResponse`: como el item de arriba más `servicio` y `fotos`. 400 id inválido, 404 |
+| `GET /inmuebles/disponibles` | — | parcial (ver notas) | US-34 | `propiedades.service#listarPropiedadesPublicadas`, `#listarPropiedadesRecientes`, `#buscarPropiedades`, `#contarPropiedades`, `#listarUbicaciones` | el front manda solo `page=1&limit=1000` (la landing, `page=1&limit=6`). El back documenta `barrio, precioMin, precioMax, tipo, dormitorios, ambientes, superficieMin, superficieMax, tags, indiceAjuste, page, limit, orden, direccion`, y desde ce677a4 (29/09) filtra, ordena y pagina con todos (probado el 06/10; `barrio` por nombre exacto, `dormitorios`/`ambientes` igual exacto) | `{ items: InmuebleDisponibleResponse[], total, page, limit, totalPages }`, por id descendente; cada item con `tipo`, `tags` e `indice_ajuste` como `{ id, descripcion }`, `precio`, `expensas` (0 sin contrato), `foto_principal` y `fecha_disponible` → `inmuebleDisponibleToPropiedadResumen` |
+| `GET /inmuebles/disponibles/:id` | — (público; el front manda Bearer si hay sesión, hoy se ignora) | **conectado** (09/10; faltan datos) | US-41 (detalle público, Jira) | `propiedades.service#getPropiedad` (antes `GET /inmuebles/:id`, renombrada el 26/09) | — | `InmuebleDetalleResponse`: como el item de arriba más `servicio` y `fotos` → `inmuebleDetalleToPropiedadDetalle`. 400 id inválido, 404 si no existe o no está disponible (el front muestra los dos como "Esta publicación ya no está disponible"). Le faltan dueño, estado, condiciones del contrato, medios de pago y si el usuario ya la solicitó (ver `HANDOFF-BACKEND.md` §7, US-41) |
 | `GET /locadores/:idLocador/barrios` | Bearer + rol `locador` (solo el propio id; otro → 403) | existe, sin usar | US-02 (filtro de barrio) | — | — | `string[]` (barrios de las propiedades del locador) |
+| `GET /mis-alquileres/:id` | Bearer + rol `locador` | **pendiente (propuesto)**; hoy el front usa el puente `GET /mis-alquileres` + buscar el id (09/10) | US-03 y US-04 (detalle del locador) | `propiedades.service#getMiPropiedad` | — | `MisAlquileresDetalleResponse` (`apps/web/src/services/shared/backend-dtos.ts`): los mismos campos que el cuerpo de `POST /inmuebles` (dirección **exacta**, `tags`, `fotos` con `orden` y `es_principal`, `condiciones_contrato`), más `fecha_publicacion` y `contrato_vigente: { id, locatario, fecha_fin, proximo_ajuste, monto_actual } \| null`. **404 si el inmueble no existe, está eliminado o no es del que llama** (el front muestra lo mismo en los tres casos). Va en la familia `/mis-alquileres`, que ya filtra por dueño, para no confundirla con el detalle público |
 | `GET /mis-alquileres` | Bearer + rol `locador` | parcial | US-02 | `propiedades.service#listarMisPropiedades` | el back documenta `barrio, tipo, estado, reclamos`, pero no los aplica (el front filtra en el cliente) | `MisAlquileresItem[]` (todos los inmuebles del locador; desde el 29/09 también `contrato.locatario`, `contrato.fecha_proximo_ajuste` y `posee_reclamos_no_resueltos`, que el front suma en el próximo PR; con `fotos`, `foto_principal`, `tags` y `contrato` con `monto_alquiler`, `expensas`, `indice_aumento` como texto y `medios_pago` como nombres) → `misAlquileresItemToPropiedadLocador`. 401 / 403 |
 | `POST /inmuebles` | Bearer, cualquier rol (desde el 29/09, d88deca: además le suma el rol locador al usuario, en una transacción) | conectado (29/09: alta real de punta a punta con fotos en Storage) | US-01 | `propiedades.service#registrarPropiedad` | `CreateInmuebleCompletoPayload`: inmueble + `tags: number[]` + `fotos: { url, peso_kb, formato, es_principal }[]` (3 a 50, jpg/png, ≤ 350 KB) + `condiciones_contrato` (`monto_alquiler, expensas, indice_aumento (id), frecuencia_ajuste (texto), duracion_meses, deposito (monto), interes_por_dia, dias_gracia, medios_pago: number[]`) → `propiedadNuevaToCreateInmueble` | `Inmueble` creado (201). 400 con el mensaje de cada regla, 401. Si volviera un 403, el front muestra "Todavía no podés publicar desde esta cuenta…" |
 | Supabase Storage, bucket `fotos-propiedades` | sesión del usuario | conectado (29/09; desde el 30/09 también borra las fotos de un alta fallida) | US-01 | `propiedades.service#subirFotoPropiedad` | archivo en `<auth.uid>/<uuid>.<jpg\|png>`, `upsert: false` | URL pública, `peso_kb` (redondeado hacia arriba) y `formato` |
 | `GET /catalogos/ubicaciones` | — | pendiente (propuesto) | US-34 | `propiedades.service#listarUbicaciones` | — | `UbicacionOpciones` (hoy se arma con los datos) |
+| `DELETE /inmuebles/:id` | Bearer + rol `locador` (solo el dueño del inmueble) | **conectado** (09/10, `develop` b7ebf48) | US-04 | `propiedades.service#eliminarPropiedad` (errores: `propiedad.adapter.ts#errorDeEliminarPropiedad`: 403/404 → "No encontramos esta propiedad.", 409 → "No podés eliminar una propiedad con contrato vigente.") | — | Mensaje de éxito, sin `data` (200). **Baja lógica:** el inmueble queda con `activo = false` (no se borra la fila) y sus contratos pasan a `estado = 3` (finalizado) y `activo = false`, todo en la función SQL `eliminar_inmueble_logico` (una transacción). Solo se puede eliminar un inmueble `publicado` o `pausado`. 400 id inválido, 401, 403 (no es el dueño), 404 (no existe o ya estaba inactivo), 409 (`alquilado` o `publicado/alquilado`, o un estado que no permite eliminar). Un inmueble inactivo desaparece de `/inmuebles/disponibles`, de `/mis-alquileres`, de los barrios del locador y del detalle público |
+| `PUT /inmuebles/:id` | Bearer + rol `locador` (solo el dueño del inmueble) | **conectado** (11/10, `develop` b5acfa7; probado en real con el inmueble 25) | US-03 | `propiedades.service#actualizarPropiedad(id, guardada, editada)` (cuerpo: `propiedad.adapter.ts#cambiosToUpdateInmueble`, solo lo que cambió respecto de la precarga; errores: `#errorDeActualizarPropiedad`: 403/404 → "No encontramos esta propiedad.", 409 → "No podés editar una propiedad alquilada.", 400 con el texto del back) | Campos editables, todos opcionales: `tipo, descripcion, provincia, ciudad, barrio, direccion, numero, piso, m2_totales, m2_cubiertos, ambientes, dormitorios, banos, antiguedad, precio_publicado, fecha_disponible, servicios`, más `fotos` (3 a 50, una principal como máximo) y `tags` (ids). Lo que se omite conserva su valor; `fotos` y `tags`, si se envían, **reemplazan** la lista completa (`tags: []` los borra) | 200 con el inmueble actualizado. Todo ocurre en la función SQL `actualizar_propiedad_completa` (una transacción, con la fila bloqueada). **No se puede cambiar** `estado_alquiler` ni datos del contrato (400). 400 id inválido o datos incorrectos, 401, 403 (no es el dueño), 404 (no existe o está inactivo), 409 (`alquilado` o `publicado/alquilado`) |
 | `PATCH /inmuebles/:id/publicacion` | Bearer + rol `locador` | pendiente (propuesto) | publicar/pausar (sin US en Sprint 0, mapa US-40) | `propiedades.service#cambiarEstadoPublicacion` (sin usar) | `{ activa: boolean }` | — |
 
 Mapeos del alta (US-01), documentados en `services/adapters/propiedad.adapter.ts`:
@@ -67,11 +70,96 @@ Mapeos del alta (US-01), documentados en `services/adapters/propiedad.adapter.ts
 
 Búsqueda (US-34), `GET /inmuebles/disponibles`:
 
-- Desde el 29/09 el back ignora casi todos los filtros y la paginación, así que el front trae todas
-  en un pedido (hasta 1000) y filtra, ordena y pagina en el cliente, con las mismas reglas que el
-  modo mock. Sirve para el piloto; no escala. Detalle y brechas en `HANDOFF-BACKEND.md` §7 (US-34).
-- `GET /inmuebles/disponibles/:id` manda `-1` en `precio` y `expensas` sin contrato (hoy el front
-  no la usa).
+- Desde ce677a4 (29/09) el back filtra, ordena y pagina (probado el 06/10). La landing ya le pide
+  `limit=6`; `/buscar`, las opciones de ubicación y "Propiedades similares" todavía traen todas en un
+  pedido (hasta 1000) y filtran, ordenan y paginan en el cliente, con las mismas reglas que el modo
+  mock: pasarlas al back queda para la tanda de conexión. Detalle y brechas en `HANDOFF-BACKEND.md`
+  §7 (US-34).
+- `GET /inmuebles/disponibles/:id` manda `null` en `precio` y `expensas` cuando el inmueble no tiene
+  contrato. NOTA: antes del 29/09 mandaba `-1`; el adaptador acepta los dos (y cualquier negativo)
+  como "no informado" y la pantalla muestra "Consultar" (`TODO(backend)`: confirmar que ya no
+  manda `-1`).
+
+## Problemas de las rutas de inmuebles (tanda 3 del Sprint 2)
+
+Encontrados al revisar `PUT` y `DELETE /inmuebles/:id` para US-03 y US-04 (y el de `/disponibles`, con la
+US-35 actualizada). En orden de gravedad;
+detalle y propuesta en `HANDOFF-BACKEND.md` §10 (y el texto del issue, que abre el PO).
+
+| Gravedad | Problema | Dónde |
+|---|---|---|
+| ~~🔴 Crítica~~ | ~~`PUT /inmuebles/:id` no chequea que el inmueble sea del que llama~~ **Resuelto (10/10, b5acfa7):** valida el dueño (403) y solo actualiza columnas editables, en la función SQL `actualizar_propiedad_completa`. | — |
+| 🔴 Alta | `GET /inmuebles` está **abierto** (sin token) y devuelve todos los inmuebles con la **dirección exacta** y el `id_locador`. El front no la usa. | `routes/v1/inmuebles.routes.ts` (línea 7), `inmueble.repository.ts#findAll` |
+| 🟠 Media | `DELETE` (lógico desde el 09/10) **bloquea por `estado_alquiler` y no por contrato vigente**, **no cancela solicitudes** y **deja las fotos en el bucket público**. Responde 403 (no 404) para un inmueble ajeno. | `supabase/migrations/20261009000000_us04_eliminacion_logica_inmueble.sql` (`eliminar_inmueble_logico`) |
+| 🔴 Alta | `GET /inmuebles/disponibles` y `/disponibles/:id` (públicas) devuelven **calle, altura y piso sin token**: la regla "sin sesión, la aproximada" del front es solo cosmética. Sin token, mandar la calle y la cuadra, nunca el piso. | `routes/v1/inmuebles.routes.ts`, `InmuebleDisponibleResponse` / `InmuebleDetalleResponse` |
+| ~~🟡 Baja~~ | ~~`PUT` responde 400 en lugar de 404~~ **Resuelto (10/10, b5acfa7):** 404 si no existe o está inactivo. | — |
+| 🔴 Alta | `PUT` cambia `precio_publicado`, pero `/disponibles` y `/disponibles/:id` muestran (y filtran por) `contrato.monto_alquiler`: el precio editado no se ve en la búsqueda, que es lo que ven los inquilinos (HANDOFF §10, punto 25). | `services/inmueble.service.ts`, función `actualizar_propiedad_completa` |
+| 🟠 Media | Las fotos que se sacan en una edición quedan en el bucket público (HANDOFF §10, punto 27). | `services/inmueble.service.ts`, función `actualizar_propiedad_completa` |
+| 🔴 Alta | El default de `error.middleware` pasó a 500: las validaciones del alta sin `statusCode` ahora salen como 500 (HANDOFF §10, punto 24). | `gateway/middlewares/error.middleware.ts`, `services/inmueble.service.ts` |
+
+## Solicitudes (Sprint 2)
+
+**Existen en `develop` desde el 12/10** (Thiago) y el front las usa desde la tanda 5 (13/10). Código
+del back: `apps/api/src/routes/v1/solicitudes.routes.ts`, `controllers/solicitud.controller.ts`,
+`services/solicitud.service.ts`, `repositories/solicitud.repository.ts` y `dtos/solicitud.dto.ts`.
+En el front: `services/solicitudes.service.ts`, `services/adapters/solicitud.adapter.ts` (DTOs,
+vistas y errores traducidos) y la copia de los DTOs en `services/shared/backend-dtos.ts`. Todas con
+**Bearer** (el usuario sale del token) y el sobre `{ success, data, message?, error? }`. Las
+diferencias con la propuesta original y lo que falta están en
+[`HANDOFF-BACKEND.md`](HANDOFF-BACKEND.md) §7, "US-35 a US-38".
+
+| Método y ruta | Auth | Estado | US (Jira) | Service | Body / query | Respuesta (`data`) | Errores | Mail que dispara |
+|---|---|---|---|---|---|---|---|---|
+| `GET /solicitudes/preparar` | Bearer | existe | US-35 | `#prepararSolicitud` | `?id_inmueble=` (entero) | `SolicitudPreparacionResponse`: `usuario` (nombre, apellido, DNI, teléfono sin "+", email), catálogos de ocupación y garantías, `garantias_exigidas` (hoy siempre `[]`) y `valores_iniciales` | 400 id inválido; 401; 403 propia; 404 no existe; 409 "ya no recibe solicitudes" (no está `publicado` ni `publicado/alquilado`). **No** detecta una duplicada | — |
+| `POST /solicitudes` | Bearer, cualquier rol | existe | US-35 (actualizada) | `#enviarSolicitud` | `CrearSolicitudRequest`: `{ id_inmueble, mensaje?, telefono, email, ocupacion, ingresos, convivientes, mascotas, detalle_mascotas, garantias, acepta_condiciones }`. `telefono` E.164 (el back lo guarda sin "+"); `ingresos` entero > 0 o **`null`** = no informa (un 0 lo pasa a `null`); `detalle_mascotas` ≤ 300; mensaje ≤ 600 | `SolicitudResponse` (201, `pendiente`) | 400 por dato inválido; 401; 403 propia; 404 no existe; **409 "Ya tenés una solicitud activa para esta propiedad"** (pendiente o aceptada). **No** valida que esté publicada ni las garantías exigidas | Al **locador** (US-35): **no se manda todavía** |
+| `GET /solicitudes/mias` | Bearer | existe | US-36 (y US-35: botón del detalle y "N pendientes en otras propiedades") | `#listarMisSolicitudes`; con `?inmueble=`, `#getMiSolicitudParaPropiedad`; con `?estado=pendiente`, `#contarMisSolicitudesPendientes` | `estado`, `inmueble` (opcionales) | `SolicitudResponse[]`, de la más nueva a la más vieja. **Sin canceladas** (`?estado=cancelada` da vacío). **Con** DNI, contacto y legajo propios (el adaptador los descarta) | 400 filtro inválido; 401 | — |
+| `GET /solicitudes/recibidas` | Bearer + rol `locador` | existe | US-36 | `#listarSolicitudesRecibidas` (lista, sin datos sensibles); con `?inmueble=`, `#getSolicitudRecibida` (puente del detalle); con `?estado=pendiente`, `panel.service#getSolicitudesPendientes` | `estado`, `inmueble` (opcionales) | `SolicitudResponse[]` de los inmuebles del locador, con DNI, contacto y legajo. **Sin canceladas** | 400; 401; 403 sin rol | — |
+| `GET /solicitudes/:id` | Bearer (dueño o postulante) | **no existe — propuesto** | US-36 | `#getSolicitudRecibida` (hoy por el puente de arriba) | — | `SolicitudResponse` con DNI, contacto y legajo solo para el dueño del inmueble | 401; 404 si no es parte | — |
+| `PATCH /solicitudes/:id/aceptar` | Bearer + rol `locador` (dueño) | existe | US-37 | `#aceptarSolicitud` | — | `SolicitudResponse` (`aceptada`) | 400; 401; 403; 404 si no es suya; 409 si ya no está pendiente. **No** controla que el inmueble ya tenga otra aceptada (lo sostiene el front) ni cambia el estado del inmueble | Al **locatario** (US-37): **no se manda todavía** |
+| `PATCH /solicitudes/:id/rechazar` | Bearer + rol `locador` (dueño) | existe | US-37 | `#rechazarSolicitud` | Body opcional `{ mensaje_rechazo }` (≤ 200). **El front lo manda solo si hay motivo** (sin espacios en los bordes); sin motivo, el `PATCH` va sin cuerpo. US-36 lo muestra en los listados, truncado a 80 | `SolicitudResponse` (`rechazada`) | 400 (también si el motivo pasa de 200: "El mensaje de rechazo no puede superar los 200 caracteres.", que el front traduce); 401; 403; 404; 409 si ya no está pendiente | — |
+| `PATCH /solicitudes/:id/cancelar` | Bearer (**solo el postulante**) | existe | Sin US en Sprint 0 (postulante, mapa US-39). **US-38 (locador) no está** | `#cancelarSolicitud` | — | `SolicitudResponse` (`cancelada`) | 400; 401; **404 si no es el postulante (también el locador)**; 409 si no está pendiente | Al **locatario** si cancela el locador (US-38): no aplica todavía |
+
+`SolicitudResponse` (`apps/api/src/dtos/solicitud.dto.ts`):
+
+```ts
+{
+  id: number
+  estado: string                    // nombre de estado_solicitud: pendiente | aceptada | rechazada | cancelada
+  mensaje: string | null
+  mensaje_rechazo?: string | null   // motivo del rechazo (US-37), ≤ 200; null si no tiene
+  fecha_creacion: string            // ISO, con hora
+  fecha_respuesta: string | null    // ISO: cuándo dejó de estar pendiente (también al cancelar)
+  inmueble: { id, direccion, numero, piso?, barrio, foto_principal: string | null }
+  postulante: { id, nombre, apellido?, dni?, telefono?, email? }   // siempre; teléfono sin "+"
+  legajo: { ocupacion, ingresos: number | null, convivientes, mascotas, detalle_mascotas, garantias } | null
+}
+```
+
+Notas:
+
+- **Quién cancela (decidido por el PO, tanda 2 del Sprint 2):** una sola ruta,
+  `PATCH /solicitudes/:id/cancelar`, que decide según quién llama y el estado:
+  - **dueño del inmueble + `aceptada`** → `cancelada` (US-38), con mail al locatario. **El back
+    todavía no lo hace** (HANDOFF §7, brecha 1): en real el front oculta el botón.
+  - **postulante + `pendiente`** → `cancelada` (sin US en Sprint 0, mapa US-39). **Hecho.**
+- **Transiciones permitidas** (las mismas que `TRANSICIONES_SOLICITUD` en
+  `apps/web/src/lib/validation/solicitud.rules.ts`): aceptar y rechazar, del locador desde
+  `pendiente`; cancelar, del locador desde `aceptada` (falta en el back) o del postulante desde
+  `pendiente`. Cada una guarda `fecha_respuesta`.
+- **Una sola aceptada por inmueble (decidido por el PO):** `PATCH /aceptar` debería responder 409 si
+  el inmueble ya tiene otra `aceptada`. **El back todavía no lo controla** (brecha 2): lo sostiene el
+  front.
+- **Una sola activa por persona e inmueble:** una `pendiente` o `aceptada` impide otra (409). Una
+  `rechazada` o `cancelada` no. **Hecho.**
+- **Aceptar no rechaza a las demás** solicitudes del inmueble (Flujo de solicitudes · 02). **Hecho.**
+- **Dirección con sesión:** quien inició sesión ve la **exacta** con el piso, en `/recibidas`, en
+  `/mias`, en el modal y en el detalle de `/propiedad/[id]`.
+- **Privacidad del legajo:** el DNI, el teléfono, el email, los ingresos y el resto del legajo los ve
+  solo el dueño del inmueble, en el detalle del postulante; nunca en un listado. El back los manda
+  siempre (brecha 4): el adaptador los descarta.
+- **Garantías exigidas:** el inmueble puede exigir garantías (`requiredGuarantees` en el front);
+  alcanza con que el postulante ofrezca **al menos una**. **El back no tiene el dato** (ni el alta ni
+  la edición lo cargan; `garantias_exigidas` llega vacío): queda para el Sprint 3 (HANDOFF §7).
 
 ## Panel del locador (`/panel`)
 
@@ -83,7 +171,7 @@ pantalla muestra sus estados vacíos; los conteos de propiedades salen de `GET /
 | `GET /panel/cobros` | Bearer | pendiente (propuesto) | US-08, US-09 | `panel.service#getResumenCobros` | `ResumenCobros` |
 | `GET /panel/reclamos` | Bearer | pendiente (propuesto) | US-14 a US-18 | `panel.service#getResumenReclamos` | `ResumenReclamos` |
 | `GET /panel/contratos?dias=60` | Bearer | pendiente (propuesto) | US-05 a US-07 | `panel.service#getEventosContratos` | `EventoContratoPanel[]` |
-| `GET /solicitudes?estado=pendiente` | Bearer | pendiente (propuesto) | US-36 | `panel.service#getSolicitudesPendientes` | `SolicitudPanel[]` |
+| `GET /solicitudes/recibidas?estado=pendiente` | Bearer + rol `locador` | pendiente (propuesto; ver "Solicitudes") | US-36 | `panel.service#getSolicitudesPendientes` | `SolicitudResponse[]` → `SolicitudPanel` |
 
 Cómo se calcula cada cifra (cobrado del mes, vencidos, días de atraso, reclamos sin responder,
 eventos de 60 días): encabezado de `apps/web/src/lib/mocks/panel.mock.ts`. El back puede devolver

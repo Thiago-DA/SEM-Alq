@@ -1,0 +1,182 @@
+'use client'
+
+/**
+ * ModalAccionSolicitud.tsx — la confirmación de aceptar, rechazar o cancelar
+ * una solicitud, con `ConfirmActionModal` de `@rentar/ui`.
+ *
+ * Qué muestra (Claude Design, "Flujo de solicitudes" · 03, 04 y 06):
+ * - Aceptar (US-37): "¿Aceptar la solicitud de X?" y, en el momento de
+ *   decidir, que las otras pendientes de la propiedad siguen pendientes.
+ * - Rechazar (US-37): con un motivo opcional de hasta 200 caracteres ("se
+ *   puede incluir un mensaje … para aclarar el motivo del rechazo"), que
+ *   después ve el postulante (US-36). Rechazar sin escribir nada sigue
+ *   andando. NOTA: el "no puede volver a solicitar por 30 días" del diseño no
+ *   va (no hay bloqueo de 30 días, decisión del PO).
+ * - Cancelar del locador, una aceptada (US-38): le avisa por mail al
+ *   locatario (lo manda el back) y vuelve a poder aceptar a otro.
+ * - Cancelar del postulante, una pendiente: sin US en Sprint 0 (mapa US-39).
+ * - El error de la acción, adentro del modal y con "Reintentar" (· 06).
+ * Ninguna de las cuatro borra nada: ningún botón va en rojo (· 03).
+ *
+ * Quién lo usa: `SolicitudesRecibidas` y `MisSolicitudes`.
+ */
+import { Alert, Button, Input } from 'antd'
+import { ConfirmActionModal } from '@rentar/ui'
+import { SOLICITUD_MENSAJE_RECHAZO_MAX, type ActorSolicitud } from '@/lib/validation/solicitud.rules'
+import { AVISO_ACEPTAR_SIN_BAJA_MESSAGE, avisaPorMail, puedeCancelarAceptada } from '@/services/solicitudes.service'
+import type { EstadoAccionSolicitud } from './useAccionSolicitud'
+import styles from './ModalAccionSolicitud.module.css'
+
+/** Props de {@link ModalAccionSolicitud}. */
+interface ModalAccionSolicitudProps {
+  /** Lo que devuelve `useAccionSolicitud`. */
+  estado: EstadoAccionSolicitud
+  /** Quién confirma: cambia los textos de "Cancelar". */
+  actor: ActorSolicitud
+  /** Para "Aceptar": cuántas otras solicitudes pendientes tiene la propiedad. */
+  otrasPendientes?: number
+  /** Prefijo de los `data-testid` (`solicitudes` o `mis-solicitudes`). */
+  testIdPrefix: string
+}
+
+/** Textos del modal para cada acción y actor. */
+interface TextosModal {
+  title: string
+  /** `undefined` si el modal no lleva texto debajo del título (aceptar en real: lo dice el aviso). */
+  description?: string
+  confirmLabel: string
+  cancelLabel: string
+  /** "aceptar la solicitud", para el título del error. */
+  verbo: string
+}
+
+/** "La otra solicitud … sigue pendiente" / "Las otras 2 solicitudes … siguen pendientes". */
+function textoOtrasPendientes(cantidad: number, direccion: string): string {
+  const de = direccion ? ` de ${direccion}` : ''
+  return cantidad === 1 ? `La otra solicitud${de} sigue pendiente.` : `Las otras ${cantidad} solicitudes${de} siguen pendientes.`
+}
+
+/**
+ * Elige los textos. Se habla de vos y se dice qué pasa después (· 07).
+ * "Le avisamos por mail": los mails los manda el back (US-37 al aceptar y
+ * US-38 al cancelar); el front solo lo cuenta, y solo si el back de verdad
+ * los manda (`avisaPorMail`; hoy no, HANDOFF §7).
+ */
+function textosDe(estado: EstadoAccionSolicitud, actor: ActorSolicitud): TextosModal | null {
+  const pedida = estado.pedida
+  if (!pedida) return null
+  const nombre = pedida.solicitud.applicant.fullName
+  const direccion = pedida.solicitud.property.address
+  switch (pedida.accion) {
+    case 'aceptar':
+      return {
+        title: `¿Aceptar la solicitud de ${nombre}?`,
+        // En real (sin baja de una aceptada) lo dice todo el aviso de abajo (`AVISO_ACEPTAR_SIN_BAJA_MESSAGE`): sin descripción, para no repetirlo.
+        description: !puedeCancelarAceptada
+          ? undefined
+          : avisaPorMail
+            ? 'Le avisamos por mail que aceptaste su solicitud. Mientras siga aceptada, no vas a poder aceptar otra de esta propiedad.'
+            : 'Mientras siga aceptada, no vas a poder aceptar otra de esta propiedad.',
+        confirmLabel: 'Aceptar solicitud',
+        cancelLabel: 'Volver',
+        verbo: 'aceptar',
+      }
+    case 'rechazar':
+      return {
+        title: `¿Rechazar la solicitud de ${nombre}?`,
+        description: 'La solicitud pasa a rechazada. Puede volver a solicitar la propiedad mientras siga publicada.',
+        confirmLabel: 'Rechazar',
+        cancelLabel: 'Volver',
+        verbo: 'rechazar',
+      }
+    case 'cancelar':
+      return actor === 'locador'
+        ? {
+            title: `¿Cancelar la solicitud aceptada de ${nombre}?`,
+            description: `${avisaPorMail ? 'Le avisamos por mail que la cancelaste. ' : ''}Después vas a poder aceptar a otro postulante${direccion ? ` de ${direccion}` : ''}.`,
+            confirmLabel: 'Cancelar solicitud',
+            cancelLabel: 'Dejarla aceptada',
+            verbo: 'cancelar',
+          }
+        : {
+            title: `¿Cancelar tu solicitud${direccion ? ` de ${direccion}` : ''}?`,
+            description: 'El dueño deja de verla entre sus pendientes. Si te arrepentís, podés volver a solicitar la propiedad mientras siga publicada.',
+            confirmLabel: 'Cancelar solicitud',
+            cancelLabel: 'Dejarla activa',
+            verbo: 'cancelar',
+          }
+  }
+}
+
+/** El detalle del error: si no se sabe qué pasó, que nada cambió y que pruebe de nuevo (· 06). */
+function detalleError(code: string, message: string, estadoActual: string): string {
+  const generico = code === 'network' || code === 'server' || code === 'unknown'
+  return generico ? `Nada cambió: la solicitud sigue ${estadoActual}. Probá de nuevo en un momento.` : message
+}
+
+/** Confirmación de una acción sobre una solicitud. */
+export function ModalAccionSolicitud({ estado, actor, otrasPendientes = 0, testIdPrefix }: ModalAccionSolicitudProps) {
+  const textos = textosDe(estado, actor)
+  const pedida = estado.pedida
+
+  // ─── Render ─────────────────────────────────────────────────────────
+  return (
+    <ConfirmActionModal
+      open={pedida !== null}
+      title={textos?.title ?? ''}
+      description={textos?.description}
+      confirmLabel={textos?.confirmLabel}
+      cancelLabel={textos?.cancelLabel}
+      confirmLoading={estado.enCurso}
+      onConfirm={() => void estado.confirmar()}
+      onCancel={estado.cerrar}
+      data-testid={pedida ? `${testIdPrefix}-${pedida.accion}-modal` : undefined}
+    >
+      {/* US-37: el motivo es opcional; `maxLength` no deja escribir más de 200. */}
+      {pedida?.accion === 'rechazar' && (
+        <div className={styles.motivo}>
+          <label htmlFor="modal-rechazo-motivo" className={styles.motivoLabel}>
+            Motivo del rechazo (opcional)
+          </label>
+          <Input.TextArea
+            id="modal-rechazo-motivo"
+            value={estado.mensajeRechazo}
+            onChange={(event) => estado.cambiarMensajeRechazo(event.target.value)}
+            maxLength={SOLICITUD_MENSAJE_RECHAZO_MAX}
+            showCount
+            autoSize={{ minRows: 3, maxRows: 5 }}
+            disabled={estado.enCurso}
+            aria-describedby="modal-rechazo-motivo-ayuda"
+            data-testid={`${testIdPrefix}-rechazar-motivo`}
+          />
+          <span id="modal-rechazo-motivo-ayuda" className={styles.motivoHelp}>
+            Si escribís un motivo, el postulante lo va a ver en Mis solicitudes.
+          </span>
+        </div>
+      )}
+      {/* Brechas 1 y 2 de HANDOFF §7: en real, aceptar no tiene vuelta atrás. Se avisa antes de confirmar. */}
+      {pedida?.accion === 'aceptar' && !puedeCancelarAceptada && (
+        <Alert type="warning" showIcon className={styles.modalAlert} title={AVISO_ACEPTAR_SIN_BAJA_MESSAGE} data-testid={`${testIdPrefix}-aceptar-aviso`} />
+      )}
+      {/* El aviso de que las otras siguen vivas va acá, en el momento de decidir (· 03). */}
+      {pedida?.accion === 'aceptar' && otrasPendientes > 0 && (
+        <p className={styles.modalNote}>{textoOtrasPendientes(otrasPendientes, pedida.solicitud.property.address)}</p>
+      )}
+      {estado.error && textos && pedida && (
+        <Alert
+          type="error"
+          showIcon
+          className={styles.modalAlert}
+          title={`No pudimos ${textos.verbo} la solicitud`}
+          description={detalleError(estado.error.code, estado.error.message, pedida.solicitud.status)}
+          action={
+            <Button size="small" onClick={() => void estado.confirmar()} loading={estado.enCurso} data-testid={`${testIdPrefix}-accion-reintentar`}>
+              Reintentar
+            </Button>
+          }
+          data-testid={`${testIdPrefix}-accion-error`}
+        />
+      )}
+    </ConfirmActionModal>
+  )
+}
