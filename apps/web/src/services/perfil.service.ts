@@ -301,6 +301,15 @@ export async function actualizarDatosPersonales(cambios: DatosPersonalesCambios)
 // ─── Legajo (US-21) ─────────────────────────────────────────────────────
 
 /**
+ * `true` si el legajo se puede editar y guardar: solo en modo mock. En real
+ * el back todavía no tiene legajo (TODO(backend), HANDOFF §7) y el bloque se
+ * ve en solo lectura con el aviso "El legajo todavía no se puede guardar"
+ * (decisión del PO: no se guarda en memoria para no hacer creer que quedó
+ * guardado).
+ */
+export const LEGAJO_SE_PUEDE_GUARDAR = USE_MOCKS
+
+/**
  * US-21 Modificar usuario — guarda el bloque "Legajo" entero: situación
  * ocupacional, ingreso mensual (entero mayor a 0, o vacío) y garantías.
  * @backend PATCH /api/v1/usuarios/me/legajo   (no existe — propuesto) body ActualizarLegajoRequest → 200 LegajoDto
