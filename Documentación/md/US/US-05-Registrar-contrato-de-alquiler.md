@@ -4,10 +4,11 @@
 | **Criterios de aceptación:** |
 | *Acceso e inicio* |
 | - Se debe haber iniciado sesión con el usuario locador dueño de la propiedad. |
-| - Se debe poder iniciar el contrato desde una solicitud aceptada (botón "Iniciar contrato"), con la propiedad y el locatario precargados. |
+| - Se debe iniciar el contrato desde una solicitud aceptada (botón "Iniciar contrato"), con la propiedad y el locatario precargados. |
 | - La propiedad no debe tener un contrato vigente ni pendiente de firma. |
 | - Una solicitud aceptada puede originar un solo contrato. |
 | - El alta se realiza en 4 pasos (Partes y garantes, Condiciones, Cláusulas y Revisión). Se debe mostrar el paso actual y se puede volver a los pasos anteriores sin perder lo cargado. |
+| - Si el usuario intenta salir del alta con cambios sin guardar, se debe mostrar un aviso. |
 | *Paso 1 · Partes y garantes* |
 | - Se deben mostrar los datos del locador y del locatario (nombre, apellido, DNI, correo y teléfono) sin poder modificarlos. |
 | - Se debe mostrar el acceso a la solicitud de origen. |
@@ -21,7 +22,7 @@
 | *Paso 2 · Condiciones* |
 | - Se debe indicar la fecha de inicio, que no puede ser anterior a la fecha actual. |
 | - Se debe indicar la duración en meses, como número entero mayor a 0. Por defecto es 24 meses. |
-| - Se debe calcular automáticamente la fecha de fin a partir de la fecha de inicio y la duración. La fecha de fin no es editable. |
+| - Se debe calcular automáticamente la fecha de fin a partir de la fecha de inicio y la duración. Si ese día no existe en el mes de fin, se toma el último día del mes. La fecha de fin no es editable. |
 | - Se debe indicar el monto inicial del alquiler, como número entero mayor a 0. Por defecto se precarga el precio publicado de la propiedad. |
 | - Se puede indicar el depósito en garantía, como número entero mayor o igual a 0. Por defecto equivale a un mes de alquiler. |
 | - Se debe indicar el día de vencimiento del pago, entre 1 y 28. Por defecto es el día 10. |
@@ -41,18 +42,11 @@
 | - Se debe mostrar un resumen de todo lo cargado: propiedad, partes, garantes, vigencia, monto inicial, ajuste, depósito, vencimiento del pago y cláusulas. Cada bloque tiene la opción de volver a editarlo. |
 | - Para enviar a firmar, se debe marcar la casilla "Revisé las condiciones y las cláusulas, y entiendo que después de enviarlo no puedo editarlo". |
 | - Se debe solicitar confirmación antes de enviar a firmar, indicando quiénes deben firmar. |
-| - Al enviarlo, el contrato pasa al estado "pendiente de firma", recibe un código con formato CT-AAAA-NNNN y no se puede editar. |
+| - Al enviarlo, el contrato pasa al estado "pendiente de firma" y recibe un código con formato CT-AAAA-NNNN. |
 | - La propiedad sigue publicada mientras el contrato esté pendiente de firma. |
 | *Borrador* |
-| - Se puede guardar el contrato como borrador desde cualquier paso. |
-| - Un borrador se puede retomar desde el paso en que quedó. |
-| - Se puede eliminar un borrador, previa confirmación. |
-| *Listado de contratos (/panel/contratos)* |
-| - Se debe mostrar el listado de contratos del locador, con propiedad, código, locatario, estado, monto actual, vigencia y fecha del próximo ajuste. |
-| - Se pueden filtrar los contratos por estado: todos, borradores, pendientes de firma, vigentes y finalizados. Se debe mostrar la cantidad de contratos de cada estado. |
-| - Se pueden buscar contratos por dirección de la propiedad o por nombre del locatario. |
-| - Por defecto, el listado muestra primero los pendientes de firma y después el resto, ordenado por fecha de fin. |
-| - Si el locador no tiene contratos, se debe mostrar un mensaje con acceso a las solicitudes aceptadas. |
+| - Se puede guardar el contrato como borrador desde cualquier paso, sin completar los datos obligatorios de los pasos siguientes. |
+| - El borrador queda en estado "borrador" y recuerda el último paso en que estaba el usuario. |
 | **Pruebas de usuario:** |
 | - Probar registrar un contrato sin haber iniciado sesión (falla). |
 | - Probar registrar un contrato para una propiedad de otro locador, accediendo por URL (falla). |
@@ -60,6 +54,7 @@
 | - Probar iniciar un contrato desde una solicitud pendiente o rechazada (falla). |
 | - Probar iniciar un segundo contrato desde la misma solicitud aceptada (falla). |
 | - Probar registrar un contrato para una propiedad con un contrato vigente o pendiente de firma (falla). |
+| - Probar salir del alta con cambios sin guardar y verificar que se muestre el aviso (pasa). |
 | - Probar registrar un contrato sin garantes (pasa). |
 | - Probar agregar 3 garantes con datos válidos (pasa). |
 | - Probar agregar un cuarto garante (falla). |
@@ -70,6 +65,7 @@
 | - Probar indicar una fecha de inicio anterior a la fecha actual (falla). |
 | - Probar indicar una duración de 0 meses o con decimales (falla). |
 | - Probar modificar la duración y verificar que la fecha de fin se recalcule (pasa). |
+| - Probar una fecha de inicio 31/01 con 1 mes de duración y verificar que la fecha de fin sea el último día de febrero (pasa). |
 | - Probar verificar que el monto inicial venga precargado con el precio publicado y que se pueda modificar (pasa). |
 | - Probar indicar un monto inicial igual a 0, negativo o con decimales (falla). |
 | - Probar indicar un depósito negativo (falla). |
@@ -82,9 +78,6 @@
 | - Probar editar una cláusula con más de 1.000 caracteres (falla). |
 | - Probar agregar y luego eliminar una cláusula propia (pasa). |
 | - Probar enviar a firmar sin marcar la casilla de revisión (falla). |
-| - Probar enviar a firmar, cancelar la confirmación y verificar que el contrato siga editable (pasa). |
-| - Probar enviar a firmar y verificar que el contrato quede pendiente de firma, con código CT-AAAA-NNNN, y que no se pueda editar (pasa). |
-| - Probar guardar un borrador en el paso 2, salir y retomarlo desde ese paso con los datos cargados (pasa). |
-| - Probar eliminar un borrador confirmando la acción (pasa). |
-| - Probar filtrar el listado de contratos por cada estado y verificar los resultados y las cantidades (pasa). |
-| - Probar buscar un contrato por el nombre del locatario (pasa). |
+| - Probar enviar a firmar, cancelar la confirmación y verificar que el contrato no se envíe (pasa). |
+| - Probar enviar a firmar y verificar que el contrato quede pendiente de firma, con código CT-AAAA-NNNN (pasa). |
+| - Probar guardar un borrador en el paso 2 sin completar los pasos 3 y 4 y verificar que quede en estado "borrador" (pasa). |
