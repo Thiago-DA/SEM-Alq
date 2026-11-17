@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ApiResponse } from '../../dtos';
+import { redactarUrl } from '../redactar-url';
 
 export const errorHandler = (
   err: any,
@@ -37,12 +38,18 @@ export const errorHandler = (
   }
 
   console.error(
-    `[API Gateway Error] ${req.method} ${req.originalUrl} - Status: ${statusCode} - Mensaje: ${message}`
+    `[API Gateway Error] ${req.method} ${redactarUrl(req.originalUrl)} - Status: ${statusCode} - Mensaje: ${message}`
   );
+
+  const publicError = statusCode >= 500
+    ? 'Ocurrió un error inesperado en el servidor.'
+    : message;
 
   res.status(statusCode).json({
     success: false,
     message: 'Error en la solicitud',
-    error: message
+    error: publicError,
+    // Los errores de negocio con un motivo identificable (409 de contratos) lo traen en `codigo`.
+    ...(typeof err.codigo === 'string' ? { codigo: err.codigo } : {})
   });
 };

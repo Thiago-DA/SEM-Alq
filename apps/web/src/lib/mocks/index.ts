@@ -8,5 +8,14 @@
  */
 export { usuarios, MOCK_PASSWORD, type UsuarioMock } from './usuarios.mock'
 export { propiedades, type PropiedadMock, type FotoMock, type AlquilerMock } from './propiedades.mock'
-export { cobros, reclamos, type CobroMock, type ReclamoMock } from './panel.mock'
+export { reclamos, type ReclamoMock } from './panel.mock'
 export { solicitudes, type SolicitudMock } from './solicitudes.mock'
+export { contratos, type ContratoMock, type FirmaMock, type FirmasMock } from './contratos.mock'
+export {
+  cobrosDePeriodos,
+  periodos,
+  periodosDeContrato,
+  PLAZO_POR_CONTRATO,
+  type CobroRegistradoMock,
+  type PeriodoMock,
+} from './periodos.mock'

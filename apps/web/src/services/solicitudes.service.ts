@@ -66,6 +66,8 @@ import { USE_MOCKS } from './shared/config'
 import { delay } from './shared/delay'
 import { ServiceError } from './shared/errors'
 import { readMockCollection, saveMockRecord } from './shared/mockStore'
+import { contratoDeSolicitudMock, propiedadConContratoActivoMock } from './adapters/contrato-mock.adapter'
+import { perfilMockDe } from './perfil.service'
 import { requireSessionUserId } from './shared/session'
 import { readUsuariosMock } from './usuarios.service'
 
@@ -144,13 +146,20 @@ function aVista(solicitud: SolicitudMock, vista: VistaSolicitud): Solicitud {
   const propiedad = readPropiedadesMockConBorradas().find((item) => item.id === solicitud.propertyId) ?? null
   // La cuenta del postulante, para el DNI que ve el locador (US-35 actualizada).
   const postulante = vista === 'locador-detalle' ? (readUsuariosMock().find((item) => item.id === solicitud.applicantUserId) ?? null) : null
-  return solicitudMockToSolicitud(solicitud, propiedad, vista, postulante)
+  const vistaBase = solicitudMockToSolicitud(solicitud, propiedad, vista, postulante)
+  if (vista === 'locador-lista' || vista === 'locador-detalle') {
+    // US-05: para "Iniciar contrato" / "Continuar contrato", el locador
+    // necesita saber si esta solicitud ya originó un contrato y si la
+    // propiedad tiene otro vigente o pendiente de firma.
+    const contrato = contratoDeSolicitudMock(solicitud.id)
+    return { ...vistaBase, contrato, propiedadConContrato: !contrato && propiedadConContratoActivoMock(solicitud.propertyId) }
+  }
+  return vistaBase
 }
 
 /**
- * "Ahora" en el elenco: el 23/09/2026 a las 12:00 (`AHORA_ELENCO`), así una
- * solicitud recién enviada dice "hace menos de 1 h" (US-36) y ordena después
- * de las del día (la más nueva del elenco es de las 11:35).
+ * "Ahora" en el elenco: el reloj único (`ahora()`, el 23/09/2026 con la hora real), así una
+ * solicitud recién enviada dice "hace menos de 1 h" (US-36).
  */
 function ahoraMock(): string {
   return ahora().format('YYYY-MM-DDTHH:mm:ss')
@@ -263,14 +272,16 @@ export async function prepararSolicitud(propertyId: string): Promise<Preparacion
     await delay(300)
     const userId = requireSessionUserId()
     const propiedad = propiedadSolicitableMock(propertyId, userId)
-    const usuario = readUsuariosMock().find((item) => item.id === userId)
+    // El perfil completo (con el DNI vigente, incluso el editado en "Mi
+    // perfil", que vive solo en memoria: ver `perfil.service`).
+    const perfil = perfilMockDe(userId)
     return {
       perfil: {
-        nombre: usuario?.nombre ?? '',
-        apellido: usuario?.apellido ?? '',
-        dni: usuario?.dni ?? null,
-        telefono: usuario?.telefono ?? null,
-        email: usuario?.email ?? '',
+        nombre: perfil?.nombre ?? '',
+        apellido: perfil?.apellido ?? '',
+        dni: perfil?.dni ?? null,
+        telefono: perfil?.telefono ?? null,
+        email: perfil?.email ?? '',
       },
       garantiasExigidas: propiedad.requiredGuarantees ?? [],
     }

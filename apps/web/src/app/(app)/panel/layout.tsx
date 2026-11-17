@@ -6,7 +6,7 @@
  * Qué es: una sola raíz autenticada para locador y locatario; el rol activo
  * de `useAuth()` decide el menú (`lib/navigation/navConfig.tsx`), no la ruta.
  * También arma los ítems del UserMenu (Claude Design, "Mi perfil y legajo" ·
- * 02): "Mi perfil y legajo" y "Mis notificaciones". El último ítem, "Cerrar
+ * 02): "Mi perfil" (sin "y legajo" desde el 06/11) y "Mis notificaciones". El último ítem, "Cerrar
  * sesión", lo agrega el propio UserMenu (US-39: desvincula la sesión y vuelve
  * a la landing). "Administración" no va: el panel de admin no es del Sprint 1.
  *
@@ -41,7 +41,9 @@ import type { ResumenContextoRol, UserRole } from '@rentar/shared-types'
 import { AppShell, RoleContextSwitcher, type AppShellHeaderAction, type UserMenuItem, type UserMenuRoleOption } from '@rentar/ui'
 import { useAuth } from '@/lib/auth/AuthProvider'
 import { readSessionFromDocument } from '@/lib/auth/session-cookie'
-import { navItemsByRole, type PanelRole } from '@/lib/navigation/navConfig'
+import { AvisoCambiosProvider, useConfirmarSalida } from '@/lib/navigation/AvisoCambiosProvider'
+import { ITEM_MIS_ALQUILERES, navItemsByRole, RUTAS_DEL_ITEM, type PanelRole } from '@/lib/navigation/navConfig'
+import { useCantidadAlquileres } from '@/lib/navigation/useCantidadAlquileres'
 import { getResumenRoles } from '@/services/panel.service'
 import styles from './PanelLayout.module.css'
 
@@ -63,7 +65,7 @@ const PUBLICAR_ACTION: AppShellHeaderAction = { label: 'Publicar propiedad', hre
 
 /** Títulos de la barra móvil para las rutas que no están en el menú lateral. */
 const MOBILE_TITLE_BY_PATH: Record<string, string> = {
-  '/panel/perfil': 'Mi perfil y legajo',
+  '/panel/perfil': 'Mi perfil',
   '/panel/notificaciones': 'Mis notificaciones',
 }
 
@@ -85,9 +87,23 @@ function AltaMobileBar({ onBack, exitHref }: { onBack: () => void; exitHref: str
   )
 }
 
-/** AppShell del panel: menú por rol, UserMenu y cambio de contexto. */
+/**
+ * Layout del panel: el aviso de cambios sin guardar (US-21) envuelve todo,
+ * así el AppShell puede preguntar antes de cerrar sesión.
+ */
 export default function PanelLayout({ children }: { children: ReactNode }) {
+  return (
+    <AvisoCambiosProvider>
+      <PanelShell>{children}</PanelShell>
+    </AvisoCambiosProvider>
+  )
+}
+
+/** AppShell del panel: menú por rol, UserMenu y cambio de contexto. */
+function PanelShell({ children }: { children: ReactNode }) {
   const { user, roles, activeRole, isLoading, logout, switchRole } = useAuth()
+  // US-21: con cambios sin guardar, "Cerrar sesión" y "Viendo como" preguntan antes.
+  const confirmarSalida = useConfirmarSalida()
   const pathname = usePathname()
   const router = useRouter()
   const [resumenRoles, setResumenRoles] = useState<ResumenContextoRol[]>([])
@@ -106,10 +122,17 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
 
   // ─── Menú y UserMenu ────────────────────────────────────────────────
   const panelRoles = useMemo(() => roles.filter(isPanelRole), [roles])
-  const navItems = useMemo(() => (activeRole && isPanelRole(activeRole) ? navItemsByRole[activeRole] : []), [activeRole])
+  // US-27: "Mi alquiler" o "Mis alquileres" según cuántos contratos tenga (ver el hook).
+  const cantidadAlquileres = useCantidadAlquileres(user?.id ?? null, activeRole === 'locatario')
+  const navItems = useMemo(() => {
+    const items = activeRole && isPanelRole(activeRole) ? navItemsByRole[activeRole] : []
+    if (cantidadAlquileres === null || cantidadAlquileres < 2) return items
+    return items.map((item) => (item.key === 'alquiler' ? { ...item, ...ITEM_MIS_ALQUILERES } : item))
+  }, [activeRole, cantidadAlquileres])
 
   const activeKey = useMemo(() => {
-    const matches = navItems.filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    const coincide = (ruta: string) => pathname === ruta || pathname.startsWith(`${ruta}/`)
+    const matches = navItems.filter((item) => [item.href, ...(RUTAS_DEL_ITEM[item.key] ?? [])].some(coincide))
     // Gana el match más específico (href más largo): así "/panel" no le
     // gana a "/panel/propiedades" cuando la ruta activa es esta última.
     const mostSpecific = [...matches].sort((a, b) => b.href.length - a.href.length)[0]
@@ -119,7 +142,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
   const userMenuItems = useMemo<UserMenuItem[]>(() => {
     if (!user || !activeRole) return []
     return [
-      { key: 'perfil', label: 'Mi perfil y legajo', href: '/panel/perfil', icon: <UserOutlined /> },
+      { key: 'perfil', label: 'Mi perfil', href: '/panel/perfil', icon: <UserOutlined /> },
       // NOTA: sin contador de no leídas: las notificaciones no son del Sprint 1
       // (el UserMenu lo soporta con `badgeCount`).
       { key: 'notificaciones', label: 'Mis notificaciones', href: '/panel/notificaciones', icon: <BellOutlined /> },
@@ -156,11 +179,16 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
     [hasTwoRoles, panelRoles, resumenRoles],
   )
 
-  /** Cambia el rol activo y vuelve al inicio del panel de ese rol. */
+  /**
+   * Cambia el rol activo y vuelve al inicio del panel de ese rol. Con cambios
+   * sin guardar, pregunta antes (US-21); con "Seguir editando" no cambia nada.
+   */
   function handleRoleChange(role: UserRole): void {
     if (!isPanelRole(role)) return
-    switchRole(role)
-    router.push('/panel')
+    confirmarSalida(() => {
+      switchRole(role)
+      router.push('/panel')
+    }, 'cambiar-rol')
   }
 
   // ─── Barra móvil ────────────────────────────────────────────────────
@@ -179,7 +207,7 @@ export default function PanelLayout({ children }: { children: ReactNode }) {
       activeKey={activeKey}
       user={{ name: `${user.nombre} ${user.apellido}`, role: activeRole, avatarUrl: user.avatarUrl, subtitle: isPanelRole(activeRole) ? ROLE_LABEL[activeRole] : undefined }}
       userMenuItems={userMenuItems}
-      onLogout={logout}
+      onLogout={() => confirmarSalida(logout, 'cerrar-sesion')}
       mobileTitle={mobileTitle}
       activeRoleLabel={hasTwoRoles && isPanelRole(activeRole) ? ROLE_LABEL[activeRole] : undefined}
       roleOptions={roleOptions}

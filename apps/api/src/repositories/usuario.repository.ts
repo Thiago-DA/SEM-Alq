@@ -1,4 +1,4 @@
-import { CreateUsuarioDTO, RolDTO, UsuarioDTO } from '../dtos';
+import { CreateUsuarioDTO, RolDTO, UsuarioDTO, UpdateUsuarioDTO } from '../dtos';
 import { getSupabaseAdmin } from '../config/supabase';
 
 const ROL_LOCATARIO_ID = 0;
@@ -7,6 +7,7 @@ export interface IUsuarioRepository {
   create(data: CreateUsuarioDTO): Promise<UsuarioDTO>;
   findByAuthUserId(authUserId: string): Promise<UsuarioDTO | null>;
   getRolesByUsuarioId(usuarioId: number): Promise<RolDTO[]>;
+  updateByAuthUserId(authUserId: string, data: UpdateUsuarioDTO): Promise<UsuarioDTO>;
 }
 
 export class UsuarioRepository implements IUsuarioRepository {
@@ -20,6 +21,82 @@ export class UsuarioRepository implements IUsuarioRepository {
     if (error) throw error;
     return data as UsuarioDTO | null;
   }
+  
+  async updateByAuthUserId(
+    authUserId: string,
+    data: UpdateUsuarioDTO
+  ): Promise<UsuarioDTO> {
+    const supabase = getSupabaseAdmin();
+
+    // US-21: si cambia el correo, se guarda una copia de lo que había para poder revertir
+    // si Supabase Auth rechaza el cambio (los dos lugares tienen que quedar iguales).
+    const anterior = data.email !== undefined ? await this.findByAuthUserId(authUserId) : null;
+
+    const { data: usuario, error } = await supabase
+      .from('usuario')
+      .update(data)
+      .eq('auth_user_id', authUserId)
+      .select(
+        'id, nombre, apellido, email, numero_documento, telefono, fecha_nacimiento'
+      )
+      .maybeSingle();
+
+    if (error) {
+      // 23505 = violación de unicidad. Los campos únicos que se pueden tocar son el DNI y el
+      // correo: se responde un mensaje claro (nunca el texto crudo de Postgres) con `codigo`
+      // para que el front distinga cada 409 (y el del contrato).
+      if (error.code === '23505') {
+        const esCorreo = /email/i.test(`${error.message} ${error.details ?? ''}`);
+        const err = new Error(
+          esCorreo ? 'Ya existe una cuenta con ese correo.' : 'El DNI ya está registrado por otro usuario.'
+        );
+        (err as any).statusCode = 409;
+        (err as any).codigo = esCorreo ? 'EMAIL_DUPLICADO' : 'DNI_DUPLICADO';
+        throw err;
+      }
+      const err = new Error(error.message);
+      (err as any).statusCode = 400;
+      throw err;
+    }
+
+    if (!usuario) {
+      const err = new Error('No se encontró el perfil del usuario autenticado.');
+      (err as any).statusCode = 404;
+      throw err;
+    }
+
+    // US-21: el correo también se cambia en Supabase Auth (el de login), ya confirmado: no se
+    // manda ningún enlace. El trigger `trg_sincronizar_email_usuario` deja `usuario.email`
+    // igual, así que acá no hay nada más que escribir.
+    if (data.email !== undefined) {
+      const { error: authError } = await supabase.auth.admin.updateUserById(authUserId, {
+        email: data.email,
+        email_confirm: true
+      });
+
+      if (authError) {
+        // Se revierten los campos ya guardados para no dejar el perfil a medias.
+        if (anterior) {
+          const previo: Record<string, unknown> = {};
+          for (const campo of Object.keys(data)) {
+            previo[campo] = (anterior as unknown as Record<string, unknown>)[campo];
+          }
+          await supabase.from('usuario').update(previo).eq('auth_user_id', authUserId);
+        }
+
+        const duplicado = (authError as { code?: string }).code === 'email_exists';
+        const err = new Error(
+          duplicado ? 'Ya existe una cuenta con ese correo.' : 'No se pudo actualizar el correo electrónico.'
+        );
+        (err as any).statusCode = duplicado ? 409 : 400;
+        if (duplicado) (err as any).codigo = 'EMAIL_DUPLICADO';
+        throw err;
+      }
+    }
+
+    return usuario as UsuarioDTO;
+  }
+
 
   async getRolesByUsuarioId(usuarioId: number): Promise<RolDTO[]> {
     const supabase = getSupabaseAdmin();

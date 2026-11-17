@@ -19,7 +19,8 @@
  * - Julieta no tiene ninguna sobre Fructuoso Rivera 785: ahí se prueba el
  *   envío completo de US-35.
  * - Una propiedad alquilada (sin fecha de disponibilidad) o pausada no recibe
- *   solicitudes: no hay ninguna sobre esas.
+ *   solicitudes. La única sobre una pausada es 0041 (Chacabuco 690): la aceptaron
+ *   y el locador la pausó mientras arma el contrato (Sprint 4, US-43).
  * - Tanda C de correcciones (US-36, tiempo en horas): 0039 (Sofía, hace 3 h)
  *   y 0040 (Diego, hace menos de 1 h), las dos pendientes de Nicolás.
  * - Prefijo de id: `SOL-2026-XXXX`.
@@ -30,6 +31,7 @@
  * TODO(db): son filas de la tabla de solicitudes, que todavía no existe.
  */
 import type { ContactoSolicitud, EstadoSolicitud, LegajoSolicitud } from '@rentar/shared-types'
+import { ahora } from '@/lib/utils/fechas'
 
 // ─── Tipos ──────────────────────────────────────────────────────────────
 
@@ -65,6 +67,11 @@ export interface SolicitudMock {
    * inventan); lo guardan los rechazos hechos en el navegador.
    */
   rejectionMessage?: string | null
+}
+
+/** Fecha y hora ISO de hace `cantidad` horas o minutos, según el reloj único (ver la NOTA de 0039 y 0040). */
+function haceDesdeAhora(cantidad: number, unidad: 'hour' | 'minute'): string {
+  return ahora().subtract(cantidad, unidad).format('YYYY-MM-DDTHH:mm:ss')
 }
 
 // ─── Contacto y legajo (US-35 actualizada) ──────────────────────────────
@@ -103,14 +110,17 @@ export const solicitudes: SolicitudMock[] = [
     id: 'SOL-2026-0031',
     propertyId: 'prop-rondeau-480',
     applicantUserId: 'usr-julieta',
-    // Mapa: Julieta encuentra Rondeau 480 en /buscar y la solicita. Todavía
-    // no se aceptó (después termina en CT-2026-0207).
+    // Mapa: Julieta encuentra Rondeau 480 en /buscar, la solicita, la
+    // aceptan y firma CT-2026-0207. Desde el Sprint 3 (tanda 2, OK del PO)
+    // está aceptada y ya originó ese contrato, pendiente de firma (ver
+    // contratos.mock.ts). Por la regla "una sola aceptada por propiedad",
+    // en Rondeau ya no se puede aceptar otra.
     applicantName: 'Julieta Peralta',
     // NOTA: el mapa no define un mensaje; no se inventa uno.
     message: null,
-    status: 'pendiente',
+    status: 'aceptada',
     createdAt: '2026-09-20',
-    respondedAt: null,
+    respondedAt: '2026-09-21',
     contact: CONTACTO_JULIETA,
     legajo: LEGAJO_JULIETA,
   },
@@ -126,6 +136,21 @@ export const solicitudes: SolicitudMock[] = [
     status: 'pendiente',
     createdAt: '2026-09-19T18:40:00',
     respondedAt: null,
+    contact: CONTACTO_MATIAS,
+    legajo: LEGAJO_MATIAS,
+  },
+  // Chacabuco 690: de esta nace el borrador sembrado BOR-2026-0001 (US-43).
+  // NOTA: Matías tiene además la 0032 pendiente en Rondeau: la regla de "una sola
+  // activa" es por propiedad (US-35), así que puede tener las dos.
+  {
+    id: 'SOL-2026-0041',
+    propertyId: 'prop-chacabuco-690',
+    applicantUserId: 'usr-matias',
+    applicantName: 'Matías Quiroga',
+    message: 'Hola, me interesa para mudarme en octubre. Puedo presentar seguro de caución.',
+    status: 'aceptada',
+    createdAt: '2026-09-18T10:15:00',
+    respondedAt: '2026-09-21T09:30:00',
     contact: CONTACTO_MATIAS,
     legajo: LEGAJO_MATIAS,
   },
@@ -216,9 +241,14 @@ export const solicitudes: SolicitudMock[] = [
   },
 
   // ─── Tanda C de correcciones del testing del Sprint 2 (US-36) ─────────
-  // Dos pendientes del mismo "hoy", para ver el tiempo en horas (el "ahora"
-  // del elenco es el 23/09 a las 12:00, `AHORA_ELENCO`): una de hace 3 h y
+  // Dos pendientes recientes, para ver el tiempo en horas: una de hace 3 h y
   // otra de hace menos de 1 h. La de varios días es la de Matías (0032).
+  // NOTA (tanda 4 del Sprint 3): con el reloj único (`ahora()`: el 23/09 con
+  // la hora real), una hora fija haría que el texto cambie según la hora del
+  // día y los tests de Selenium fallen. Por eso su `createdAt` se calcula
+  // RELATIVO a `ahora()` cada vez que se lee (un getter): siempre dicen
+  // "hace 3 h" y "hace menos de 1 h". Al guardarse en el navegador (por
+  // ejemplo, al aceptarla), queda la fecha de ese momento.
   // NOTA: no son de Julieta: sobre Fructuoso Rivera 785 no tiene ninguna
   // (ahí se prueba el envío de US-35) y en Rondeau 480 ya tiene la 0031.
   {
@@ -230,7 +260,9 @@ export const solicitudes: SolicitudMock[] = [
     applicantName: 'Sofía Ledesma',
     message: 'Hola Nicolás, soy Sofía, tu inquilina de Obispo Trejo. Mi contrato termina en marzo y busco algo con más luz. Puedo mostrar mis recibos de sueldo.',
     status: 'pendiente',
-    createdAt: '2026-09-23T09:00:00',
+    get createdAt() {
+      return haceDesdeAhora(3, 'hour')
+    },
     respondedAt: null,
     contact: { phone: '+543515550102', email: 'sofia.ledesma@rentar.test' },
     // Tres garantías: el resumen de la fila las une con comas ("…, … y …").
@@ -245,7 +277,9 @@ export const solicitudes: SolicitudMock[] = [
     applicantName: 'Diego Ferreyra',
     message: 'Hola de nuevo. Ahora sumo seguro de caución además de la garantía propietaria, por si eso ayuda.',
     status: 'pendiente',
-    createdAt: '2026-09-23T11:35:00',
+    get createdAt() {
+      return haceDesdeAhora(30, 'minute')
+    },
     respondedAt: null,
     contact: CONTACTO_DIEGO,
     // Dos garantías: el resumen las une con " y ".

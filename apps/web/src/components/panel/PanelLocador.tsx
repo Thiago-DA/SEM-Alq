@@ -31,8 +31,9 @@ import { useRouter } from 'next/navigation'
 import type { PropiedadLocador, ResumenCobros, ResumenReclamos, SolicitudPanel } from '@rentar/shared-types'
 import { StatCard } from '@rentar/ui'
 import { formatARS } from '@rentar/ui/src/utils/formatARS'
+import { MIS_PROPIEDADES_HREF } from '@/lib/contratos/rutas'
 import { useServiceCall, type EstadoServicio } from '@/lib/hooks/useServiceCall'
-import { diasDesde, esDelMesActual, fechaLarga, hoy, nombreMes, textoDias } from '@/lib/utils/fechas'
+import { ahora, diasDesde, esDelMesActual, fechaLarga, hoy, nombreMes, textoDias } from '@/lib/utils/fechas'
 import { getEventosContratos, getResumenCobros, getResumenReclamos, getSolicitudesPendientes } from '@/services/panel.service'
 import { listarMisPropiedades } from '@/services/propiedades.service'
 import { Bloque, BloqueCargando, BloqueError, ContratosProximos, ProximosCobros, ReclamosRecientes } from './BloquesPanel'
@@ -43,11 +44,11 @@ import styles from './Panel.module.css'
 
 /**
  * "Buen día" hasta las 13, "Buenas tardes" hasta las 20, después "Buenas noches".
- * NOTA: usa la hora real a propósito: el "hoy" fijo del modo mock fija la
- * fecha (los días de atraso), no la hora del día.
+ * NOTA: la hora sale del reloj único (`ahora()`): en mock, el "hoy" fijo
+ * fija la fecha (los días de atraso), no la hora del día.
  */
 function saludo(): string {
-  const hora = new Date().getHours()
+  const hora = ahora().hour()
   if (hora < 13) return 'Buen día'
   if (hora < 20) return 'Buenas tardes'
   return 'Buenas noches'
@@ -171,7 +172,7 @@ export function PanelLocador({ nombre }: { nombre: string }) {
         value={<span className={cobros.data.overdueAmount > 0 ? styles.overdueValue : undefined}>{formatARS(cobros.data.overdueAmount)}</span>}
         delta={
           cobros.data.overdueCount > 0
-            ? { label: `${contar(cobros.data.overdueCount, 'cobro', 'cobros')} · el más viejo, ${textoDias(vencidoMasViejo)}`, trend: 'down' }
+            ? { label: `Incluye intereses por mora · ${contar(cobros.data.overdueCount, 'cobro', 'cobros')} · el más viejo, ${textoDias(vencidoMasViejo)}`, trend: 'down' }
             : { label: 'Nada vencido', trend: 'neutral' }
         }
         data-testid="panel-stat-vencidos"
@@ -284,7 +285,7 @@ export function PanelLocador({ nombre }: { nombre: string }) {
 
       <Bloque
         title="Contratos por vencer o por ajustar · próximos 60 días"
-        link={{ href: '/panel/contratos', label: 'Ir a Contratos', testId: 'panel-ir-contratos' }}
+        link={{ href: MIS_PROPIEDADES_HREF, label: 'Ir a mis propiedades', testId: 'panel-ir-contratos' }}
         data-testid="panel-bloque-contratos"
       >
         {contratos.status === 'listo' && <ContratosProximos eventos={contratos.data} />}

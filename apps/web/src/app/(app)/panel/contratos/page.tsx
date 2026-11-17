@@ -1,17 +1,15 @@
 /**
- * /panel/contratos — Contratos (US-05 Registrar contrato de alquiler).
+ * /panel/contratos — ya no es una pantalla: redirige a Mis propiedades.
  *
- * Placeholder: la pantalla es de otro sprint. Existe para que el botón que
- * lleva acá no quede roto.
- * Entra desde: el ítem "Contratos" del menú del locador.
+ * Qué es: US-43: "No existe un listado con los contratos de todas las
+ * propiedades del locador". Los contratos se ven en la pestaña Contratos de
+ * cada propiedad. Se deja el redirect para los enlaces guardados; siguen
+ * `[id]`, `[id]/editar` y `nuevo?solicitud=`.
  */
-import type { Metadata } from 'next'
-import { PlaceholderScreen } from '@/components/PlaceholderScreen'
+import { redirect } from 'next/navigation'
+import { MIS_PROPIEDADES_HREF } from '@/lib/contratos/rutas'
 
-/** Título de la pestaña del navegador (el layout raíz le suma "— RentAR"). */
-export const metadata: Metadata = { title: 'Contratos' }
-
-/** Placeholder de Contratos (otro sprint). */
+/** Manda a Mis propiedades. */
 export default function ContratosPage() {
-  return <PlaceholderScreen title="Contratos" userStory="US-05 Registrar contrato de alquiler" />
+  redirect(MIS_PROPIEDADES_HREF)
 }

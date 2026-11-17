@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { ApiResponse, CreateUsuarioDTO, UsuarioDTO } from '../dtos';
+import { ApiResponse, CreateUsuarioDTO, UsuarioDTO, UpdateUsuarioDTO} from '../dtos';
 import { usuarioService } from '../services/usuario.service';
 import { AuthenticatedUser } from '../gateway/middlewares/auth.middleware';
 
@@ -21,6 +21,7 @@ export class UsuarioController {
     }
   }
 
+  
   async obtenerMiPerfil(
     req: Request,
     res: Response,
@@ -28,17 +29,14 @@ export class UsuarioController {
   ): Promise<void> {
     try {
       const user = (req as any).user as AuthenticatedUser;
-  
+
+      const usuario = await usuarioService.obtenerMiPerfil(user.authUserId);
+
       res.status(200).json({
         success: true,
         message: 'Datos del usuario obtenidos exitosamente.',
         data: {
-          id: user.id,
-          nombre: user.nombre,
-          apellido: user.apellido,
-          email: user.email,
-          numero_documento: user.numero_documento,
-          telefono: user.telefono,
+          ...usuario,
           roles: user.roles
         }
       });
@@ -46,6 +44,35 @@ export class UsuarioController {
       next(error);
     }
   }
+
+  
+  async actualizarMiPerfil(
+    req: Request<unknown, unknown, UpdateUsuarioDTO>,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const user = (req as any).user as AuthenticatedUser;
+
+      const usuario = await usuarioService.actualizarMiPerfil(
+        user.authUserId,
+        req.body
+      );
+
+      res.status(200).json({
+        success: true,
+        message: 'Datos del usuario actualizados exitosamente.',
+        data: {
+          ...usuario,
+          roles: user.roles
+        }
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+
 }
 
 

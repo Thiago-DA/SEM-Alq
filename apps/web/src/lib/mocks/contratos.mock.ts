@@ -1,0 +1,234 @@
+/**
+ * contratos.mock.ts — los contratos del elenco que no salen de una propiedad alquilada.
+ *
+ * Qué es: los contratos de US-05 que no están en `propiedades.mock.ts`:
+ * - **CT-2026-0207, pendiente de firma:** Rondeau 480, PB, con Julieta
+ *   Peralta. Nace de su solicitud aceptada SOL-2026-0031 (mapa: "la
+ *   solicita, la aceptan y firma CT-2026-0207"). $385.000 (el valor
+ *   canónico del mapa; el wizard del diseño decía $320.000), del 01/10/2026
+ *   al 30/09/2029, ICL semestral. Mientras está pendiente de firma, Rondeau
+ *   sigue publicada (decisión del PO).
+ * - **CT-2023-0041, finalizado:** Rondeau 480, PB, con Camila Ríos, del
+ *   01/12/2023 al 30/11/2025 (24 meses). Así Camila tiene un vigente
+ *   (CT-2026-0133, en Mariano Moreno 285, desde el 01/12/2025) y un
+ *   finalizado: el caso de "dos o más contratos" de US-27 sin inventar gente
+ *   nueva (decisión del PO).
+ *   NOTA: termina el día antes de que empiece CT-2026-0133, así respeta "un
+ *   inquilino pertenece a una sola propiedad" a la vez (mapa; PO, tanda 3).
+ *
+ * - **BOR-2026-0001, borrador sin código:** Chacabuco 690 (pausada: el locador
+ *   la pausó mientras arma el contrato), con Matías Quiroga, desde
+ *   SOL-2026-0041. "Sin ajuste", quedó en el paso 2. Es el borrador sembrado de
+ *   la pestaña Contratos (US-43): "Continuar" y "Eliminar".
+ * - **CT-2024-0031, finalizado:** Chacabuco 690, con Valentina Ríos (del diseño),
+ *   "Sin ajuste". Contrato histórico sin cuenta: es el detalle sin calendario
+ *   (US-42) y no aparece en ningún Mis alquileres.
+ *
+ * Los 5 vigentes del elenco (CT-2026-0102, 0115, 0121, 0133 y 0148) NO se
+ * repiten acá: salen de `propiedades.mock.ts` (`rental`), así el listado de
+ * contratos, Mis propiedades y el panel nunca se contradicen.
+ *
+ * Quién lo usa: la rama mock de `services/contratos.service.ts` (a través de
+ * `services/adapters/contrato-mock.adapter.ts`). Ninguna pantalla lo importa.
+ *
+ * US-07: CT-2026-0207 arranca pendiente de firma con 0 de 3 firmas
+ * (`firmas`: Nicolás, Julieta y su garante, Hugo Peralta). Los garantes
+ * firman desde la decisión del PO del 11/11. CT-2023-0041 no tiene registro
+ * de firmas: es anterior a RentAR y no se inventan.
+ *
+ * TODO(db): son filas de `contrato` + garantes + firmas, que
+ * hoy no existen en el esquema (HANDOFF §7, US-05).
+ */
+import type {
+  CondicionesNuevoContrato,
+  ContractStatus,
+  GaranteContrato,
+  SignatureStatus,
+} from '@rentar/shared-types'
+
+/** La firma de un firmante, como la guardaría el back (US-07). */
+export interface FirmaMock {
+  estado: SignatureStatus
+  /** Fecha y hora ISO; `null` si no firmó. */
+  firmadoEl: string | null
+  /** Solo datos viejos: rechazar ahora vuelve el contrato a borrador y borra las firmas. */
+  rechazadoEl: string | null
+  motivoRechazo: string | null
+  /**
+   * Solo garantes: el enlace de firma vigente (US-07), como lo guarda el back: el hash SHA-256 del
+   * token y su vencimiento (fecha y hora ISO del reloj del mock). Nunca el token ni la URL.
+   * Uno nuevo reemplaza al anterior. Sin el campo (o `null`): no tiene enlace.
+   */
+  enlace?: { hash: string; venceEl: string } | null
+}
+
+/**
+ * Las firmas de un contrato enviado (US-07): el locador, el locatario y una
+ * por garante, en el mismo orden que `ContratoMock.garantes`.
+ */
+export interface FirmasMock {
+  locador: FirmaMock
+  locatario: FirmaMock
+  garantes: FirmaMock[]
+}
+
+/**
+ * Un contrato como lo guardaría el back. JSON puro: los borradores que se
+ * crean en el navegador se guardan con esta forma en `rentar:mock:contratos`
+ * (sin el DNI de los garantes: ver `contrato-mock.adapter.ts`).
+ */
+export interface ContratoMock {
+  /** Id interno. En los del elenco es el mismo código; en los borradores, `BOR-<n>`. */
+  id: string
+  /** `CT-AAAA-NNNN`; `null` en los borradores. */
+  code: string | null
+  status: ContractStatus
+  /** `UsuarioSesion.id` del locador. */
+  ownerId: string
+  propertyId: string
+  /** Solicitud aceptada de la que nace; `null` en los anteriores a US-05. */
+  solicitudId: string | null
+  /** `UsuarioSesion.id` del locatario, si tiene cuenta en el elenco. */
+  tenantUserId: string | null
+  /** Nombre y apellido del locatario (para los que no tienen cuenta). */
+  tenantName: string
+  garantes: GaranteContrato[]
+  condiciones: CondicionesNuevoContrato
+  /** Paso en que quedó el borrador (0 a 3). */
+  ultimoPaso: number
+  /** Fecha y hora ISO de creación y del último cambio. */
+  createdAt: string
+  updatedAt: string
+  /** Fecha y hora ISO en que se envió a firmar; `null` si es borrador. */
+  sentAt: string | null
+  /**
+   * Firmas del locador, el locatario y los garantes (US-07). Sin el campo:
+   * no hay registro (los borradores y los anteriores a RentAR, como CT-2023-0041).
+   */
+  firmas?: FirmasMock
+  /** Fecha y hora ISO de la última firma, cuando firmaron todas las partes. */
+  firmadoPorTodasEl?: string | null
+  /** El PDF cargado (solo los datos: el archivo no entra en `localStorage`). */
+  pdf?: { nombre: string; tamanoBytes: number; subidoEl: string } | null
+  /** `true` en un borrador sembrado que se eliminó en el navegador (el elenco no se borra). */
+  descartado?: boolean
+}
+
+/** Tamaño de `public/mocks/contrato-ficticio.pdf`, el PDF de todo el elenco (6 páginas, sin datos reales). */
+const PDF_FICTICIO_BYTES = 7602
+
+/** Los contratos del elenco que no salen de `propiedades.mock.ts` (ver el encabezado). */
+export const contratos: ContratoMock[] = [
+  {
+    id: 'CT-2026-0207',
+    code: 'CT-2026-0207',
+    status: 'pendiente_firma',
+    ownerId: 'usr-nicolas',
+    propertyId: 'prop-rondeau-480',
+    solicitudId: 'SOL-2026-0031',
+    tenantUserId: 'usr-julieta',
+    tenantName: 'Julieta Peralta',
+    // Del diseño ("tu papá"), con el dominio del elenco.
+    garantes: [{ key: 'garante-1', fullName: 'Hugo Peralta', dni: '14902338', email: 'hugo.peralta@rentar.test' }],
+    condiciones: {
+      startDate: '2026-10-01',
+      durationMonths: 36,
+      initialAmount: 385000,
+      deposit: 385000,
+      paymentTermDays: 10,
+      adjustmentIndex: 'ICL',
+      adjustmentPeriod: 'semestral',
+    },
+    ultimoPaso: 3,
+    // NOTA: el diseño fecha la aceptación el 14/09, pero en el elenco la
+    // solicitud se envió el 20/09: se acepta el 21, el borrador es del 21 y
+    // se envía a firmar el 22 (antes del "hoy" mock, 23/09).
+    createdAt: '2026-09-21T17:22:00',
+    updatedAt: '2026-09-22T11:40:00',
+    sentAt: '2026-09-22T11:40:00',
+    pdf: { nombre: 'contrato-rondeau-480-pb.pdf', tamanoBytes: PDF_FICTICIO_BYTES, subidoEl: '2026-09-22T11:30:00' },
+    // US-07: arranca pendiente con 0 de 3 firmas (Nicolás, Julieta y Hugo).
+    firmas: {
+      locador: { estado: 'pendiente', firmadoEl: null, rechazadoEl: null, motivoRechazo: null },
+      locatario: { estado: 'pendiente', firmadoEl: null, rechazadoEl: null, motivoRechazo: null },
+      garantes: [{ estado: 'pendiente', firmadoEl: null, rechazadoEl: null, motivoRechazo: null }],
+    },
+  },
+  {
+    id: 'CT-2023-0041',
+    code: 'CT-2023-0041',
+    status: 'finalizado',
+    ownerId: 'usr-nicolas',
+    propertyId: 'prop-rondeau-480',
+    solicitudId: null,
+    // Cuenta desde la tanda 4 del Sprint 3 (US-27): su finalizado se ve en Mis alquileres.
+    tenantUserId: 'usr-camila',
+    tenantName: 'Camila Ríos',
+    garantes: [],
+    condiciones: {
+      startDate: '2023-12-01',
+      durationMonths: 24,
+      // NOTA: el monto con que terminó (el diseño muestra $240.000); los ajustes no se guardan.
+      initialAmount: 240000,
+      deposit: 240000,
+      paymentTermDays: 10,
+      adjustmentIndex: 'IPC',
+      adjustmentPeriod: 'semestral',
+    },
+    ultimoPaso: 3,
+    createdAt: '2023-11-20T10:00:00',
+    updatedAt: '2023-11-25T10:00:00',
+    sentAt: '2023-11-25T10:00:00',
+    pdf: { nombre: 'CT-2023-0041.pdf', tamanoBytes: PDF_FICTICIO_BYTES, subidoEl: '2023-11-25T10:00:00' },
+  },
+  {
+    id: 'BOR-2026-0001',
+    code: null,
+    status: 'borrador',
+    ownerId: 'usr-nicolas',
+    propertyId: 'prop-chacabuco-690',
+    solicitudId: 'SOL-2026-0041',
+    tenantUserId: 'usr-matias',
+    tenantName: 'Matías Quiroga',
+    garantes: [],
+    condiciones: {
+      startDate: '2026-10-01',
+      durationMonths: 24,
+      initialAmount: 445000,
+      deposit: 445000,
+      paymentTermDays: 10,
+      adjustmentIndex: 'sin_ajuste',
+      adjustmentPeriod: null,
+    },
+    ultimoPaso: 1,
+    createdAt: '2026-09-21T10:00:00',
+    updatedAt: '2026-09-21T10:30:00',
+    sentAt: null,
+  },
+  {
+    id: 'CT-2024-0031',
+    code: 'CT-2024-0031',
+    status: 'finalizado',
+    ownerId: 'usr-nicolas',
+    propertyId: 'prop-chacabuco-690',
+    solicitudId: null,
+    // Histórico sin cuenta en el elenco.
+    tenantUserId: null,
+    tenantName: 'Valentina Ríos',
+    garantes: [],
+    condiciones: {
+      startDate: '2024-03-01',
+      durationMonths: 24,
+      initialAmount: 415000,
+      deposit: 415000,
+      paymentTermDays: 10,
+      adjustmentIndex: 'sin_ajuste',
+      adjustmentPeriod: null,
+    },
+    ultimoPaso: 3,
+    createdAt: '2024-02-20T10:00:00',
+    updatedAt: '2024-02-25T10:00:00',
+    sentAt: '2024-02-25T10:00:00',
+    pdf: { nombre: 'CT-2024-0031.pdf', tamanoBytes: PDF_FICTICIO_BYTES, subidoEl: '2024-02-25T10:00:00' },
+  },
+]

@@ -35,8 +35,8 @@ import type {
 } from '@rentar/shared-types'
 import { getSupabaseBrowserClient } from '@/lib/auth/supabase/client'
 import { buscarEnLista, FILTROS_INICIALES, ordenar, ubicacionesDe } from '@/lib/search/busqueda'
-import { cobros as cobrosElenco, propiedades as propiedadesElenco, reclamos as reclamosElenco, solicitudes as solicitudesElenco, type PropiedadMock, type SolicitudMock } from '@/lib/mocks'
-import { hoy } from '@/lib/utils/fechas'
+import { propiedades as propiedadesElenco, reclamos as reclamosElenco, solicitudes as solicitudesElenco, type PropiedadMock, type SolicitudMock } from '@/lib/mocks'
+import { ahoraIso, hoy } from '@/lib/utils/fechas'
 import { FOTO_PESO_MAXIMO_BYTES, FOTO_TIPOS_ACEPTADOS } from '@/lib/validation/propiedad.rules'
 import {
   aplicarCambiosMock,
@@ -65,6 +65,7 @@ import {
   PROPIEDAD_ALQUILADA_NO_EDITABLE_MESSAGE,
   PROPIEDAD_CON_CONTRATO_MESSAGE,
 } from './adapters/propiedad.adapter'
+import { filasDeLocadorMock } from './adapters/cobro-mock.adapter'
 import { apiRequest } from './shared/apiClient'
 import type { DisponiblesQuery, InmuebleDetalleResponse, InmueblesDisponiblesResponse } from './shared/backend-dtos'
 import { USE_MOCKS } from './shared/config'
@@ -98,20 +99,24 @@ export function readPropiedadesMockConBorradas(): PropiedadMock[] {
 
 /**
  * Propiedades mock de un locador, ya como filas de US-02: cada una con su
- * cobro del período y sus reclamos abiertos (de `lib/mocks/panel.mock.ts`).
+ * cobro del mes (de `lib/mocks/periodos.mock.ts`, la misma fuente que cobros) y sus
+ * reclamos abiertos (de `lib/mocks/panel.mock.ts`).
  * La comparte `panel.service.ts` para los conteos del panel.
  */
 export function misPropiedadesMock(ownerId: string): PropiedadLocador[] {
+  const hoyIso = hoy().format('YYYY-MM-DD')
+  const delMes = filasDeLocadorMock(ownerId, hoyIso).filter((fila) => fila.periodo === hoyIso.slice(0, 7))
   return readPropiedadesMock()
     .filter((propiedad) => propiedad.ownerId === ownerId)
-    .map((propiedad) =>
-      propiedadMockToLocador(propiedad, {
-        cobro: cobrosElenco.find((cobro) => cobro.propertyId === propiedad.id) ?? null,
+    .map((propiedad) => {
+      const fila = delMes.find((item) => item.propiedadId === propiedad.id)
+      return propiedadMockToLocador(propiedad, {
+        cobro: fila ? { dueDate: fila.vencimiento, paidAt: fila.fechaPago } : null,
         openClaims: reclamosElenco.filter(
           (reclamo) => reclamo.propertyId === propiedad.id && (reclamo.status === 'abierto' || reclamo.status === 'en_proceso'),
         ).length,
-      }),
-    )
+      })
+    })
 }
 
 // ─── Búsqueda pública (US-34) ───────────────────────────────────────────
@@ -588,10 +593,9 @@ function miPropiedadMock(propiedadId: string): PropiedadMock {
   return propiedad
 }
 
-/** "Ahora" en el elenco: el "hoy" fijo (23/09/2026) con la hora actual. */
+/** "Ahora" en el elenco: el reloj único (`ahora()`: el "hoy" fijo con la hora real). */
 function ahoraMock(): string {
-  const ahora = new Date()
-  return hoy().hour(ahora.getHours()).minute(ahora.getMinutes()).format('YYYY-MM-DDTHH:mm:ss')
+  return ahoraIso()
 }
 
 /**
@@ -669,8 +673,9 @@ async function subirFotosNuevas(editada: PropiedadNueva): Promise<FotoSubida[]> 
  * en un campo que acá no se tocó no se pisa.
  * TODO(backend): las fotos que se sacan quedan en el bucket público
  * (`fotos-propiedades`); falta definir quién las borra (HANDOFF §10).
- * TODO(backend): el precio editado (`precio_publicado`) no se ve en `/buscar`
- * ni en el detalle público, que muestran `contrato.monto_alquiler` (HANDOFF §10).
+ * TODO(db): el precio editado (`precio_publicado`) no llega a la oferta, y
+ * `/buscar` y el detalle público muestran `contrato.monto_alquiler`. Se resuelve
+ * al aplicar `20261104000001_us03_modificar_oferta.sql` (HANDOFF §7, S4-22).
  */
 export async function actualizarPropiedad(
   propiedadId: string,
